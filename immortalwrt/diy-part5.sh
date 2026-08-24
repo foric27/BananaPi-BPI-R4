@@ -158,18 +158,25 @@ export GOEXPERIMENT=
 export GOPROXY=https://proxy.golang.org,direct
 
 # Compatibility fixes for floating feeds metadata
-# rust: build LLVM locally when the feed references an unavailable CI artifact
-if [ -f feeds/packages/lang/rust/Makefile ] && \
-    ! grep -qF -- '--set=llvm.download-ci-llvm=false' feeds/packages/lang/rust/Makefile; then
-    patch_makefile_dep \
-        feeds/packages/lang/rust/Makefile \
-        $'--bootstrap-cache-path=$(DL_DIR)/rustc \\\n' \
-        $'--bootstrap-cache-path=$(DL_DIR)/rustc \\\n\t--set=llvm.download-ci-llvm=false \\\n'
-
-    grep -qF -- '--set=llvm.download-ci-llvm=false' feeds/packages/lang/rust/Makefile || {
-        echo 'Failed to disable Rust CI LLVM download' >&2
-        exit 1
-    }
+# rust: rust-lang pruned the 1.94.0 CI LLVM artifacts, so download-ci-llvm=true
+# 404s and rust/host (required by shadowsocks-rust) fails to build. Build LLVM
+# from source instead (mirrors immortalwrt/packages 47cadedca2). configure.py
+# dedupes repeated --set flags with last-wins, so the flag must be REPLACED,
+# not duplicated.
+_rust_makefile="feeds/packages/lang/rust/Makefile"
+if [ -f "$_rust_makefile" ]; then
+    if grep -qF -- '--set=llvm.download-ci-llvm=false' "$_rust_makefile"; then
+        echo "[DIY] rust: llvm.download-ci-llvm already false"
+    elif grep -qF -- '--set=llvm.download-ci-llvm=true' "$_rust_makefile"; then
+        sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/' "$_rust_makefile"
+        grep -qF -- '--set=llvm.download-ci-llvm=false' "$_rust_makefile" || {
+            echo 'Failed to disable Rust CI LLVM download' >&2
+            exit 1
+        }
+        echo "[DIY] rust: llvm.download-ci-llvm=false (build LLVM from source)"
+    else
+        echo 'WARNING: rust Makefile has no llvm.download-ci-llvm flag' >&2
+    fi
 fi
 
 patch_makefile_dep \
