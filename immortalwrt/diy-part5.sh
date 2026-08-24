@@ -158,6 +158,20 @@ export GOEXPERIMENT=
 export GOPROXY=https://proxy.golang.org,direct
 
 # Compatibility fixes for floating feeds metadata
+# rust: build LLVM locally when the feed references an unavailable CI artifact
+if [ -f feeds/packages/lang/rust/Makefile ] && \
+    ! grep -qF -- '--set=llvm.download-ci-llvm=false' feeds/packages/lang/rust/Makefile; then
+    patch_makefile_dep \
+        feeds/packages/lang/rust/Makefile \
+        $'--bootstrap-cache-path=$(DL_DIR)/rustc \\\n' \
+        $'--bootstrap-cache-path=$(DL_DIR)/rustc \\\n\t--set=llvm.download-ci-llvm=false \\\n'
+
+    grep -qF -- '--set=llvm.download-ci-llvm=false' feeds/packages/lang/rust/Makefile || {
+        echo 'Failed to disable Rust CI LLVM download' >&2
+        exit 1
+    }
+fi
+
 patch_makefile_dep \
     feeds/packages/lang/python/python-ubus/Makefile \
     'PKG_BUILD_DEPENDS:=python-setuptools/host' \
