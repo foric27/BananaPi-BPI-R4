@@ -179,6 +179,29 @@ if [ -f "$_rust_makefile" ]; then
     fi
 fi
 
+# luci-ssl-openssl: the luci feed's 2026-08-24 merge made it depend on
+# px5g-openssl. The immortalwrt 25.12 tree ships it, but guard anyway and fall
+# back to px5g-standalone if a future tree drops it (same /usr/sbin/px5g).
+_ssl_makefile="feeds/luci/collections/luci-ssl-openssl/Makefile"
+if [ -f "$_ssl_makefile" ] && \
+    grep -qF -- '+px5g-openssl' "$_ssl_makefile" && \
+    [ ! -d package/utils/px5g-openssl ]; then
+    sed -i 's/+px5g-openssl/+px5g-standalone/' "$_ssl_makefile"
+    grep -qF -- '+px5g-standalone' "$_ssl_makefile" || {
+        echo 'Failed to switch luci-ssl-openssl to px5g-standalone' >&2
+        exit 1
+    }
+    echo "[DIY] luci-ssl-openssl: dep px5g-openssl -> px5g-standalone"
+fi
+
+# kernel 6.12.103: the 2026-08-24 "Merge Official Source" added fmsh SPI-NAND
+# backport patches (436/437) whose context does not match the 6.12.103 kernel,
+# breaking toolchain/kernel-headers. The fmsh chips are not used by BPI-R4, so
+# drop the broken patches.
+rm -f target/linux/generic/backport-6.12/436-v7.3-mtd-spinand-fmsh-*.patch \
+      target/linux/generic/backport-6.12/437-v7.3-mtd-spinand-fmsh-*.patch
+echo "[DIY] removed fmsh backport patches 436/437 (broken against kernel 6.12.103)"
+
 patch_makefile_dep \
     feeds/packages/lang/python/python-ubus/Makefile \
     'PKG_BUILD_DEPENDS:=python-setuptools/host' \

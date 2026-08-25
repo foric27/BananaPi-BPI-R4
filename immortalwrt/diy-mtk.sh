@@ -371,6 +371,22 @@ if [ -f "$_rust_makefile" ]; then
     fi
 fi
 
+# luci-ssl-openssl: the luci feed's 2026-08-24 merge made it depend on
+# px5g-openssl, which this SDK (chasey-dev rebase) does not ship (immortalwrt
+# added it to their own tree on 08-20). Fall back to px5g-standalone, which is
+# present here and installs the same /usr/sbin/px5g.
+_ssl_makefile="feeds/luci/collections/luci-ssl-openssl/Makefile"
+if [ -f "$_ssl_makefile" ] && \
+    grep -qF -- '+px5g-openssl' "$_ssl_makefile" && \
+    [ ! -d package/utils/px5g-openssl ]; then
+    sed -i 's/+px5g-openssl/+px5g-standalone/' "$_ssl_makefile"
+    grep -qF -- '+px5g-standalone' "$_ssl_makefile" || {
+        echo 'Failed to switch luci-ssl-openssl to px5g-standalone' >&2
+        exit 1
+    }
+    echo "[DIY] luci-ssl-openssl: dep px5g-openssl -> px5g-standalone"
+fi
+
 patch_makefile_dep \
     feeds/packages/lang/python/python-ubus/Makefile \
     'PKG_BUILD_DEPENDS:=python-setuptools/host' \
