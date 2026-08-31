@@ -239,7 +239,7 @@ fi
 
 # MTK mt_wifi7: Linux 6.12 moved the generic unaligned helpers out of asm/.
 _mt_wifi7_unaligned_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1006-mt_wifi7-linux-6.12-unaligned-header.patch"
-_mt_wifi7_unaligned_patch_dst="package/mtk/drivers/mt_wifi7/patches/014-linux-6.12-unaligned-header.patch"
+_mt_wifi7_unaligned_patch_dst="package/mtk/drivers/mt_wifi7/patches/900-linux-6.12-unaligned-header.patch"
 
 if [ ! -f "$_mt_wifi7_unaligned_patch_src" ]; then
     echo "Required mt_wifi7 compatibility patch not found: $_mt_wifi7_unaligned_patch_src" >&2
@@ -253,7 +253,7 @@ echo "[DIY] mt_wifi7: Linux 6.12 unaligned header compatibility patch installed"
 # the driver's -Werror policy. Keep this separate from the unaligned fix so
 # either compatibility patch can be reviewed or removed independently.
 _mt_wifi7_declarations_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1007-mt_wifi7-fix-missing-declarations.patch"
-_mt_wifi7_declarations_patch_dst="package/mtk/drivers/mt_wifi7/patches/015-fix-missing-declarations.patch"
+_mt_wifi7_declarations_patch_dst="package/mtk/drivers/mt_wifi7/patches/901-fix-missing-declarations.patch"
 
 if [ ! -f "$_mt_wifi7_declarations_patch_src" ]; then
     echo "Required mt_wifi7 compatibility patch not found: $_mt_wifi7_declarations_patch_src" >&2
@@ -267,7 +267,7 @@ echo "[DIY] mt_wifi7: GCC 14 missing declarations compatibility patch installed"
 # vendor source only defines locally in bcn.c. GCC 14 -Werror rejects the
 # undeclared identifier; provide the same constant in rt_channel.c.
 _mt_wifi7_max_tx_power_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1008-mt_wifi7-fix-max-transmit-power.patch"
-_mt_wifi7_max_tx_power_patch_dst="package/mtk/drivers/mt_wifi7/patches/016-fix-max-transmit-power.patch"
+_mt_wifi7_max_tx_power_patch_dst="package/mtk/drivers/mt_wifi7/patches/902-fix-max-transmit-power.patch"
 
 if [ ! -f "$_mt_wifi7_max_tx_power_patch_src" ]; then
     echo "Required mt_wifi7 compatibility patch not found: $_mt_wifi7_max_tx_power_patch_src" >&2
@@ -285,7 +285,7 @@ echo "[DIY] mt_wifi7: MAX_TRANSMIT_POWER declaration compatibility patch install
 # so with APCLI_SUPPLICANT_SUPPORT off every TU fails with "field ...
 # has incomplete type". Align the include guard with the field guard.
 _mt_wifi7_sae_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1009-mt_wifi7-fix-incomplete-sae-structs.patch"
-_mt_wifi7_sae_patch_dst="package/mtk/drivers/mt_wifi7/patches/017-fix-incomplete-sae-structs.patch"
+_mt_wifi7_sae_patch_dst="package/mtk/drivers/mt_wifi7/patches/903-fix-incomplete-sae-structs.patch"
 
 if [ ! -f "$_mt_wifi7_sae_patch_src" ]; then
     echo "Required mt_wifi7 compatibility patch not found: $_mt_wifi7_sae_patch_src" >&2
@@ -301,7 +301,7 @@ echo "[DIY] mt_wifi7: incomplete SAE struct compatibility patch installed"
 # unconditionally, so with MAP off every such TU fails with "no member named
 # 'cac_required'". Move the field out of the MAP guard.
 _mt_wifi7_cac_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1010-mt_wifi7-fix-cac-required-field.patch"
-_mt_wifi7_cac_patch_dst="package/mtk/drivers/mt_wifi7/patches/018-fix-cac-required-field.patch"
+_mt_wifi7_cac_patch_dst="package/mtk/drivers/mt_wifi7/patches/904-fix-cac-required-field.patch"
 
 if [ ! -f "$_mt_wifi7_cac_patch_src" ]; then
     echo "Required mt_wifi7 compatibility patch not found: $_mt_wifi7_cac_patch_src" >&2
