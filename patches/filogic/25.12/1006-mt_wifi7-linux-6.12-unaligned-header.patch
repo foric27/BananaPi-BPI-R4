@@ -4,6 +4,8 @@ Subject: [PATCH] mt_wifi7: use generic unaligned header on Linux 6.12
 The architecture-specific asm/unaligned.h wrapper is no longer available in
 Linux 6.12. Include the generic header that provides get_unaligned() instead.
 
+diff --git a/mt_wifi/include/os/rt_linux.h b/mt_wifi/include/os/rt_linux.h
+index b54d1d2..21d9cc6 100644
 --- a/mt_wifi/include/os/rt_linux.h
 +++ b/mt_wifi/include/os/rt_linux.h
 @@ -50,7 +50,7 @@
