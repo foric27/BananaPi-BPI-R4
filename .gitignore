@@ -1,2 +1,16 @@
 */.DS_Store
 .DS_Store
+
+# Build directory
+openwrt/
+
+# Build output
+output/
+
+# Temporary files
+*.swp
+*.swo
+*~
+
+# Agent instruction files
+AGENTS.md
