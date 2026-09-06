@@ -7,6 +7,9 @@ openwrt/
 # Build output
 output/
 
+# Build logs
+build-*.log
+
 # Temporary files
 *.swp
 *.swo

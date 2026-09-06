@@ -48,21 +48,14 @@ apply_workspace_patch() {
 # Удаление upstream-фидов, заменённых сообщественными клонами ниже
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
-rm -rf feeds/luci/applications/luci-app-passwall
 rm -rf feeds/luci/applications/luci-app-modemband
 rm -rf package/mtk/applications/luci-app-turboacc-mtk
 rm -rf feeds/packages/net/adguardhome
-rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 
 # Клонирование пакетов сообщества
 mkdir -p package/community
 pushd package/community
-git clone --depth=1 -b dev https://github.com/fw876/helloworld
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git
-[ -f openwrt-passwall-packages/haproxy/Makefile ] && sed -i '/^[[:space:]]*ADDON+=USE_QUIC=1$/d' openwrt-passwall-packages/haproxy/Makefile
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall.git
-git clone --depth=1 https://github.com/nikkinikki-org/OpenWrt-nikki
-git clone --depth=1 https://github.com/1522042029/luci-app-socat
+rm -rf luci-theme-argon luci-app-argon-config
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
 merge_package https://github.com/kenzok8/jell jell/adguardhome
@@ -87,54 +80,17 @@ if [ -f "$_adguardhome_patch" ]; then
 AGPATCH
 	echo "[DIY] adguardhome default_username.patch пересобран для v0.107.78"
 fi
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-fan
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-sfp-status
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-adguardhome
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-modemband
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-turboacc-mtk
-merge_package "-b main https://github.com/linkease/ddnsto-openwrt-package" ddnsto-openwrt-package/ddnsto
-merge_package "-b main https://github.com/linkease/ddnsto-openwrt-package" ddnsto-openwrt-package/luci-app-ddnsto
+# Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
+for pkg in luci-app-fan luci-app-sfp-status luci-app-adguardhome luci-app-modemband luci-app-turboacc-mtk; do
+    cp -r "$GITHUB_WORKSPACE/packages/$pkg" package/openwrt-packages/
+done
 popd
-
-# luci-app-mosdns
-rm -rf feeds/packages/lang/golang
-git clone --depth=1 https://github.com/sbwml/packages_lang_golang -b 26.x feeds/packages/lang/golang
-rm -rf feeds/packages/net/mosdns
-git clone --depth=1 https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
-
-# luci-app-OpenClash
-mkdir -p package/OpenClash
-pushd package/OpenClash
-git clone --depth=1 https://github.com/vernesong/OpenClash
-popd
-
-# Исправление недетерминированного PKG_MIRROR_HASH в helloworld/shadowsocks-libev
-patch_makefile_dep \
-    package/community/helloworld/shadowsocks-libev/Makefile \
-    'PKG_MIRROR_HASH:=b3898ad0a557bc8b0bbb2f3888101d461944239b0b7d4d4c6f164d73694a4595' \
-    'PKG_MIRROR_HASH:=skip'
-
-# simple-obfs: пропуск хеша архива (git archive + submodule дают недетерминированный хеш)
-patch_makefile_dep \
-    package/community/helloworld/simple-obfs/Makefile \
-    'PKG_MIRROR_HASH:=7a0154d2de18373e52783d1b64cf5204471049c2d2c64f0b3323d7f430aa4275' \
-    'PKG_MIRROR_HASH:=skip'
 
 # adguardhome: пропуск хеша фронтенда (хеш релизного ассета GitHub непостоянен)
 patch_makefile_dep \
     package/community/package/openwrt-packages/adguardhome/Makefile \
     'FRONTEND_HASH:=084bf3e00ca3e49487fc5a87270b4e1eb26617710ca6116b9e42ce90cb1ad358' \
     'FRONTEND_HASH:=skip'
-
-# shadowsocksr-libev: замена хрупкого LTO на no-lto
-[ -f package/community/openwrt-passwall-packages/shadowsocksr-libev/Makefile ] && {
-    sed -i '/^[[:space:]]*TARGET_CFLAGS += -flto$/c\PKG_BUILD_FLAGS+=no-lto' \
-        package/community/openwrt-passwall-packages/shadowsocksr-libev/Makefile
-    patch_makefile_dep \
-        package/community/openwrt-passwall-packages/shadowsocksr-libev/Makefile \
-        '146fa4511a52da2aaa1e11ea0294cfb450e62643156c5da3b10e037ef43961f6' \
-        'skip'
-}
 
 # Обход GCC 14 + musl fortify для mbedtls
 if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
@@ -320,9 +276,8 @@ fi
 
 # Зависимости фидов для сообщественных клонов (pcre2 в основном дереве с 25.12)
 ./scripts/feeds update -a
-./scripts/feeds install -a
-./scripts/feeds install c-ares udns
 
+./scripts/feeds install -a
 
 
 # Удаление репо kiddin9 APK (вызывает сломанный подрепо video/)
@@ -337,39 +292,6 @@ done
 rm -f package/base-files/files/etc/uci-defaults/99-apk-untrusted
 [ -d package/base-files/files/etc/uci-defaults ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1005-base-files-apk-manager-fixes-master.patch"
-
-# Проверка наличия libmbedtls (требуется для shadowsocks-libev)
-if [ ! -f package/libs/mbedtls/Makefile ]; then
-  echo "WARNING: package/libs/mbedtls/Makefile не найден" >&2
-elif ! grep -q 'define Package/libmbedtls' package/libs/mbedtls/Makefile; then
-  echo "WARNING: package/libs/mbedtls/Makefile не определяет libmbedtls" >&2
-fi
-
-# GO-прокси для sing-box
-export GOEXPERIMENT=
-export GOPROXY=https://proxy.golang.org,direct
-
-# Исправления совместимости для плавающих метаданных фидов
-# rust: rust-lang удалил CI LLVM артефакты 1.94.0, поэтому download-ci-llvm=true
-# отвечает 404, и rust/host (требуется для shadowsocks-rust) не собирается. Сборка
-# LLVM из исходников вместо этого (зеркало immortalwrt/packages 47cadedca2). configure.py
-# дедуплицирует повторяющиеся --set флаги с последним победившим, поэтому флаг должен быть
-# ЗАМЕНЁН, а не продублирован.
-_rust_makefile="feeds/packages/lang/rust/Makefile"
-if [ -f "$_rust_makefile" ]; then
-    if grep -qF -- '--set=llvm.download-ci-llvm=false' "$_rust_makefile"; then
-        echo "[DIY] rust: llvm.download-ci-llvm уже false"
-    elif grep -qF -- '--set=llvm.download-ci-llvm=true' "$_rust_makefile"; then
-        sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/' "$_rust_makefile"
-        grep -qF -- '--set=llvm.download-ci-llvm=false' "$_rust_makefile" || {
-            echo 'Не удалось отключить загрузку Rust CI LLVM' >&2
-            exit 1
-        }
-        echo "[DIY] rust: llvm.download-ci-llvm=false (сборка LLVM из исходников)"
-    else
-        echo 'WARNING: в Makefile rust отсутствует флаг llvm.download-ci-llvm' >&2
-    fi
-fi
 
 # luci-ssl-openssl: мерж luci-фидов от 2026-08-24 добавил зависимость от
 # px5g-openssl, которого нет в этом SDK (chasey-dev rebase) (immortalwrt
@@ -411,7 +333,13 @@ patch_makefile_dep \
     'CONFIG_BOOTDELAY=30' \
     'CONFIG_BOOTDELAY=10'
 
-# IP по умолчанию не изменяется (остаётся 192.168.1.1)
+# Исправление пустого install target для uboot-mediatek (вызывает ложные Error 1 ignored)
+if grep -q '^define Package/u-boot/install$' package/boot/uboot-mediatek/Makefile 2>/dev/null; then
+    sed -i '/^define Package\/u-boot\/install$/,/^endef$/{
+        /^define Package\/u-boot\/install$/a\	# install handled by Build/InstallDev
+    }' package/boot/uboot-mediatek/Makefile
+    echo "[DIY] uboot-mediatek: пустой install target исправлен"
+fi
 
 # Фиксация символов ядра Kconfig для избежания интерактивных запросов (новые символы)
 CFG="target/linux/mediatek/filogic/config-6.12"

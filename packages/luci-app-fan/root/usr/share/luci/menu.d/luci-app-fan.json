@@ -1,0 +1,13 @@
+{
+	"admin/status/luci-fan": {
+		"title": "Управление вентилятором",
+		"order": 60,
+		"action": {
+			"type": "view",
+			"path": "fan"
+		},
+		"depends": {
+			"acl": [ "luci-app-fan" ]
+		}
+	}
+}

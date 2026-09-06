@@ -1,0 +1,567 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:27
+msgid ""
+"<input type=\"button\" style=\"width:210px;border-color:Teal; text-align:"
+"center;font-weight:bold;color:Green;\" value=\"AdGuardHome Web:"
+msgstr ""
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/controller/AdGuardHome.lua:6
+msgid "AdGuard Home"
+msgstr "AdGuard Home"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:67
+msgid "AdGuardHome Bin path if no bin will auto download"
+msgstr "Путь к исполняемому файлу AdGuardHome; при отсутствии будет загружен автоматически"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:99
+msgid "AdGuardHome config path"
+msgstr "Путь к конфигурации AdGuardHome"
+
+#
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:58
+msgid "AdGuardHome redirect mode"
+msgstr "Режим перенаправления AdGuardHome"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:142
+msgid ""
+"AdGuardHome runtime Log file if 'syslog': write to system log;if empty no log"
+msgstr "Журнал выполнения AdGuardHome; при значении syslog записывается в системный журнал, пустое значение — без журнала"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:120
+msgid "AdGuardHome work dir include rules,audit log and database"
+msgstr "Рабочий каталог AdGuardHome, содержащий правила, журнал аудита и базу данных"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:179
+msgid "Add"
+msgstr "Добавить"
+
+# hide div
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:177
+msgid "Add gfwlist"
+msgstr "Добавить список GFW"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:259
+msgid "Auto tail querylog"
+msgstr "Автоматическая обрезка журнала запросов"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:260
+msgid "Auto tail runtime log"
+msgstr "Автоматическая обрезка журнала выполнения"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:258
+msgid "Auto update core"
+msgstr "Автообновление ядра"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:262
+msgid "Auto update gfwlist and restart adh"
+msgstr "Автообновление списка GFW и перезапуск AdGuardHome"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:261
+msgid "Auto update ipv6 hosts and restart adh"
+msgstr "Автообновление IPv6 hosts и перезапуск AdGuardHome"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:212
+msgid "Backup workdir files when shutdown"
+msgstr "Резервное копирование файлов рабочего каталога при остановке"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:213
+msgid "Backup workdir path"
+msgstr "Путь резервного копирования рабочего каталога"
+
+# /cgi-bin/luci/admin/services/AdGuardHome
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/controller/AdGuardHome.lua:7
+msgid "Base Setting"
+msgstr "Основные настройки"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:67
+msgid "Bin Path"
+msgstr "Путь к исполняемому файлу"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:22
+msgid "Browser management port"
+msgstr "Порт веб-управления"
+
+# hide div
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:189
+msgid "Change browser management password"
+msgstr "Изменить пароль веб-управления"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_check.htm:37
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_check.htm:70
+msgid "Check..."
+msgstr "Проверка..."
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_status.htm:25
+msgid "Collecting data..."
+msgstr "Сбор данных..."
+
+#
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:99
+msgid "Config Path"
+msgstr "Путь к конфигурации"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:257
+msgid "Crontab task"
+msgstr "Задача cron"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_chpass.htm:16
+msgid "Culculate"
+msgstr "Вычислить"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:172
+msgid "Del"
+msgstr "Удалить"
+
+# hide div
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:170
+msgid "Del gfwlist"
+msgstr "Удалить список GFW"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:268
+msgid "Download links for update"
+msgstr "Ссылки для загрузки обновлений"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:18
+msgid "Enable"
+msgstr "Включить"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_check.htm:6
+msgid "Fast config"
+msgstr "Быстрая настройка"
+
+# button hide
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_check.htm:4
+msgid "Force update"
+msgstr "Принудительное обновление"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:11
+msgid ""
+"Free and open source, powerful network-wide ads & trackers blocking DNS "
+"server."
+msgstr "Бесплатный и открытый DNS-сервер для блокировки рекламы и трекеров по всей сети."
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:184
+msgid "Gfwlist domain upstream dns service"
+msgstr "Upstream DNS-сервис для доменов из списка GFW"
+
+# hide div
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:184
+msgid "Gfwlist upstream dns server"
+msgstr "Upstream DNS-сервер для списка GFW"
+
+#
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:195
+msgid "Keep files when system upgrade"
+msgstr "Сохранять файлы при обновлении системы"
+
+# #button change
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_chpass.htm:48
+msgid "Load culculate model"
+msgstr "Загрузить модуль вычисления"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/controller/AdGuardHome.lua:8
+msgid "Log"
+msgstr "Журнал"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/controller/AdGuardHome.lua:9
+msgid "Manual Config"
+msgstr "Ручная настройка"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_status.htm:9
+msgid "NOT RUNNING"
+msgstr "НЕ РАБОТАЕТ"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_status.htm:15
+msgid "Not redirect"
+msgstr "Без перенаправления"
+
+#
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:207
+msgid "On boot when network ok restart"
+msgstr "Перезапуск при загрузке после готовности сети"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/log.htm:106
+msgid "Please add log path in config to enable log"
+msgstr "Укажите путь к журналу в конфигурации для включения журналирования"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:257
+msgid "Please change time and args in crontab"
+msgstr "Измените время и аргументы в задаче cron"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_chpass.htm:24
+msgid "Please save/apply"
+msgstr "Сохраните и примените изменения"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:189
+msgid "Press load culculate model and culculate finally save/apply"
+msgstr "Сначала загрузите модуль вычисления, затем выполните вычисление, наконец сохраните/примените"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_status.htm:7
+msgid "RUNNING"
+msgstr "РАБОТАЕТ"
+
+#
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:58
+msgid "Redirect"
+msgstr "Перенаправление"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:62
+msgid "Redirect 53 port to AdGuardHome"
+msgstr "Перенаправление порта 53 на AdGuardHome"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_status.htm:13
+msgid "Redirected"
+msgstr "Перенаправлено"
+
+# hide button
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/yamleditor.htm:36
+msgid "Reload Config"
+msgstr "Перезагрузить конфигурацию"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_chpass.htm:47
+msgid "Reveal/hide password"
+msgstr "Показать/скрыть пароль"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:61
+msgid "Run as dnsmasq upstream server"
+msgstr "Как upstream DNS-сервер для dnsmasq"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:142
+msgid "Runtime log file"
+msgstr "Файл журнала выполнения"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:49
+msgid "Update"
+msgstr "Обновление"
+
+# button change
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:50
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_check.htm:3
+msgid "Update core version"
+msgstr "Обновить версию ядра"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_check.htm:54
+msgid "Updated"
+msgstr "Обновлено"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:63
+msgid "Use port 53 replace dnsmasq"
+msgstr "Использовать порт 53 вместо dnsmasq для DNS"
+
+# /cgi-bin/luci//admin/services/AdGuardHome/manual/
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/yamleditor.htm:38
+msgid "Use template"
+msgstr "Использовать шаблон"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:160
+msgid "Verbose log"
+msgstr "Подробный журнал"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/manual.lua:71
+msgid "WARNING!!! no bin found apply config will not be test"
+msgstr "ВНИМАНИЕ: исполняемый файл не найден, конфигурация не будет проверена при применении"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:234
+msgid "Will be restore when workdir/data is empty"
+msgstr "Будет восстановлено при пустом каталоге workdir/data"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:120
+msgid "Work dir"
+msgstr "Рабочий каталог"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:96
+msgid "bin use less space,but may have compatibility issues"
+msgstr "Уменьшает размер файла, но могут возникнуть проблемы совместимости"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:92
+msgid "compress best(can be slow for big files)"
+msgstr "Максимальное сжатие (может быть медленным для больших файлов)"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:91
+msgid "compress better"
+msgstr "Лучшее сжатие"
+
+# inlist
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:90
+msgid "compress faster"
+msgstr "Быстрое сжатие"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:197
+msgid "config file"
+msgstr "Файл конфигурации"
+
+# checkbox
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:196
+msgid "core bin"
+msgstr "Исполняемый файл ядра"
+
+#
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:53
+msgid "core version:"
+msgstr "Версия ядра:"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/log.htm:7
+msgid "dellog"
+msgstr "Удалить журнал"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/log.htm:8
+msgid "download log"
+msgstr "Скачать журнал"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:202
+msgid "filters"
+msgstr "Фильтры"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_chpass.htm:26
+msgid "is empty"
+msgstr "Пусто"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_chpass.htm:6
+msgid "loading..."
+msgstr "Загрузка..."
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/log.htm:4
+msgid "localtime"
+msgstr "Местное время"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:198
+msgid "log file"
+msgstr "Файл журнала"
+
+# description change
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:32
+msgid "no config"
+msgstr "Конфигурация не найдена"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:35
+msgid "no core"
+msgstr "Ядро не найдено"
+
+# inlist
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:60
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:89
+msgid "none"
+msgstr "Нет"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:201
+msgid "querylog.json"
+msgstr "querylog.json"
+
+# /cgi-bin/luci/admin/services/AdGuardHome/log/
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/AdGuardHome_check.htm:9
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/view/AdGuardHome/log.htm:2
+msgid "reverse"
+msgstr "Обратный порядок"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:199
+msgid "sessions.db"
+msgstr "sessions.db"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:200
+msgid "stats.db"
+msgstr "stats.db"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:93
+msgid "try all available compression methods & filters [slow]"
+msgstr "Попытка всех доступных методов сжатия и фильтров [медленно]"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:94
+msgid "try even more compression variants [very slow]"
+msgstr "Попытка большего количества вариантов сжатия [очень медленно]"
+
+#: /mnt/A/openwrt-latest/package/ctcgfw/luci-app-adguardhome/luasrc/model/cbi/AdGuardHome/base.lua:88
+msgid "use upx to compress bin after download"
+msgstr "Использовать UPX для сжатия исполняемого файла после загрузки"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "None"
+msgstr "Нет"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Unknown"
+msgstr "Неизвестно"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "The luci.adguardhome rpcd object is not available. Reinstall this package or restart rpcd, then refresh LuCI."
+msgstr "RPC-объект luci.adguardhome недоступен. Переустановите этот пакет или перезапустите rpcd, затем обновите LuCI."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "The rpcd backend is outdated and does not provide this view data. Reinstall this package or restart rpcd, then refresh LuCI."
+msgstr "Бэкенд rpcd устарел и не предоставляет данные этого представления. Переустановите этот пакет или перезапустите rpcd, затем обновите LuCI."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Use as dnsmasq upstream"
+msgstr "Как upstream для dnsmasq"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Redirect port 53"
+msgstr "Перенаправление порта 53"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Swap with dnsmasq port"
+msgstr "Обмен портами с dnsmasq"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "PassWall2 DNS redirect is active. AdGuard Home keeps DNS interception enabled and uses compatibility bypass rules."
+msgstr "Обнаружен PassWall2 с включённым DNS-перенаправлением. AdGuard Home сохраняет DNS-перехват и использует совместимые правила обхода."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "PassWall DNS redirect is active. AdGuard Home keeps DNS interception enabled and uses compatibility bypass rules."
+msgstr "Обнаружен PassWall с включённым DNS-перенаправлением. AdGuard Home сохраняет DNS-перехват и использует совместимые правила обхода."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "PassWall2 Compatibility Mode"
+msgstr "Режим совместимости PassWall2"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "PassWall Compatibility Mode"
+msgstr "Режим совместимости PassWall"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "AdGuard Home intercepts LAN DNS while bypassing the PassWall2 DNS redirect chain. Upstream DNS is not changed automatically."
+msgstr "AdGuard Home перехватывает DNS-запросы LAN, обходя цепочку DNS-перенаправлений PassWall2. Upstream DNS не изменяется автоматически."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "AdGuard Home intercepts LAN DNS while bypassing the PassWall2 DNS redirect chain. One managed PassWall2 upstream entry is maintained when the frontend port is known."
+msgstr "AdGuard Home перехватывает DNS-запросы LAN, обходя цепочку DNS-перенаправлений PassWall2. При обнаружении фронтального порта поддерживается управляемая запись upstream PassWall2."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "AdGuard Home intercepts LAN DNS while bypassing the PassWall DNS redirect chain. Upstream DNS is not changed automatically."
+msgstr "AdGuard Home перехватывает DNS-запросы LAN, обходя цепочку DNS-перенаправлений PassWall. Upstream DNS не изменяется автоматически."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "AdGuard Home intercepts LAN DNS while bypassing the PassWall DNS redirect chain. One managed PassWall upstream entry is maintained when the frontend port is known."
+msgstr "AdGuard Home перехватывает DNS-запросы LAN, обходя цепочку DNS-перенаправлений PassWall. При обнаружении фронтального порта поддерживается управляемая запись upstream PassWall."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "DNS Frontend"
+msgstr "DNS фронтенд"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Frontend Port"
+msgstr "Фронтальный порт"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Managed Upstream"
+msgstr "Управляемый upstream"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Running"
+msgstr "Работает"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Stopped"
+msgstr "Остановлен"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Overview data unavailable"
+msgstr "Данные обзора недоступны"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Network DNS Guard"
+msgstr "Сетевая DNS-защита"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Control Panel"
+msgstr "Панель управления"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Open Settings"
+msgstr "Открыть настройки"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "View Logs"
+msgstr "Просмотр журналов"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Service"
+msgstr "Сервис"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Backend missing"
+msgstr "Бэкенд недоступен"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Core"
+msgstr "Ядро"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Missing"
+msgstr "Отсутствует"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "DNS Port"
+msgstr "DNS-порт"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Running Mode"
+msgstr "Режим работы"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Web Console"
+msgstr "Веб-консоль"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Config File"
+msgstr "Файл конфигурации"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Ready"
+msgstr "Готово"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Workspace"
+msgstr "Рабочий каталог"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Update Task"
+msgstr "Задача обновления"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Idle"
+msgstr "Бездействует"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "DNS Queries"
+msgstr "DNS-запросы"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Blocked"
+msgstr "Заблокировано"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Blocked Ratio"
+msgstr "Доля блокировки"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Avg. Processing"
+msgstr "Среднее время обработки"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "DNS statistics unavailable. AdGuard Home API may require authentication from localhost."
+msgstr "DNS-статистика недоступна. API AdGuard Home может требовать аутентификации с localhost."
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Core Binary"
+msgstr "Исполняемый файл ядра"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "YAML Config"
+msgstr "Конфигурация YAML"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "Work Directory"
+msgstr "Рабочий каталог"
+
+#: htdocs/luci-static/resources/view/adguardhome/overview.js
+msgid "DNS statistics fetch failed."
+msgstr "Ошибка получения DNS-статистики."

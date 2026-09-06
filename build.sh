@@ -20,6 +20,9 @@ NPROC=$(nproc)
 # GITHUB_WORKSPACE нужен diy-mtk.sh для поиска патчей
 export GITHUB_WORKSPACE="$(pwd)"
 
+# Очистка PATH от Windows-путей с пробелами/скобками (WSL)
+export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v ' ' | grep -v '(' | tr '\n' ':' | sed 's/:$//')
+
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -68,10 +71,14 @@ chmod +x "$GITHUB_WORKSPACE/immortalwrt/"*.sh
 echo ""
 
 # ============================================================
-# Шаг 3: Клонирование исходников
+# Шаг 3: Клонирование / Сброс исходников
 # ============================================================
 if [ -d "openwrt" ]; then
-    info "Директория openwrt/ уже существует, пропускаем клонирование"
+    info "Директория openwrt/ существует, сброс к чистому состоянию..."
+    cd openwrt
+    git reset --hard HEAD
+    git clean -fd
+    cd "$GITHUB_WORKSPACE"
 else
     info "Клонирование $REPO_URL (ветка $REPO_BRANCH)..."
     git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" openwrt
@@ -85,6 +92,12 @@ fi
 # ============================================================
 info "=== Обновление фидов ==="
 cd openwrt
+for feed in packages luci routing telephony video; do
+    [ -d "feeds/$feed/.git" ] && {
+        git -C "feeds/$feed" reset --hard HEAD
+        git -C "feeds/$feed" clean -fd
+    }
+done
 ./scripts/feeds update -a
 cd "$GITHUB_WORKSPACE"
 
@@ -130,8 +143,14 @@ make download -j"$NPROC" 2>&1
 find dl -size -1024c -exec ls -l {} \;
 find dl -size -1024c -exec rm -f {} \;
 
-info "Компиляция ($NPROC потоков)..."
-make -j"$NPROC" || make -j$(("$NPROC" / 2 + 1)) || make -j1 V=s
+# Очистка Go-кеша перед сборкой (всегда, чтобы избежать неполных модулей)
+rm -rf dl/go-mod-cache
+rm -rf tmp/go-build
+
+LOG_FILE="$GITHUB_WORKSPACE/build-$(date +'%Y%m%d-%H%M%S').log"
+info "Компиляция ($NPROC потоков, verbose). Лог: $LOG_FILE"
+make -j"$NPROC" V=s 2>&1 | tee "$LOG_FILE"
+MAKE_STATUS=${PIPESTATUS[0]}
 
 # Статистика ccache
 if [ -d ".ccache" ]; then
@@ -141,13 +160,19 @@ fi
 
 cd "$GITHUB_WORKSPACE"
 
+if [ $MAKE_STATUS -ne 0 ]; then
+    error "Сборка завершилась с ошибкой (код: $MAKE_STATUS). Лог: $LOG_FILE"
+    exit $MAKE_STATUS
+fi
+
 # ============================================================
 # Шаг 8: Копирование прошивки
 # ============================================================
 info "=== Копирование прошивки ==="
-mkdir -p output
 rm -rf output/*
+mkdir -p output
 cp -r openwrt/bin/targets/mediatek/filogic/* output/
+[ -f "$LOG_FILE" ] && cp "$LOG_FILE" output/
 info "Прошивка сохранена в output/"
 ls -lh output/
 

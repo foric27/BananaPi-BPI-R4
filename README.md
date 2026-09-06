@@ -44,3 +44,15 @@
 * https://github.com/immortalwrt/immortalwrt
 * https://github.com/P3TERX/Actions-OpenWrt
 * https://github.com/padavanonly/immortalwrt-mt798x-6.6
+
+## Пакеты
+
+LuCI-приложения взяты из [MedyMa/luci-app](https://github.com/MedyMa/luci-app) и переведены на русский язык:
+
+| Пакет | Описание | Автор |
+|---|---|---|
+| luci-app-fan | Управление вентилятором (BPI-R4) | [MedyMa](https://github.com/MedyMa/luci-app) |
+| luci-app-sfp-status | Статус SFP-модулей | [MedyMa](https://github.com/MedyMa/luci-app) |
+| luci-app-adguardhome | AdGuard Home | [MedyMa](https://github.com/MedyMa/luci-app) |
+| luci-app-modemband | Управление полосами модема | [MedyMa](https://github.com/MedyMa/luci-app) |
+| luci-app-turboacc-mtk | Сетевое ускорение MediaTek | [MedyMa](https://github.com/MedyMa/luci-app) |

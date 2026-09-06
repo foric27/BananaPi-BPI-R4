@@ -1,0 +1,417 @@
+msgid ""
+msgstr ""
+"Language: ru\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Preferred LTE bands"
+msgstr "Предпочтительные полосы LTE"
+
+msgid "Preferred 5G SA bands"
+msgstr "Предпочтительные полосы 5G SA"
+
+msgid "Preferred 5G NSA bands"
+msgstr "Предпочтительные полосы 5G NSA"
+
+msgid "Currently set LTE bands"
+msgstr "Текущие установленные полосы LTE"
+
+msgid "Currently set 5G SA bands"
+msgstr "Текущие установленные полосы 5G SA"
+
+msgid "Currently set 5G NSA bands"
+msgstr "Текущие установленные полосы 5G NSA"
+
+msgid "Preferred LTE/5G Bands"
+msgstr "Конфигурация модема"
+
+msgid "Modem Configuration"
+msgstr "Конфигурация модема"
+
+msgid "Modem"
+msgstr "Модем"
+
+msgid "Supported LTE bands"
+msgstr "Поддерживаемые полосы LTE"
+
+msgid "Supported 5G SA bands"
+msgstr "Поддерживаемые полосы 5G SA"
+
+msgid "Supported 5G NSA bands"
+msgstr "Поддерживаемые полосы 5G NSA"
+
+msgid "5G bands cannot be read. Check if your modem supports this technology and if it is in the list of supported modems."
+msgstr "Не удалось прочитать полосы 5G. Проверьте, поддерживает ли ваш модем эту технологию и находится ли он в списке поддерживаемых модемов."
+
+msgid "LTE bands cannot be read. Check if your modem supports this technology and if it is in the list of supported modems."
+msgstr "Не удалось прочитать полосы LTE. Проверьте, поддерживает ли ваш модем эту технологию и находится ли он в списке поддерживаемых модемов."
+
+msgid ""
+"Configuration modem frequency bands. More "
+"information about the modemband application on the %seko.one.pl forum%s."
+msgstr ""
+"Настройка частотных полос модема. "
+"Более подробная информация о приложении modemband на %sфоруме eko.one.pl%s."
+
+msgid "LTE Bands Configuration"
+msgstr "Конфигурация полос LTE"
+
+msgid "5G SA Bands Configuration"
+msgstr "Конфигурация полос 5G SA"
+
+msgid "5G NSA Bands Configuration"
+msgstr "Конфигурация полос 5G NSA"
+
+msgid "Preferred bands settings"
+msgstr "Настройка предпочтительных полос"
+
+msgid "Modification of the bands"
+msgstr "Изменение полос"
+
+msgid "Modem information"
+msgstr "Информация о модеме"
+
+msgid "The new bands settings have been sent to the modem. If the changes are not visible, a restart of the connection, modem or router may be required."
+msgstr "Новые настройки полос отправлены модему. Если изменения не видны, может потребоваться перезапуск соединения, модема или роутера."
+
+msgid "Apply changes"
+msgstr "Применить изменения"
+
+msgid "Restore"
+msgstr "Восстановить"
+
+msgid "Please select a band(s)"
+msgstr "Пожалуйста, выберите полосы"
+
+msgid "Bands configuration"
+msgstr "Конфигурация полос"
+
+msgid "Restore default bands"
+msgstr "Восстановить полосы по умолчанию"
+
+msgid "Waiting for device..."
+msgstr "Ожидание устройства..."
+
+msgid "Rebooting…"
+msgstr "Перезагрузка..."
+
+msgid "Perform reboot"
+msgstr "Выполнить перезагрузку"
+
+msgid "Restart"
+msgstr "Перезапуск"
+
+msgid "Reboot"
+msgstr "Перезагрузка"
+
+msgid "Refresh"
+msgstr "Обновить"
+
+msgid "Do you really want to restart the device?"
+msgstr "Вы действительно хотите перезагрузить устройство?"
+
+msgid "Additional options"
+msgstr "Дополнительные параметры"
+
+msgid "Select the preferred band(s) for the modem."
+msgstr "Выберите предпочтительные полосы для модема."
+
+msgid "Do you really want to set up all possible bands for the modem?"
+msgstr "Вы действительно хотите настроить все доступные полосы для модема?"
+
+msgid "Preferred bands"
+msgstr "Предпочтительные полосы"
+
+msgid "Configuration"
+msgstr "Конфигурация"
+
+msgid "Configuration modemband"
+msgstr "Конфигурация modemband"
+
+msgid "Configuration panel for modemband and gui application."
+msgstr "Панель настройки modemband и графического интерфейса."
+
+msgid "Manage modem communication, restart behavior and template customization from one page."
+msgstr "Управление связью с модемом, параметрами перезапуска и настройкой шаблонов на одной странице."
+
+msgid "Device communication"
+msgstr "Связь с устройством"
+
+msgid "Restart and notification behavior"
+msgstr "Параметры перезапуска и уведомлений"
+
+msgid "Template selection"
+msgstr "Выбор шаблона"
+
+msgid "Template editor"
+msgstr "Редактор шаблонов"
+
+msgid "Interface"
+msgstr "Интерфейс"
+
+msgid "Network interface for Internet access."
+msgstr "Сетевой интерфейс для доступа в Интернет."
+
+msgid "WAN restart after making changes to bands."
+msgstr "Перезапуск WAN после изменения полос."
+
+msgid "Modem restart"
+msgstr "Перезапуск модема"
+
+msgid "Modem restart after making changes to bands."
+msgstr "Перезапуск модема после изменения полос."
+
+msgid "Restart with AT command"
+msgstr "Перезапуск AT-командой"
+
+msgid "AT command to restart the modem."
+msgstr "AT-команда для перезапуска модема."
+
+msgid "Port for communication with the modem"
+msgstr "Порт для связи с модемом"
+
+msgid "Please select a port"
+msgstr "Пожалуйста, выберите порт"
+
+msgid "Select one of the available ttyUSBX ports."
+msgstr "Выберите один из доступных портов ttyUSBX."
+
+msgid "No supported modem was found, quitting..."
+msgstr "Поддерживаемый модем не найден, выход..."
+
+msgid "Port not found, quitting..."
+msgstr "Порт не найден, выход..."
+
+msgid "Additional options useful for modem configuration."
+msgstr "Дополнительные параметры для настройки модема."
+
+msgid "Connection / router restart"
+msgstr "Перезапуск соединения / роутера"
+
+msgid "Restart WAN"
+msgstr "Перезапуск WAN"
+
+msgid "Hint: The name of the WAN section can be changed in the package settings panel."
+msgstr "Подсказка: Имя раздела WAN можно изменить в панели настроек пакета."
+
+msgid "LTE band aggregation at UL (upload)"
+msgstr "Агрегация полос LTE в UL (загрузка)"
+
+msgid "No supported modem / router was found..."
+msgstr "Поддерживаемый модем / роутер не найден..."
+
+msgid "Hint: Option dedicated to the ZTE MF286D router."
+msgstr "Подсказка: Параметр предназначен для роутера ZTE MF286D."
+
+msgid "Enable aggregation"
+msgstr "Включить агрегацию"
+
+msgid "Disable aggregation"
+msgstr "Отключить агрегацию"
+
+msgid "Disable"
+msgstr "Отключить"
+
+msgid "Enable"
+msgstr "Включить"
+
+msgid "Turn off notifications"
+msgstr "Отключить уведомления"
+
+msgid "Appearance and action settings"
+msgstr "Настройки внешнего вида и действий"
+
+msgid "Checking this option disables the notification that appears every time the bands are changed."
+msgstr "Включение этого параметра отключает уведомление, которое появляется при каждом изменении полос."
+
+msgid "Modem settings template"
+msgstr "Шаблон настроек модема"
+
+msgid "Modem template configuration"
+msgstr "Конфигурация шаблона модема"
+
+msgid "Settings panel for the modemband application that allows you to customize the package for your modem."
+msgstr "Панель настроек приложения modemband, позволяющая настроить пакет для вашего модема."
+
+msgid "Edit script"
+msgstr "Редактировать скрипт"
+
+msgid "Supported bands depend on the region in which the modem operates. By modifying the DEFAULT_LTE_BANDS variable, you can easily adapt the package to your modem."
+msgstr "Поддерживаемые полосы зависят от региона, в котором работает модем. Изменяя переменную DEFAULT_LTE_BANDS, вы можете легко адаптировать пакет к вашему модему."
+
+msgid "Waiting to read data from the modem..."
+msgstr "Ожидание чтения данных от модема..."
+
+msgid "Edit"
+msgstr "Редактировать"
+
+msgid "Template loaded"
+msgstr "Шаблон загружен"
+
+msgid "Refresh the view"
+msgstr "Обновить вид"
+
+msgid "Reload"
+msgstr "Перезагрузить"
+
+msgid "Select the modem settings file"
+msgstr "Выбрать файл настроек модема"
+
+msgid "Select the template assigned to the Vendor and ProdID of the modem."
+msgstr "Выберите шаблон, назначенный по Vendor и ProdID модема."
+
+msgid "Band selection switch"
+msgstr "Переключатель выбора полос"
+
+msgid "Deselect all"
+msgstr "Снять выделение"
+
+msgid "Select all"
+msgstr "Выбрать все"
+
+msgid "Bands are disabled..."
+msgstr "Полосы отключены..."
+
+msgid "Check if you have selected the bands correctly."
+msgstr "Проверьте, правильно ли вы выбрали полосы."
+
+msgid "No band changes to apply."
+msgstr "Нет изменений полос для применения."
+
+msgid "The modemband error."
+msgstr "Ошибка modemband."
+
+msgid "Overview"
+msgstr "Обзор"
+
+msgid "Band Settings"
+msgstr "Настройки полос"
+
+msgid "Modem Overview"
+msgstr "Обзор модема"
+
+msgid "No runtime modem data is available. Install and start ModemManager to show live status."
+msgstr "Данные модема в реальном времени недоступны. Установите и запустите ModemManager для отображения текущего состояния."
+
+msgid "Signal Strength"
+msgstr "Мощность сигнала"
+
+msgid "Module Temperature"
+msgstr "Температура модуля"
+
+msgid "Module Voltage"
+msgstr "Напряжение модуля"
+
+msgid "Serving Band"
+msgstr "Текущая полоса"
+
+msgid "Selected Bands"
+msgstr "Выбранные полосы"
+
+msgid "Region"
+msgstr "Регион"
+
+msgid "Operator Information"
+msgstr "Информация оператора"
+
+msgid "Module Information"
+msgstr "Информация о модуле"
+
+msgid "SIM Card Information"
+msgstr "Информация о SIM-карте"
+
+msgid "SIM Status"
+msgstr "Состояние SIM"
+
+msgid "SIM Type"
+msgstr "Тип SIM"
+
+msgid "Emergency Numbers"
+msgstr "Экстренные номера"
+
+msgid "Operator"
+msgstr "Оператор"
+
+msgid "Active"
+msgstr "Активна"
+
+msgid "Inactive"
+msgstr "Неактивна"
+
+msgid "SIM not detected"
+msgstr "SIM-карта не обнаружена"
+
+msgid "Device Status"
+msgstr "Состояние устройства"
+
+msgid "Primary Port"
+msgstr "Основной порт"
+
+msgid "Current Cell"
+msgstr "Текущая ячейка"
+
+msgid "Access Technology"
+msgstr "Технология доступа"
+
+msgid "Registration State"
+msgstr "Состояние регистрации"
+
+msgid "Signal Details"
+msgstr "Детали сигнала"
+
+msgid "LTE Selected Bands"
+msgstr "Выбранные полосы LTE"
+
+msgid "5G SA Selected Bands"
+msgstr "Выбранные полосы 5G SA"
+
+msgid "5G NSA Selected Bands"
+msgstr "Выбранные полосы 5G NSA"
+
+msgid "Unavailable from current backend"
+msgstr "Недоступно из текущего бэкенда"
+
+msgid "No active network information is currently available."
+msgstr "Активная информация о сети в данный момент недоступна."
+
+msgid "Unknown"
+msgstr "Неизвестно"
+
+msgid "No Service"
+msgstr "Нет службы"
+
+msgid "Manufacturer"
+msgstr "Производитель"
+
+msgid "Model"
+msgstr "Модель"
+
+msgid "Revision"
+msgstr "Версия"
+
+msgid "Signal Quality"
+msgstr "Качество сигнала"
+
+msgid "China Mobile"
+msgstr "China Mobile"
+
+msgid "China Unicom"
+msgstr "China Unicom"
+
+msgid "China Telecom"
+msgstr "China Telecom"
+
+msgid "China Broadnet"
+msgstr "China Broadnet"
+
+msgid "China Mainland"
+msgstr "Китай (материковый)"
+
+msgid "Hong Kong"
+msgstr "Гонконг"
+
+msgid "Macao"
+msgstr "Макао"
+
+msgid "Taiwan"
+msgstr "Тайвань"

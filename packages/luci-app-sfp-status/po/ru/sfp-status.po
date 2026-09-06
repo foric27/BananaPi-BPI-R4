@@ -1,0 +1,70 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-sfp-status\n"
+"PO-Revision-Date: 2026-09-06 00:00+0000\n"
+"Last-Translator: GitHub Copilot\n"
+"Language-Team: ru\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "SFP"
+msgstr "SFP"
+
+#: root/usr/share/rpcd/acl.d/luci-app-sfp-status.json:3
+msgid "Grant UCI read and RPC access to LuCI app SFP status"
+msgstr "Предоставить приложению LuCI SFP статус доступ на чтение UCI и RPC"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Module"
+msgstr "Модуль"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "SFP Name"
+msgstr "Модуль SFP"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Temperature"
+msgstr "Температура"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "SFP Speed"
+msgstr "Скорость SFP"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Voltage"
+msgstr "Напряжение"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Bias Current"
+msgstr "Ток смещения"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Available Interfaces"
+msgstr "Доступные интерфейсы"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "SFP Interfaces"
+msgstr "Интерфейсы SFP"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Status"
+msgstr "Состояние"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Unavailable"
+msgstr "Недоступно"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Interface"
+msgstr "Интерфейс"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Name"
+msgstr "Имя"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "Value"
+msgstr "Значение"
