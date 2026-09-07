@@ -5,6 +5,9 @@
 # Реплицирует GitHub Actions workflow immortalwrt_25.12_wifi7.yml
 # для запуска на локальной машине (Ubuntu/Debian).
 #
+# Опции:
+#   --no-menuconfig  Пропустить интерактивный menuconfig
+#
 
 set -e
 
@@ -16,12 +19,20 @@ REPO_BRANCH="25.12-dev-wifi7"
 CONFIG_FILE="immortalwrt/MTK/defconfig-vendor-wifi"
 DIY_SH="immortalwrt/diy-mtk.sh"
 NPROC=$(nproc)
+NO_MENUCONFIG=0
 
 # GITHUB_WORKSPACE нужен diy-mtk.sh для поиска патчей
 export GITHUB_WORKSPACE="$(pwd)"
 
 # Очистка PATH от Windows-путей с пробелами/скобками (WSL)
-export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v ' ' | grep -v '(' | tr '\n' ':' | sed 's/:$//')
+export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v ' ' | grep -v '(' | grep -v '^\s*$' | tr '\n' ':' | sed 's/:$//')
+
+# Парсинг аргументов
+for arg in "$@"; do
+    case "$arg" in
+        --no-menuconfig) NO_MENUCONFIG=1 ;;
+    esac
+done
 
 # Цвета для вывода
 RED='\033[0;31m'
@@ -32,6 +43,9 @@ NC='\033[0m' # No Color
 info()  { echo -e "${GREEN}[INFO]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+
+# Очистка старых логов (старше 7 дней)
+find "$GITHUB_WORKSPACE" -maxdepth 1 -name "build-*.log" -mtime +7 -delete 2>/dev/null || true
 
 # ============================================================
 # Шаг 1: Проверка зависимостей
@@ -81,28 +95,17 @@ if [ -d "openwrt" ]; then
     cd "$GITHUB_WORKSPACE"
 else
     info "Клонирование $REPO_URL (ветка $REPO_BRANCH)..."
-    git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" openwrt
+    if ! git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" openwrt; then
+        error "Не удалось склонировать репозиторий"
+        exit 1
+    fi
     cd openwrt
     git log --pretty=tformat:"%h" -n1 tools toolchain || echo "Нет истории toolchain"
     cd "$GITHUB_WORKSPACE"
 fi
 
 # ============================================================
-# Шаг 4: Обновление фидов
-# ============================================================
-info "=== Обновление фидов ==="
-cd openwrt
-for feed in packages luci routing telephony video; do
-    [ -d "feeds/$feed/.git" ] && {
-        git -C "feeds/$feed" reset --hard HEAD
-        git -C "feeds/$feed" clean -fd
-    }
-done
-./scripts/feeds update -a
-cd "$GITHUB_WORKSPACE"
-
-# ============================================================
-# Шаг 5: DIY-скрипт (кастомизация пакетов + патчи)
+# Шаг 4: DIY-скрипт (кастомизация пакетов + патчи + фиды)
 # ============================================================
 info "=== Запуск diy-mtk.sh ==="
 cd openwrt
@@ -111,7 +114,7 @@ chmod +x "$GITHUB_WORKSPACE/$DIY_SH"
 cd "$GITHUB_WORKSPACE"
 
 # ============================================================
-# Шаг 6: Загрузка конфигурации
+# Шаг 5: Загрузка конфигурации
 # ============================================================
 info "=== Загрузка конфигурации ==="
 if [ -e "$CONFIG_FILE" ]; then
@@ -123,40 +126,40 @@ else
 fi
 
 # ============================================================
-# Шаг 7: Сборка
+# Шаг 6: Сборка
 # ============================================================
 info "=== Сборка прошивки ==="
 cd openwrt
 
+BUILD_START=$(date +%s)
+
 info "make defconfig..."
 make defconfig
 
-# Интерактивный выбор пакетов
-info "Запуск menuconfig для настройки пакетов..."
-make menuconfig
+# Интерактивный выбор пакетов (опционально)
+if [ "$NO_MENUCONFIG" -eq 0 ]; then
+    info "Запуск menuconfig для настройки пакетов..."
+    make menuconfig
+else
+    info "menuconfig пропущен (--no-menuconfig)"
+fi
 
-info "Содержимое .config:"
-cat .config
+info "Ключевые опции конфигурации:"
+grep -E "^CONFIG_TARGET|^CONFIG_PACKAGE_luci|^CONFIG_PACKAGE_kmod-mediatek" .config | head -20
+
+# Очистка Go-кеша ДО загрузки (чтобы избежать неполных модулей)
+rm -rf dl/go-mod-cache tmp/go-build
 
 info "Загрузка пакетов (make download -j$NPROC)..."
 make download -j"$NPROC" 2>&1
+# Удаление битых загрузок
 find dl -size -1024c -exec ls -l {} \;
 find dl -size -1024c -exec rm -f {} \;
-
-# Очистка Go-кеша перед сборкой (всегда, чтобы избежать неполных модулей)
-rm -rf dl/go-mod-cache
-rm -rf tmp/go-build
 
 LOG_FILE="$GITHUB_WORKSPACE/build-$(date +'%Y%m%d-%H%M%S').log"
 info "Компиляция ($NPROC потоков, verbose). Лог: $LOG_FILE"
 make -j"$NPROC" V=s 2>&1 | tee "$LOG_FILE"
 MAKE_STATUS=${PIPESTATUS[0]}
-
-# Статистика ccache
-if [ -d ".ccache" ]; then
-    CCACHE_DIR="$PWD/.ccache" staging_dir/host/bin/ccache --show-stats
-    du -sh .ccache
-fi
 
 cd "$GITHUB_WORKSPACE"
 
@@ -165,15 +168,33 @@ if [ $MAKE_STATUS -ne 0 ]; then
     exit $MAKE_STATUS
 fi
 
+BUILD_END=$(date +%s)
+BUILD_DURATION=$((BUILD_END - BUILD_START))
+
+# Статистика ccache
+if [ -d "openwrt/.ccache" ] && command -v ccache >/dev/null 2>&1; then
+    info "=== Статистика ccache ==="
+    CCACHE_DIR="$PWD/openwrt/.ccache" ccache --show-stats
+    du -sh openwrt/.ccache
+fi
+
 # ============================================================
-# Шаг 8: Копирование прошивки
+# Шаг 7: Копирование прошивки
 # ============================================================
 info "=== Копирование прошивки ==="
 rm -rf output/*
 mkdir -p output
 cp -r openwrt/bin/targets/mediatek/filogic/* output/
 [ -f "$LOG_FILE" ] && cp "$LOG_FILE" output/
-info "Прошивка сохранена в output/"
-ls -lh output/
 
+# ============================================================
+# Итог
+# ============================================================
+echo ""
+info "=== Итог сборки ==="
+info "Прошивка:"
+ls -lh output/*.img.gz 2>/dev/null || ls -lh output/*.itb 2>/dev/null || warn "Прошивка не найдена"
+info "Пакетов: $(ls output/packages/*.apk 2>/dev/null | wc -l)"
+info "Время сборки: $((BUILD_DURATION / 60)) мин $((BUILD_DURATION % 60)) сек"
+info "Лог: $LOG_FILE"
 info "=== Сборка завершена ==="
