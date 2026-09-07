@@ -50,7 +50,6 @@ rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf feeds/luci/applications/luci-app-modemband
 rm -rf package/mtk/applications/luci-app-turboacc-mtk
-rm -rf feeds/packages/net/adguardhome
 
 # Клонирование пакетов сообщества
 mkdir -p package/community
@@ -58,39 +57,11 @@ pushd package/community
 rm -rf luci-theme-argon luci-app-argon-config
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
-merge_package https://github.com/kenzok8/jell jell/adguardhome
-# Исправление сломанного default_username.patch: upstream zh-cn.json был реорганизован
-# с момента создания патча (контекст ханка переместился с ~L571 на ~L755, отступы
-# изменились с 4 пробелов на 2). Замена на исправленный ханк, чтобы сборка
-# не падала на этапе подготовки AdGuardHome.
-_adguardhome_patch="package/openwrt-packages/adguardhome/patches/default_username.patch"
-if [ -f "$_adguardhome_patch" ]; then
-	cat > "$_adguardhome_patch" << 'AGPATCH'
---- a/client/src/__locales/zh-cn.json
-+++ b/client/src/__locales/zh-cn.json
-@@ -752,7 +752,7 @@
-   "use_private_ptr_resolvers_title": "使用私人反向 DNS 解析器",
-   "use_saved_key": "使用之前保存的密钥",
-   "username_label": "用户名",
--  "username_placeholder": "输入用户名",
-+  "username_placeholder": "默认用户名密码都是root",
-   "validated_with_dnssec": "通过 DNSSEC 验证",
-   "version": "版本",
-   "version_request_error": "检查更新失败。请检查互联网连接。",
-AGPATCH
-	echo "[DIY] adguardhome default_username.patch пересобран для v0.107.78"
-fi
 # Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
-for pkg in luci-app-fan luci-app-sfp-status luci-app-adguardhome luci-app-modemband luci-app-turboacc-mtk; do
+for pkg in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-turboacc-mtk; do
     cp -r "$GITHUB_WORKSPACE/packages/$pkg" package/openwrt-packages/
 done
 popd
-
-# adguardhome: пропуск хеша фронтенда (хеш релизного ассета GitHub непостоянен)
-patch_makefile_dep \
-    package/community/package/openwrt-packages/adguardhome/Makefile \
-    'FRONTEND_HASH:=084bf3e00ca3e49487fc5a87270b4e1eb26617710ca6116b9e42ce90cb1ad358' \
-    'FRONTEND_HASH:=skip'
 
 # Обход GCC 14 + musl fortify для mbedtls
 if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
