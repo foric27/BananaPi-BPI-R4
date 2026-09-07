@@ -59,14 +59,14 @@ start_service() {
 	if [ ! -f "$PROG" ] ;then
 	   uci -q set caddy.@caddy[0].enabled=0 
 	   uci commit caddy
-	   echo "$(date -R) : $PROG не найден,无法启动! Убедитесь, что программа загружена" >>$log_dir 2>&1
+	   echo "$(date -R) : $PROG не найден, не удалось запустить! Убедитесь, что программа загружена" >>$log_dir 2>&1
 	   exit 1
 	else
 	   chmod +x $PROG
 	   if [ $(($($PROG -h | wc -l))) -lt 3 ] ;then
 	      uci -q set caddy.@caddy[0].enabled=0 
 	      uci commit caddy 
-	      echo "$(date -R) : $PROG программа повреждена или архитектура не поддерживается,无法启动!" >>$log_dir 2>&1
+	      echo "$(date -R) : $PROG программа повреждена или архитектура не поддерживается, не удалось запустить!" >>$log_dir 2>&1
 	      exit 1
 	   fi
 	fi
@@ -157,7 +157,7 @@ logpath="$(echo $caddyf | grep "output file" | awk -F 'output file' '{print $2}'
  else
    uci -q set caddy.@caddy[0].enabled=0 
    uci commit caddy 
-   echo "$(date -R) : $caddy_file файл конфигурации Caddyfile пуст,无法启动!" >>$log_dir 2>&1
+   echo "$(date -R) : $caddy_file файл конфигурации Caddyfile пуст, не удалось запустить!" >>$log_dir 2>&1
    exit 1
  fi
 fi

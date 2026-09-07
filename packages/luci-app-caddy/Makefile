@@ -8,18 +8,19 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=luci-app-caddy
 
 LUCI_TITLE:=LuCI support for caddy
-LUCI_DEPENDS:=+caddy
+LUCI_DEPENDS:=+caddy +luci-compat
 PKG_VERSION:=1.0
 PKG_RELEASE:=1
 
 define Package/$(PKG_NAME)/conffiles
 /etc/caddy
+/etc/config/caddy
 endef
 
 define Package/$(PKG_NAME)/postrm
 #!/bin/sh
-[ -f /etc/caddy/Caddyfile ] && rm -rf /etc/caddy/Caddyfile >/dev/null 2>&1
- return 0
+[ -f /etc/caddy/Caddyfile ] && rm -f /etc/caddy/Caddyfile >/dev/null 2>&1
+ exit 0
 endef
 
 define Package/$(PKG_NAME)/postinst
