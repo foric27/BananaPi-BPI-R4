@@ -57,6 +57,10 @@ pushd package/community
 rm -rf luci-theme-argon luci-app-argon-config
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
+# gSpotx2f LuCI apps (страница статуса)
+git clone --depth=1 https://github.com/gSpotx2f/luci-app-temp-status
+git clone --depth=1 https://github.com/gSpotx2f/luci-app-cpu-status
+git clone --depth=1 https://github.com/gSpotx2f/luci-app-cpu-perf
 # Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
 for pkg in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-turboacc-mtk luci-app-caddy; do
     cp -r "$GITHUB_WORKSPACE/packages/$pkg" package/openwrt-packages/

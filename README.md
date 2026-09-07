@@ -45,7 +45,7 @@
 * https://github.com/P3TERX/Actions-OpenWrt
 * https://github.com/padavanonly/immortalwrt-mt798x-6.6
 
-## Пакеты
+## Локальные пакеты
 
 LuCI-приложения взяты из [MedyMa/luci-app](https://github.com/MedyMa/luci-app) и переведены на русский язык:
 
@@ -55,3 +55,17 @@ LuCI-приложения взяты из [MedyMa/luci-app](https://github.com/M
 | luci-app-sfp-status | Статус SFP-модулей | [MedyMa](https://github.com/MedyMa/luci-app) |
 | luci-app-modemband | Управление полосами модема | [MedyMa](https://github.com/MedyMa/luci-app) |
 | luci-app-turboacc-mtk | Сетевое ускорение MediaTek | [MedyMa](https://github.com/MedyMa/luci-app) |
+| openwrt-caddy | Веб-сервер Caddy v2.11.4 | [caddyserver](https://github.com/caddyserver/caddy) |
+| luci-app-caddy | LuCI-интерфейс для Caddy | [kiddin9](https://github.com/kiddin9/op-packages) |
+
+## Сторонние LuCI-приложения
+
+Приложения подключены при сборке через `git clone` (не локальные пакеты):
+
+| Пакет | Описание | Автор | Репозиторий |
+|---|---|---|---|
+| luci-theme-argon | Тема Argon | [jerrykuku](https://github.com/jerrykuku) | [luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon) |
+| luci-app-argon-config | Настройки темы Argon | [jerrykuku](https://github.com/jerrykuku) | [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config) |
+| luci-app-temp-status | Датчики температуры | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-temp-status](https://github.com/gSpotx2f/luci-app-temp-status) |
+| luci-app-cpu-status | Загрузка CPU | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-cpu-status](https://github.com/gSpotx2f/luci-app-cpu-status) |
+| luci-app-cpu-perf | Управление производительностью CPU | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-cpu-perf](https://github.com/gSpotx2f/luci-app-cpu-perf) |
