@@ -248,8 +248,10 @@ fi
 # Зависимости фидов для сообщественных клонов (pcre2 в основном дереве с 25.12)
 ./scripts/feeds update -a
 
-# Удаление пакетов из фидов, заменённых локальными копиями
-# (предотвращает warning "Not overriding core package" от feeds install -a)
+# Удаление пакетов из фидов, заменённых/удалённых в проекте
+# (предотвращает warnings "Not overriding core package" от feeds install -a)
+rm -rf feeds/packages/net/adguardhome
+rm -rf feeds/luci/applications/luci-app-adguardhome
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf feeds/luci/applications/luci-app-modemband
 rm -rf feeds/luci/themes/luci-theme-argon
