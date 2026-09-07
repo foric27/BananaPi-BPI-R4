@@ -61,6 +61,9 @@ git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
 git clone --depth=1 https://github.com/gSpotx2f/luci-app-temp-status
 git clone --depth=1 https://github.com/gSpotx2f/luci-app-cpu-status
 git clone --depth=1 https://github.com/gSpotx2f/luci-app-cpu-perf
+git clone --depth=1 https://github.com/gSpotx2f/luci-app-interfaces-statistics
+git clone --depth=1 https://github.com/gSpotx2f/luci-app-disks-info
+git clone --depth=1 https://github.com/gSpotx2f/luci-app-internet-detector
 # Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
 for pkg in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-turboacc-mtk luci-app-caddy; do
     cp -r "$GITHUB_WORKSPACE/packages/$pkg" package/openwrt-packages/

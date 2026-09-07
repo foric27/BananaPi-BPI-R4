@@ -69,3 +69,6 @@ LuCI-приложения взяты из [MedyMa/luci-app](https://github.com/M
 | luci-app-temp-status | Датчики температуры | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-temp-status](https://github.com/gSpotx2f/luci-app-temp-status) |
 | luci-app-cpu-status | Загрузка CPU | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-cpu-status](https://github.com/gSpotx2f/luci-app-cpu-status) |
 | luci-app-cpu-perf | Управление производительностью CPU | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-cpu-perf](https://github.com/gSpotx2f/luci-app-cpu-perf) |
+| luci-app-interfaces-statistics | Статистика сетевых интерфейсов | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-interfaces-statistics](https://github.com/gSpotx2f/luci-app-interfaces-statistics) |
+| luci-app-disks-info | Информация о дисках | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-disks-info](https://github.com/gSpotx2f/luci-app-disks-info) |
+| luci-app-internet-detector | Детектор интернета | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-internet-detector](https://github.com/gSpotx2f/luci-app-internet-detector) |
