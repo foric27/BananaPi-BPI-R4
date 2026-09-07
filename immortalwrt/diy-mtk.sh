@@ -62,8 +62,6 @@ done
 # Caddy - веб-сервер (отдельно, не LuCI)
 [ -d "$GITHUB_WORKSPACE/packages/openwrt-caddy" ] || { echo "Пакет не найден: openwrt-caddy" >&2; exit 1; }
 cp -r "$GITHUB_WORKSPACE/packages/openwrt-caddy" package/openwrt-packages/
-# Удаление лишних po/ каталогов из openwrt-packages (конфликт i18n-пакетов)
-rm -rf package/openwrt-packages/po/
 
 # Обход GCC 14 + musl fortify для mbedtls
 if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then

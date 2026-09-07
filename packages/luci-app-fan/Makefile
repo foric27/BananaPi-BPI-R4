@@ -14,6 +14,7 @@ LUCI_TITLE:=LuCI fan control
 LUCI_DESCRIPTION:=Modern LuCI fan control dashboard for BPI-R4 pwm-fan control and thermal telemetry
 LUCI_DEPENDS:=+luci-base +coreutils-stat
 LUCI_PKGARCH:=all
+LUCI_I18N_BASE:=fan
 PKG_MAINTAINER:=MedyMa
 
 define Package/luci-app-fan/conffiles
