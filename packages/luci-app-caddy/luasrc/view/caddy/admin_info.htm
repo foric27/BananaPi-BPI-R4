@@ -1,0 +1,25 @@
+<%+cbi/valueheader%>
+<script type="text/javascript">//<![CDATA[
+	function admin_info(btn)
+	{
+		btn.disabled = true;
+		btn.value = '<%:Сбор данных...%>';
+		XHR.get('<%=luci.dispatcher.build_url("admin", "nas", "caddy", "admin_info")%>',
+			null,
+			function(x,rv)
+			{
+			var tb = document.getElementById('<%=self.option%>-status');
+			if (tb) {
+    rv.validate = rv.validate.replace(/{"level":/g, '<br>{"level":').replace(/Error/g, "<br>Error").replace(/Valid configuration/g, "<br><strong><font color='#008000'>Конфигурация корректна!</font></strong>").replace(/warn/g, "<font color='#800080'>Предупреждение</font>").replace(/level/g, "<font color='#1E90FF'>Уровень</font>").replace(/info/g, "<font color='#00BFFF'>Инфо</font>").replace(/msg/g, "<font color='#FFA500'>Сообщение</font>").replace(/error/g, "<font color='#DB7093'>Ошибка</font>").replace(/Error:/g, "<font color='red'><strong>Ошибка в конфигурации!</strong><br>Место ошибки:</font>");
+    tb.innerHTML = "<br><font color='#FF00FF'><%:Статус:%></font>" + "<font color='#2F4F4F'>" + rv.validate + "</font>";
+  } 	
+				btn.disabled = false;
+				btn.value = '<%:Проверить%>';
+			}
+		);
+		return false;
+	}
+//]]></script>
+<input type="button" class="btn cbi-button cbi-button-apply" value="<%:Проверить%>" onclick="return admin_info(this)" />
+<span id="<%=self.option%>-status"><em><%=self.value%></em></span>
+<%+cbi/valuefooter%>

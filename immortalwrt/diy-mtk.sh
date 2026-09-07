@@ -58,9 +58,11 @@ rm -rf luci-theme-argon luci-app-argon-config
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
 # Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
-for pkg in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-turboacc-mtk; do
+for pkg in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-turboacc-mtk luci-app-caddy; do
     cp -r "$GITHUB_WORKSPACE/packages/$pkg" package/openwrt-packages/
 done
+# Caddy - веб-сервер (отдельно, не LuCI)
+cp -r "$GITHUB_WORKSPACE/packages/openwrt-caddy" package/openwrt-packages/
 popd
 
 # Обход GCC 14 + musl fortify для mbedtls
