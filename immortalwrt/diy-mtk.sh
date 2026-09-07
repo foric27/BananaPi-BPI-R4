@@ -72,17 +72,6 @@ if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
   fi
 fi
 
-# Удаление onionshare-cli (нерешённые метаданные, отсутствует в конфиге)
-rm -rf feeds/packages/net/onionshare-cli
-
-[ -f feeds/luci/applications/luci-app-package-manager/root/usr/libexec/package-manager-call ] && \
-    apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1004-luci-package-manager-apk-upload-untrusted-master.patch"
-
-# vpnc: добавление -p в mkdir для идемпотентности
-if grep -q 'mkdir $(PKG_BUILD_DIR)/bin' feeds/packages/net/vpnc/Makefile 2>/dev/null; then
-    sed -i '/mkdir $(PKG_BUILD_DIR)\/bin/s/mkdir /mkdir -p /' feeds/packages/net/vpnc/Makefile
-fi
-
 # hostapd: исключение приватного MTK MLO PMKSA патча (975) из сборок без 11BE.
 # Upstream-патч ссылается на sta->mld_assoc_link_id / sta->mld_info, которые
 # существуют только при CONFIG_IEEE80211BE; это дерево собирает wpad без 11BE
@@ -247,6 +236,17 @@ fi
 
 # Зависимости фидов для сообщественных клонов (pcre2 в основном дереве с 25.12)
 ./scripts/feeds update -a
+
+# Удаление onionshare-cli (нерешённые метаданные, отсутствует в конфиге)
+rm -rf feeds/packages/net/onionshare-cli
+
+[ -f feeds/luci/applications/luci-app-package-manager/root/usr/libexec/package-manager-call ] && \
+    apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1004-luci-package-manager-apk-upload-untrusted-master.patch"
+
+# vpnc: добавление -p в mkdir для идемпотентности
+if grep -q 'mkdir $(PKG_BUILD_DIR)/bin' feeds/packages/net/vpnc/Makefile 2>/dev/null; then
+    sed -i '/mkdir $(PKG_BUILD_DIR)\/bin/s/mkdir /mkdir -p /' feeds/packages/net/vpnc/Makefile
+fi
 
 # Удаление пакетов из фидов, заменённых/удалённых в проекте
 # (предотвращает warnings "Not overriding core package" от feeds install -a)
