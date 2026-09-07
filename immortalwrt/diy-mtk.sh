@@ -248,6 +248,12 @@ fi
 # Зависимости фидов для сообщественных клонов (pcre2 в основном дереве с 25.12)
 ./scripts/feeds update -a
 
+# Удаление пакетов из фидов, заменённых локальными копиями
+# (предотвращает warning "Not overriding core package" от feeds install -a)
+rm -rf feeds/luci/applications/luci-app-argon-config
+rm -rf feeds/luci/applications/luci-app-modemband
+rm -rf feeds/luci/themes/luci-theme-argon
+
 ./scripts/feeds install -a
 
 
@@ -325,9 +331,15 @@ if [ -f "$CFG" ]; then
         sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
         echo "CONFIG_${sym}=y" >> "$CFG"
     done
-    for sym in USB_LEDS_TRIGGER_USBPORT POWER_SUPPLY_HWMON; do
+    # tristate (m/y) опции
+    for sym in USB_LEDS_TRIGGER_USBPORT; do
         sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
         echo "CONFIG_${sym}=m" >> "$CFG"
+    done
+    # bool (y/n) опции
+    for sym in POWER_SUPPLY_HWMON; do
+        sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
+        echo "CONFIG_${sym}=y" >> "$CFG"
     done
     echo "[DIY] Символы ядра Kconfig зафиксированы (GPIO_KEYS, RTC_NVMEM, USB_LED, POWER_SUPPLY)"
 fi
