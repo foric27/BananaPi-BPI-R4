@@ -1,16 +1,8 @@
 #!/bin/bash
+set -e
 #
 # diy-mtk.sh -- Сообщества пакеты и конфигурация для сборки chasey-dev
 #
-
-merge_package(){
-    repo=`echo $1 | rev | cut -d'/' -f 1 | rev`
-    pkg=`echo $2 | rev | cut -d'/' -f 1 | rev`
-    git clone --depth=1 --single-branch $1
-    [ -d package/openwrt-packages ] || mkdir -p package/openwrt-packages
-    mv $2 package/openwrt-packages/
-    rm -rf $repo
-}
 
 patch_makefile_dep() {
     local file_path="$1"
@@ -45,12 +37,6 @@ apply_workspace_patch() {
     git apply --recount --ignore-space-change --ignore-whitespace "$patch_file"
 }
 
-# Удаление upstream-фидов, заменённых сообщественными клонами ниже
-rm -rf feeds/luci/themes/luci-theme-argon
-rm -rf feeds/luci/applications/luci-app-argon-config
-rm -rf feeds/luci/applications/luci-app-modemband
-rm -rf package/mtk/applications/luci-app-turboacc-mtk
-
 # Клонирование пакетов сообщества
 mkdir -p package/community
 pushd package/community
@@ -70,9 +56,11 @@ git clone --depth=1 https://github.com/gSpotx2f/luci-app-internet-detector
 popd
 # Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
 for pkg in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-turboacc-mtk luci-app-caddy; do
+    [ -d "$GITHUB_WORKSPACE/packages/$pkg" ] || { echo "Пакет не найден: $pkg" >&2; exit 1; }
     cp -r "$GITHUB_WORKSPACE/packages/$pkg" package/openwrt-packages/
 done
 # Caddy - веб-сервер (отдельно, не LuCI)
+[ -d "$GITHUB_WORKSPACE/packages/openwrt-caddy" ] || { echo "Пакет не найден: openwrt-caddy" >&2; exit 1; }
 cp -r "$GITHUB_WORKSPACE/packages/openwrt-caddy" package/openwrt-packages/
 
 # Обход GCC 14 + musl fortify для mbedtls
@@ -296,17 +284,9 @@ patch_makefile_dep \
     feeds/packages/lang/python/python-ubus/Makefile \
     'PKG_BUILD_DEPENDS:=python-setuptools/host' \
     'PKG_BUILD_DEPENDS:=python3/host'
-patch_makefile_dep \
-    package/feeds/packages/python-ubus/Makefile \
-    'PKG_BUILD_DEPENDS:=python-setuptools/host' \
-    'PKG_BUILD_DEPENDS:=python3/host'
 
 patch_makefile_dep \
     feeds/packages/admin/zabbix/Makefile \
-    'libnetsnmp-ssl' \
-    'libnetsnmp'
-patch_makefile_dep \
-    package/feeds/packages/zabbix/Makefile \
     'libnetsnmp-ssl' \
     'libnetsnmp'
 
