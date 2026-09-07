@@ -316,5 +316,11 @@ if [ -f "$CFG" ]; then
         sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
         echo "$val" >> "$CFG"
     done
-    echo "[DIY] Символы ядра Kconfig зафиксированы"
+    # MTK_SVS: Smart Voltage Scaling (динамическая подстройка напряжения CPU)
+    # DEVFREQ_THERMAL: Thermal-aware device frequency scaling
+    for sym in MTK_SVS DEVFREQ_THERMAL; do
+        sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
+        echo "CONFIG_${sym}=y" >> "$CFG"
+    done
+    echo "[DIY] Символы ядра Kconfig зафиксированы (включая MTK_SVS, DEVFREQ_THERMAL)"
 fi
