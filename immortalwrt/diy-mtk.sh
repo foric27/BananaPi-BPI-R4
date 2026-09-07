@@ -316,11 +316,18 @@ if [ -f "$CFG" ]; then
         sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
         echo "$val" >> "$CFG"
     done
-    # MTK_SVS: Smart Voltage Scaling (динамическая подстройка напряжения CPU)
-    # DEVFREQ_THERMAL: Thermal-aware device frequency scaling
-    for sym in MTK_SVS DEVFREQ_THERMAL; do
+    # Ядерные опции оборудования BPI-R4
+    # GPIO_KEYS: WPS/Reset кнопка
+    # RTC_NVMEM: persistent time storage
+    # USB_LEDS_TRIGGER_USBPORT: USB activity LED
+    # POWER_SUPPLY_HWMON: мониторинг питания через hwmon
+    for sym in GPIO_KEYS RTC_NVMEM; do
         sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
         echo "CONFIG_${sym}=y" >> "$CFG"
     done
-    echo "[DIY] Символы ядра Kconfig зафиксированы (включая MTK_SVS, DEVFREQ_THERMAL)"
+    for sym in USB_LEDS_TRIGGER_USBPORT POWER_SUPPLY_HWMON; do
+        sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
+        echo "CONFIG_${sym}=m" >> "$CFG"
+    done
+    echo "[DIY] Символы ядра Kconfig зафиксированы (GPIO_KEYS, RTC_NVMEM, USB_LED, POWER_SUPPLY)"
 fi
