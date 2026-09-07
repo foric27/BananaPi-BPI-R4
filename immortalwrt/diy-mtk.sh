@@ -54,7 +54,10 @@ rm -rf package/mtk/applications/luci-app-turboacc-mtk
 # Клонирование пакетов сообщества
 mkdir -p package/community
 pushd package/community
+# Удаление перед клонированием (всегда чистое)
 rm -rf luci-theme-argon luci-app-argon-config
+rm -rf luci-app-temp-status luci-app-cpu-status luci-app-cpu-perf
+rm -rf luci-app-interfaces-statistics luci-app-disks-info luci-app-internet-detector
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
 git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
 # gSpotx2f LuCI apps (страница статуса)
@@ -64,13 +67,13 @@ git clone --depth=1 https://github.com/gSpotx2f/luci-app-cpu-perf
 git clone --depth=1 https://github.com/gSpotx2f/luci-app-interfaces-statistics
 git clone --depth=1 https://github.com/gSpotx2f/luci-app-disks-info
 git clone --depth=1 https://github.com/gSpotx2f/luci-app-internet-detector
+popd
 # Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
 for pkg in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-turboacc-mtk luci-app-caddy; do
     cp -r "$GITHUB_WORKSPACE/packages/$pkg" package/openwrt-packages/
 done
 # Caddy - веб-сервер (отдельно, не LuCI)
 cp -r "$GITHUB_WORKSPACE/packages/openwrt-caddy" package/openwrt-packages/
-popd
 
 # Обход GCC 14 + musl fortify для mbedtls
 if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
