@@ -3,6 +3,20 @@ set -e
 #
 # diy-mtk.sh -- Сообщества пакеты и конфигурация для сборки chasey-dev
 #
+# WiFi собирается через upstream mac80211/mt76 (mt7996e). Дремлющие фиксы
+# vendor-драйвера mt_wifi7 (Kconfig-маппинги, совместимостные патчи 900-904)
+# удалены; при возврате на vendor-драйвер восстановить из git-истории.
+#
+
+# Диагностика: номер строки при аварийном завершении (set -e)
+trap 'echo "[DIY] Ошибка в diy-mtk.sh на строке $LINENO" >&2' ERR
+
+# Гвард: скрипт оперирует относительными путями (package/..., scripts/feeds)
+# и обязан запускаться из корня дерева OpenWrt (так делает build.sh и workflow).
+if [ ! -f rules.mk ] || [ ! -x scripts/feeds ]; then
+    echo "[DIY] Запуск только из корня дерева openwrt/ (текущий cwd: $PWD)" >&2
+    exit 1
+fi
 
 patch_makefile_dep() {
     local file_path="$1"
@@ -37,31 +51,71 @@ apply_workspace_patch() {
     git apply --recount --ignore-space-change --ignore-whitespace "$patch_file"
 }
 
-# Клонирование пакетов сообщества
+# ============================================================
+# Пакеты сообщества (клонирование параллельно)
+# ============================================================
 mkdir -p package/community
-pushd package/community
+pushd package/community >/dev/null
+
+# Формат: имя;владелец/репозиторий
+COMMUNITY_PKGS="
+luci-theme-argon;jerrykuku/luci-theme-argon
+luci-app-argon-config;jerrykuku/luci-app-argon-config
+luci-app-temp-status;gSpotx2f/luci-app-temp-status
+luci-app-cpu-status;gSpotx2f/luci-app-cpu-status
+luci-app-cpu-perf;gSpotx2f/luci-app-cpu-perf
+luci-app-interfaces-statistics;gSpotx2f/luci-app-interfaces-statistics
+luci-app-disks-info;gSpotx2f/luci-app-disks-info
+luci-app-internet-detector;gSpotx2f/luci-app-internet-detector
+"
+
 # Удаление перед клонированием (всегда чистое)
-rm -rf luci-theme-argon luci-app-argon-config
-rm -rf luci-app-temp-status luci-app-cpu-status luci-app-cpu-perf
-rm -rf luci-app-interfaces-statistics luci-app-disks-info luci-app-internet-detector
-git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
-git clone --depth=1 https://github.com/jerrykuku/luci-app-argon-config
-# gSpotx2f LuCI apps (страница статуса)
-git clone --depth=1 https://github.com/gSpotx2f/luci-app-temp-status
-git clone --depth=1 https://github.com/gSpotx2f/luci-app-cpu-status
-git clone --depth=1 https://github.com/gSpotx2f/luci-app-cpu-perf
-git clone --depth=1 https://github.com/gSpotx2f/luci-app-interfaces-statistics
-git clone --depth=1 https://github.com/gSpotx2f/luci-app-disks-info
-git clone --depth=1 https://github.com/gSpotx2f/luci-app-internet-detector
-popd
-# Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
-for pkg in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-turboacc-mtk luci-app-caddy; do
-    [ -d "$GITHUB_WORKSPACE/packages/$pkg" ] || { echo "Пакет не найден: $pkg" >&2; exit 1; }
-    cp -r "$GITHUB_WORKSPACE/packages/$pkg" package/openwrt-packages/
+_clone_pids=""
+for _entry in $COMMUNITY_PKGS; do
+    _name="${_entry%%;*}"
+    _repo="${_entry#*;}"
+    ( rm -rf "$_name"; git clone --depth=1 --quiet "https://github.com/$_repo" "$_name" ) \
+        || { echo "[DIY] Не удалось склонировать $_repo" >&2; exit 1; } &
+    _clone_pids="$_clone_pids $!"
 done
-# Caddy - веб-сервер (отдельно, не LuCI)
-[ -d "$GITHUB_WORKSPACE/packages/openwrt-caddy" ] || { echo "Пакет не найден: openwrt-caddy" >&2; exit 1; }
-cp -r "$GITHUB_WORKSPACE/packages/openwrt-caddy" package/openwrt-packages/
+
+_clone_fail=0
+for _pid in $_clone_pids; do
+    wait "$_pid" || _clone_fail=1
+done
+popd >/dev/null
+
+if [ "$_clone_fail" -ne 0 ]; then
+    echo "[DIY] Ошибка клонирования community-пакетов" >&2
+    exit 1
+fi
+echo "[DIY] community-пакеты склонированы (параллельно)"
+
+# ============================================================
+# Локальные пакеты (переведены на русский, источник: github.com/MedyMa/luci-app)
+# Копируется всё содержимое packages/ — новые приложения подхватываются
+# автоматически. Включение в прошивку контролируется defconfig
+# (гейт REQUIRED_IN_CONFIG в build.sh).
+# ============================================================
+# rm -rf + cp -aT: идемпотентно (без вложенного копирования при повторном запуске)
+if ! ls "$GITHUB_WORKSPACE/packages/"* >/dev/null 2>&1; then
+    echo "Каталог $GITHUB_WORKSPACE/packages/ пуст или отсутствует" >&2
+    exit 1
+fi
+mkdir -p package/openwrt-packages
+_copied_list=""
+for _src_dir in "$GITHUB_WORKSPACE/packages/"*/; do
+    [ -d "$_src_dir" ] || continue
+    pkg="$(basename "$_src_dir")"
+    _copied_list="$_copied_list $pkg"
+    rm -rf "package/openwrt-packages/$pkg"
+    cp -aT "$_src_dir" "package/openwrt-packages/$pkg"
+done
+echo "[DIY] локальные пакеты скопированы:$_copied_list"
+
+# ============================================================
+# Фиксы базового дерева
+# ============================================================
 
 # Обход GCC 14 + musl fortify для mbedtls
 if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
@@ -106,126 +160,30 @@ fi
 
 # MTK Wi-Fi профили: замена версии chasey-dev на mt7990-only сборку padavanonly
 # (версия chasey-dev ссылается на несуществующие файлы mt7622/mt7615 и использует сломанную
-# подстановку shell-команд для значений Kconfig)
+# подстановку shell-команд для значений Kconfig). Частичный sparse-клон: скачивается
+# только package/mtk/drivers/wifi-profile вместо всего дерева (сотни МБ).
 rm -rf package/mtk/drivers/wifi-profile
-git clone --depth=1 -b mt798x-mt799x-6.6-mtwifi \
-    https://github.com/padavanonly/immortalwrt-mt798x-6.6.git \
-    /tmp/padavanonly-wifi-profile >/dev/null 2>&1
-mv /tmp/padavanonly-wifi-profile/package/mtk/drivers/wifi-profile \
-    package/mtk/drivers/wifi-profile
+rm -rf /tmp/padavanonly-wifi-profile
+if ! git clone --depth=1 --filter=blob:none --sparse --quiet \
+        -b mt798x-mt799x-6.6-mtwifi \
+        https://github.com/padavanonly/immortalwrt-mt798x-6.6.git \
+        /tmp/padavanonly-wifi-profile 2>/dev/null; then
+    echo "[DIY] sparse-clone недоступен, используется полный клон" >&2
+    git clone --depth=1 --quiet -b mt798x-mt799x-6.6-mtwifi \
+        https://github.com/padavanonly/immortalwrt-mt798x-6.6.git \
+        /tmp/padavanonly-wifi-profile
+fi
+git -C /tmp/padavanonly-wifi-profile sparse-checkout set package/mtk/drivers/wifi-profile >/dev/null 2>&1 || true
+if [ ! -d "/tmp/padavanonly-wifi-profile/package/mtk/drivers/wifi-profile" ]; then
+    echo "[DIY] wifi-profile не найден в padavanonly/mt798x-mt799x-6.6-mtwifi" >&2
+    exit 1
+fi
+mv /tmp/padavanonly-wifi-profile/package/mtk/drivers/wifi-profile package/mtk/drivers/wifi-profile
 rm -rf /tmp/padavanonly-wifi-profile
 # Удаление устаревшего wifi_jedi → /sbin/wifi установка (конфликтует с wifi-scripts ImmortalWrt 25.12)
 sed -i 's|$(INSTALL_BIN) ./files/common/wifi_jedi $(1)/sbin/wifi|# DIY: removed – conflicts with wifi-scripts|' \
     package/mtk/drivers/wifi-profile/Makefile
 echo "[DIY] wifi-profile заменён на mt7990-only версию padavanonly"
-
-# MTK mt_wifi7: расширение имён карт Kconfig в make, а не в shell
-if [ -f "package/mtk/drivers/mt_wifi7/Makefile" ] && \
-   grep -q 'CONFIG_first_card_name' "package/mtk/drivers/mt_wifi7/Makefile"; then
-    sed -i 's/$$(CONFIG_first_card_name)/$(CONFIG_first_card_name)/g; s/$$(CONFIG_second_card_name)/$(CONFIG_second_card_name)/g; s/$$(CONFIG_third_card_name)/$(CONFIG_third_card_name)/g' \
-        "package/mtk/drivers/mt_wifi7/Makefile"
-    echo "[DIY] mt_wifi7/Makefile: CONFIG_*_card_name исправлены для расширения make"
-fi
-
-# MTK mt_wifi7: сопоставление имён OpenWrt Kconfig с именами vendor Kbuild
-_mt_wifi7_makefile="package/mtk/drivers/mt_wifi7/Makefile"
-_mt_wifi7_kconfig_anchor='$(foreach c, $(PKG_KCONFIG),$(if $(CONFIG_MTK_WIFI7_$c),CONFIG_$(c)=$(CONFIG_MTK_WIFI7_$(c)))) \'
-_mt_wifi7_kconfig_replacement='$(foreach c, $(PKG_KCONFIG),$(if $(CONFIG_MTK_WIFI7_$c),CONFIG_$(c)=$(CONFIG_MTK_WIFI7_$(c)))) \
-		CONFIG_WIFI_DRIVER=$(CONFIG_MTK_WIFI7_DRIVER) \
-		CONFIG_DOT11_HE_AX=$(CONFIG_MTK_WIFI7_DOT11_AX_SUPPORT) \
-		CONFIG_DOT11_EHT_BE=$(CONFIG_MTK_WIFI7_DOT11_BE_SUPPORT) \'
-
-if [ ! -f "$_mt_wifi7_makefile" ]; then
-    echo "Требуемый mt_wifi7 Makefile не найден: $_mt_wifi7_makefile" >&2
-    exit 1
-elif grep -qE '^[[:space:]]*CONFIG_WIFI_DRIVER=\$\(CONFIG_MTK_WIFI7_DRIVER\)[[:space:]]*\\$' "$_mt_wifi7_makefile" && \
-     grep -qE '^[[:space:]]*CONFIG_DOT11_HE_AX=\$\(CONFIG_MTK_WIFI7_DOT11_AX_SUPPORT\)[[:space:]]*\\$' "$_mt_wifi7_makefile" && \
-     grep -qE '^[[:space:]]*CONFIG_DOT11_EHT_BE=\$\(CONFIG_MTK_WIFI7_DOT11_BE_SUPPORT\)[[:space:]]*\\$' "$_mt_wifi7_makefile"; then
-    echo "[DIY] mt_wifi7/Makefile: маппинги vendor Kbuild уже присутствуют"
-elif grep -qF "$_mt_wifi7_kconfig_anchor" "$_mt_wifi7_makefile"; then
-    patch_makefile_dep \
-        "$_mt_wifi7_makefile" \
-        "$_mt_wifi7_kconfig_anchor" \
-        "$_mt_wifi7_kconfig_replacement" || exit 1
-    echo "[DIY] mt_wifi7/Makefile: маппинги vendor Kbuild инжектированы"
-else
-    echo "Не удалось найти якорь компиляции mt_wifi7 Kconfig в $_mt_wifi7_makefile" >&2
-    exit 1
-fi
-
-# MTK mt_wifi7: Linux 6.12 перенёс универсальные unaligned-хелперы из asm/.
-_mt_wifi7_unaligned_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1006-mt_wifi7-linux-6.12-unaligned-header.patch"
-_mt_wifi7_unaligned_patch_dst="package/mtk/drivers/mt_wifi7/patches/900-linux-6.12-unaligned-header.patch"
-
-if [ ! -f "$_mt_wifi7_unaligned_patch_src" ]; then
-    echo "Требуемый совместимостный патч mt_wifi7 не найден: $_mt_wifi7_unaligned_patch_src" >&2
-    exit 1
-fi
-
-install -Dm0644 "$_mt_wifi7_unaligned_patch_src" "$_mt_wifi7_unaligned_patch_dst"
-echo "[DIY] mt_wifi7: совместимостный патч unaligned header для Linux 6.12 установлен"
-
-# MTK mt_wifi7: GCC 14 отвергает отсутствующие объявления AC_NUM и PMKSA под
-# политикой -Werror драйвера. Эта правка отделена от исправления unaligned, чтобы
-# каждый совместимостный патч можно было.review или удалить независимо.
-_mt_wifi7_declarations_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1007-mt_wifi7-fix-missing-declarations.patch"
-_mt_wifi7_declarations_patch_dst="package/mtk/drivers/mt_wifi7/patches/901-fix-missing-declarations.patch"
-
-if [ ! -f "$_mt_wifi7_declarations_patch_src" ]; then
-    echo "Требуемый совместимостный патч mt_wifi7 не найден: $_mt_wifi7_declarations_patch_src" >&2
-    exit 1
-fi
-
-install -Dm0644 "$_mt_wifi7_declarations_patch_src" "$_mt_wifi7_declarations_patch_dst"
-echo "[DIY] mt_wifi7: совместимостный патч отсутствующих объявлений GCC 14 установлен"
-
-# MTK mt_wifi7: rt_channel.c ссылается на MAX_TRANSMIT_POWER, который
-# в vendor-исходниках определён только локально в bcn.c. GCC 14 -Werror отвергает
-# необъявленный идентификатор; добавляем ту же константу в rt_channel.c.
-_mt_wifi7_max_tx_power_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1008-mt_wifi7-fix-max-transmit-power.patch"
-_mt_wifi7_max_tx_power_patch_dst="package/mtk/drivers/mt_wifi7/patches/902-fix-max-transmit-power.patch"
-
-if [ ! -f "$_mt_wifi7_max_tx_power_patch_src" ]; then
-    echo "Требуемый совместимостный патч mt_wifi7 не найден: $_mt_wifi7_max_tx_power_patch_src" >&2
-    exit 1
-fi
-
-install -Dm0644 "$_mt_wifi7_max_tx_power_patch_src" "$_mt_wifi7_max_tx_power_patch_dst"
-echo "[DIY] mt_wifi7: совместимостный патч объявления MAX_TRANSMIT_POWER установлен"
-
-# MTK mt_wifi7: при CONFIG_MTK_WIFI7_CFG80211_SUPPORT=y vendor-сборка
-# определяет RT_CFG80211_SUPPORT, из-за чего owe_cmm.h пропускает свой include
-# sae_cmm.h ("#ifndef RT_CFG80211_SUPPORT"). sec_cmm.h по-прежнему компилирует
-# поля struct pwd_id_list / struct sae_capability под DOT11_SAE_SUPPORT,
-# но подтягивает sae_cmm.h только под SUPP_SAE_SUPPORT, поэтому при выключенном
-# APCLI_SUPPLICANT_SUPPORT каждый TU падает с ошибкой "field ...
-# has incomplete type". Выравниваем include-guard с field-guard.
-_mt_wifi7_sae_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1009-mt_wifi7-fix-incomplete-sae-structs.patch"
-_mt_wifi7_sae_patch_dst="package/mtk/drivers/mt_wifi7/patches/903-fix-incomplete-sae-structs.patch"
-
-if [ ! -f "$_mt_wifi7_sae_patch_src" ]; then
-    echo "Требуемый совместимостный патч mt_wifi7 не найден: $_mt_wifi7_sae_patch_src" >&2
-    exit 1
-fi
-
-install -Dm0644 "$_mt_wifi7_sae_patch_src" "$_mt_wifi7_sae_patch_dst"
-echo "[DIY] mt_wifi7: совместимостный патч неполных SAE-структур установлен"
-
-# MTK mt_wifi7: поле cac_required struct wifi_dev защищено
-# CONFIG_MAP_SUPPORT, но rt_channel.c (MTK_CFG80211_CHAN_SET_FLAG_CAC_REQUIRED
-# vendor cmd) и cmm_rdm_mt.c DfsZwBypassCac (MT_DFS_SUPPORT) используют поле
-# безусловно, поэтому при выключенном MAP каждый TU падает с ошибкой "no member named
-# 'cac_required'". Переносим поле за пределы MAP-guard.
-_mt_wifi7_cac_patch_src="$GITHUB_WORKSPACE/patches/filogic/25.12/1010-mt_wifi7-fix-cac-required-field.patch"
-_mt_wifi7_cac_patch_dst="package/mtk/drivers/mt_wifi7/patches/904-fix-cac-required-field.patch"
-
-if [ ! -f "$_mt_wifi7_cac_patch_src" ]; then
-    echo "Требуемый совместимостный патч mt_wifi7 не найден: $_mt_wifi7_cac_patch_src" >&2
-    exit 1
-fi
-
-install -Dm0644 "$_mt_wifi7_cac_patch_src" "$_mt_wifi7_cac_patch_dst"
-echo "[DIY] mt_wifi7: совместимостный патч поля cac_required установлен"
 
 # datconf: отключение параллельной сборки (5 подпакетов делят одно дерево CMake, гонка при -j>1)
 if [ -f "package/mtk/applications/datconf/Makefile" ] && \
@@ -233,6 +191,10 @@ if [ -f "package/mtk/applications/datconf/Makefile" ] && \
     sed -i '/^PKG_RELEASE:=/a PKG_BUILD_PARALLEL:=0' "package/mtk/applications/datconf/Makefile"
     echo "[DIY] datconf: параллельная сборка отключена"
 fi
+
+# ============================================================
+# Фиды
+# ============================================================
 
 # Зависимости фидов для сообщественных клонов (pcre2 в основном дереве с 25.12)
 ./scripts/feeds update -a
@@ -248,10 +210,8 @@ if grep -q 'mkdir $(PKG_BUILD_DIR)/bin' feeds/packages/net/vpnc/Makefile 2>/dev/
     sed -i '/mkdir $(PKG_BUILD_DIR)\/bin/s/mkdir /mkdir -p /' feeds/packages/net/vpnc/Makefile
 fi
 
-# Удаление пакетов из фидов, заменённых/удалённых в проекте
+# Удаление пакетов из фидов, заменённых клонами/локальными пакетами
 # (предотвращает warnings "Not overriding core package" от feeds install -a)
-rm -rf feeds/packages/net/adguardhome
-rm -rf feeds/luci/applications/luci-app-adguardhome
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf feeds/luci/applications/luci-app-modemband
 rm -rf feeds/luci/themes/luci-theme-argon
@@ -288,21 +248,13 @@ if [ -f "$_ssl_makefile" ] && \
     echo "[DIY] luci-ssl-openssl: зависимость px5g-openssl -> px5g-standalone"
 fi
 
-patch_makefile_dep \
-    feeds/packages/lang/python/python-ubus/Makefile \
-    'PKG_BUILD_DEPENDS:=python-setuptools/host' \
-    'PKG_BUILD_DEPENDS:=python3/host'
-
-patch_makefile_dep \
-    feeds/packages/admin/zabbix/Makefile \
-    'libnetsnmp-ssl' \
-    'libnetsnmp'
-
 # Уменьшение задержки загрузки U-Boot BPI-R4
-patch_makefile_dep \
-    package/boot/uboot-mediatek/patches/450-add-bpi-r4.patch \
-    'CONFIG_BOOTDELAY=30' \
-    'CONFIG_BOOTDELAY=10'
+_uboot_patch="package/boot/uboot-mediatek/patches/450-add-bpi-r4.patch"
+if [ -f "$_uboot_patch" ]; then
+    patch_makefile_dep "$_uboot_patch" 'CONFIG_BOOTDELAY=30' 'CONFIG_BOOTDELAY=10'
+else
+    echo "[DIY] ВНИМАНИЕ: $_uboot_patch не найден — BOOTDELAY не уменьшен" >&2
+fi
 
 # Исправление пустого install target для uboot-mediatek (вызывает ложные Error 1 ignored)
 if grep -q '^define Package/u-boot/install$' package/boot/uboot-mediatek/Makefile 2>/dev/null; then
@@ -324,24 +276,6 @@ if [ -f "$CFG" ]; then
         sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
         echo "$val" >> "$CFG"
     done
-    # Ядерные опции оборудования BPI-R4
-    # GPIO_KEYS: WPS/Reset кнопка
-    # RTC_NVMEM: persistent time storage
-    # USB_LEDS_TRIGGER_USBPORT: USB activity LED
-    # POWER_SUPPLY_HWMON: мониторинг питания через hwmon
-    for sym in GPIO_KEYS RTC_NVMEM; do
-        sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
-        echo "CONFIG_${sym}=y" >> "$CFG"
-    done
-    # tristate (m/y) опции
-    for sym in USB_LEDS_TRIGGER_USBPORT; do
-        sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
-        echo "CONFIG_${sym}=m" >> "$CFG"
-    done
-    # bool (y/n) опции
-    for sym in POWER_SUPPLY_HWMON; do
-        sed -i "/^CONFIG_${sym}=/d; /^# CONFIG_${sym} is not set$/d" "$CFG"
-        echo "CONFIG_${sym}=y" >> "$CFG"
-    done
-    echo "[DIY] Символы ядра Kconfig зафиксированы (GPIO_KEYS, RTC_NVMEM, USB_LED, POWER_SUPPLY)"
+else
+    echo "[DIY] ВНИМАНИЕ: $CFG не найден — фиксация символов ядра пропущена" >&2
 fi

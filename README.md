@@ -10,18 +10,10 @@
 
 ### Секреты (Secrets)
 
-Для публикации релизов необходим персональный токен GitHub:
-
-1. Перейдите в **GitHub repo → Settings → Secrets and variables → Actions**
-2. Нажмите **New repository secret**
-3. Имя: `RELEASES_TOKEN`
-4. Значение: Personal Access Token (classic) с правами `contents: write`
-
-Как создать токен:
-1. **GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**
-2. **Generate new token (classic)**
-3. Выберите срок действия и права: `contents: write`
-4. Скопируйте токен и вставьте в секрет `RELEASES_TOKEN`
+**Секрет `RELEASES_TOKEN` больше не требуется** — удаление старых релизов
+выполняется встроенным `GITHUB_TOKEN` через gh-CLI (права workflow:
+`contents: write` + `actions: write`). Персональный токен можно удалить
+из **Settings → Secrets and variables → Actions**.
 
 ### Настройки Actions
 
