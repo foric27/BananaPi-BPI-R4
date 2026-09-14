@@ -715,13 +715,13 @@ function formatSimStatus(simInfo, mmInfo) {
 		return simInfo.pinState;
 
 	if (mmInfo && mmInfo.failReason === 'sim-missing')
-		return 'SIM-карта не обнаружена · sim-missing';
+		return _('SIM not detected') + ' · sim-missing';
 
 	if (simInfo.active != null)
-		return simInfo.active ? 'Включено' : 'Выключено';
+		return simInfo.active ? _('Active') : _('Inactive');
 
 	if (!simInfo.path)
-		return 'SIM-карта не обнаружена';
+		return _('SIM not detected');
 
 	return '--';
 }
@@ -1020,15 +1020,15 @@ function renderOverview(state) {
 				])
 			]),
 			E('div', { 'class': 'mb-section-card' }, [
-				E('div', { 'class': 'mb-section-title' }, 'Информация о SIM-карте'),
+				E('div', { 'class': 'mb-section-title' }, _('SIM Card Information')),
 				renderInfoTable([
-					[ 'Состояние SIM', formatSimStatus(simInfo, mmInfo) ],
+					[ _('SIM Status'), formatSimStatus(simInfo, mmInfo) ],
 					[ 'ICCID', simInfo.iccid || '--' ],
 					[ 'IMSI', simInfo.imsi || '--' ],
 					[ 'EID', simInfo.eid || '--' ],
 					[ _('Operator'), formatSimOperator(simInfo) || operatorInfo || '--' ],
-					[ 'Тип SIM', simInfo.simType || '--' ],
-					[ 'Экстренный номер', simInfo.emergencyNumbers || '--' ]
+					[ _('SIM Type'), simInfo.simType || '--' ],
+					[ _('Emergency Numbers'), simInfo.emergencyNumbers || '--' ]
 				])
 			]),
 			E('div', { 'class': 'mb-section-card' }, [
@@ -1121,7 +1121,7 @@ function renderStyle() {
 		'.mb-section-card .table{margin-bottom:0}',
 		'.mb-section-card .table tr + tr td{border-top:1px solid var(--mb-card-border-soft)}',
 		'.mb-section-card .table td:first-child{color:var(--mb-text-muted)}',
-		'.mb-section-card .table td{vertical-align:top;color:var(--mb-text)}',
+		'.mb-section-card .table td{vertical-align:top;color:var(--mb-text);overflow-wrap:anywhere;word-break:break-word}',
 		'@media (max-width:780px){.mb-detail-row{flex-direction:column;align-items:flex-start}.mb-detail-value{text-align:left}}',
 		'@media (max-width:640px){.mb-hero-card{grid-template-columns:1fr;gap:14px}.mb-hero-icon{flex-direction:row;justify-content:flex-start}.mb-hero-title{font-size:1.3rem}.mb-band-focus-value{font-size:1.1rem}}'
 	].join('\n'));

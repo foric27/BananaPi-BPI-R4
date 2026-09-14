@@ -403,9 +403,9 @@ function restartWan() {
 		var wname = uci.get('modemband', '@modemband[0]', 'iface') || 'wan';
 
 		wname = wname.replace(/@/g, '');
-		fs.exec('/sbin/ifdown', [ wname ]);
-		fs.exec('sleep', [ '3' ]);
-		fs.exec('/sbin/ifup', [ wname ]);
+		return fs.exec('/sbin/ifdown', [ wname ])
+			.then(function() { return fs.exec('sleep', [ '3' ]); })
+			.then(function() { return fs.exec('/sbin/ifup', [ wname ]); });
 	});
 }
 
@@ -430,16 +430,20 @@ function restartAfterApply() {
 
 		wname = wname.replace(/@/g, '');
 
-		if (wrestart == '1') {
-			fs.exec('/sbin/ifdown', [ wname ]);
-			fs.exec('sleep', [ '3' ]);
-			fs.exec('/sbin/ifup', [ wname ]);
-		}
+		var wanTask = Promise.resolve();
 
-		if (mrestart == '1' && sport && cmdrestart) {
-			fs.exec('sleep', [ '20' ]);
-			fs.exec_direct('/usr/bin/sms_tool', [ '-d', sport, 'at', cmdrestart ]);
-		}
+		if (wrestart == '1')
+			wanTask = fs.exec('/sbin/ifdown', [ wname ])
+				.then(function() { return fs.exec('sleep', [ '3' ]); })
+				.then(function() { return fs.exec('/sbin/ifup', [ wname ]); });
+
+		var modemTask = Promise.resolve();
+
+		if (mrestart == '1' && sport && cmdrestart)
+			modemTask = fs.exec('sleep', [ '20' ])
+				.then(function() { return fs.exec_direct('/usr/bin/sms_tool', [ '-d', sport, 'at', cmdrestart ]); });
+
+		return wanTask.then(function() { return modemTask; });
 	});
 }
 
