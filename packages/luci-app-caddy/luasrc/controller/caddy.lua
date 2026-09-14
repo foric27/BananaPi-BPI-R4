@@ -1,8 +1,10 @@
 module("luci.controller.caddy", package.seeall)
 
+local fs = require "nixio.fs"
+
 function index()
 	entry({"admin", "nas"}, firstchild(), _("NAS") , 45).dependent = false
-	if not nixio.fs.access("/etc/config/caddy") then
+	if not fs.access("/etc/config/caddy") then
 		return
 	end
 
@@ -16,75 +18,224 @@ function index()
 	entry({"admin", "nas", "caddy", "caddy_status"}, call("caddy_status")).leaf = true
 	entry({"admin", "nas", "caddy", "get_log"}, call("get_log")).leaf = true
 	entry({"admin", "nas", "caddy", "clear_log"}, call("clear_log")).leaf = true
-        entry({"admin", "nas", "caddy", "admin_info"}, call("admin_info")).leaf = true
+	entry({"admin", "nas", "caddy", "admin_info"}, call("admin_info")).leaf = true
 end
 
-function caddy_status()
-	local e={}
-          local sys  = require "luci.sys"
-	local uci  = require "luci.model.uci".cursor()
-	local port = tonumber(uci:get_first("caddy", "caddy", "port"))
-                   e.port = (port or 12311)
-		    e.running=luci.sys.call("pidof caddy >/dev/null")==0
-	local tagfile = io.open("/tmp/caddy_time", "r")
-        if tagfile then
-	local tagcontent = tagfile:read("*all")
-	tagfile:close()
-	if tagcontent and tagcontent ~= "" then
-        os.execute("start_time=$(cat /tmp/caddy_time) && time=$(($(date +%s)-start_time)) && day=$((time/86400)) && [ $day -eq 0 ] && day='' || day=${day}d && time=$(date -u -d @${time} +'%Hh%Mm%Ss') && echo $day $time > /tmp/command_caddy 2>&1")
-        local command_output_file = io.open("/tmp/command_caddy", "r")
-        if command_output_file then
-            e.caddysta = command_output_file:read("*all")
-            command_output_file:close()
-	    if e.caddysta == "" then
-               e.caddysta = "unknown"
-            end
-        end
-	end
+local function uci_cursor()
+	return require "luci.model.uci".cursor()
+end
+
+local function caddy_bin()
+	local uci = uci_cursor()
+	local bin = uci:get("caddy", "@caddy[0]", "bin_dir")
+
+	if not bin or bin == "" or not fs.access(bin, "x") then
+		bin = "/usr/bin/caddy"
 	end
 
-         local command2 = io.popen('test ! -z "`pidof caddy`" && (top -b -n1 | grep -E "$(pidof caddy)" 2>/dev/null | grep -v grep | awk \'{for (i=1;i<=NF;i++) {if ($i ~ /caddy/) break; else cpu=i}} END {print cpu}\')')
-                   e.caddycpu = command2:read("*all")
-                   command2:close()
-                   if e.caddycpu == "" then
-                   e.caddycpu = "unknown"
-                   end
-  
-         local command3 = io.popen("test ! -z `pidof caddy` && (cat /proc/$(pidof caddy | awk '{print $NF}')/status | grep -w VmRSS | awk '{printf \"%.2f MB\", $2/1024}')")
-                   e.caddyram = command3:read("*all")
-                   command3:close()
-                   if e.caddyram == "" then
-                   e.caddyram = "unknown"
-                   end
-  
-         local command4 = io.popen("([ -s /tmp/caddy.tag ] && cat /tmp/caddy.tag ) || (echo `$(uci -q get caddy.@caddy[0].bin_dir) -v |awk '{print $1}' | sed 's/[^0-9.]*//g'` > /tmp/caddy.tag && cat /tmp/caddy.tag)")
-                   e.caddytag = command4:read("*all")
-                   command4:close()
-                   if e.caddytag == "" then
-                   e.caddytag = "unknown"
-                   end
-  
-         local command5 = io.popen("([ -s /tmp/caddynew.tag ] && cat /tmp/caddynew.tag ) || ( curl -L -k -s --connect-timeout 3 --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36' https://api.github.com/repos/caddyserver/caddy/releases/latest | grep tag_name | sed 's/[^0-9.]*//g' >/tmp/caddynew.tag && cat /tmp/caddynew.tag )")
-                   e.caddynewtag = command5:read("*all")
-                   command5:close()
-                   if e.caddynewtag == "" then
-                   e.caddynewtag = "unknown"
-                   end
+	return bin
+end
+
+local function shell_quote(s)
+	return "'" .. (s:gsub("'", '')) .. "'"
+end
+
+local function log_path()
+	local uci = uci_cursor()
+	local path = uci:get("caddy", "@caddy[0]", "log_dir")
+
+	if not path or path == "" then
+		path = "/tmp/caddy/requests.log"
+	end
+
+	return path
+end
+
+local function trim(s)
+	return (s:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function caddy_pid()
+	local f = io.popen("pidof caddy 2>/dev/null")
+	if not f then
+		return nil
+	end
+	local pids = f:read("*all") or ""
+	f:close()
+	return tonumber(pids:match("%S+"))
+end
+
+-- utime+stime из /proc/<pid>/stat (поля 12-13 после comm в скобках)
+local function read_stat_ticks(pid)
+	local f = io.open("/proc/" .. pid .. "/stat", "r")
+	if not f then
+		return nil
+	end
+	local data = f:read("*all")
+	f:close()
+
+	local rest = data:match("%)%s+(.+)$")
+	if not rest then
+		return nil
+	end
+
+	local n, utime, stime = 0
+	for token in rest:gmatch("%S+") do
+		n = n + 1
+		if n == 12 then
+			utime = tonumber(token)
+		elseif n == 13 then
+			stime = tonumber(token)
+			break
+		end
+	end
+
+	if not utime or not stime then
+		return nil
+	end
+
+	return utime + stime
+end
+
+local clk_tck = nil
+local function get_clk_tck()
+	if not clk_tck then
+		local f = io.popen("getconf CLK_TCK 2>/dev/null")
+		if f then
+			clk_tck = tonumber(f:read("*l")) or 100
+			f:close()
+		else
+			clk_tck = 100
+		end
+	end
+	return clk_tck
+end
+
+-- Кеш-обёртка: refresh_fn вызывается не чаще раза в max_age секунд;
+-- даже пустой результат записывается в файл, чтобы не порождать
+-- повторные (сетевые) запросы на каждом опросе статуса.
+local function cached_tag(path, refresh_fn, max_age)
+	local st = fs.stat(path)
+	if st and st.mtime and (os.time() - st.mtime) < max_age then
+		local content = fs.readfile(path)
+		if content and content ~= "" then
+			return trim(content)
+		end
+	end
+
+	local value = trim(refresh_fn() or "")
+	if value == "" then
+		value = "unknown"
+	end
+	fs.writefile(path, value)
+	return value
+end
+
+local function refresh_local_version()
+	local f = io.popen(shell_quote(caddy_bin()) .. " -v 2>/dev/null | awk '{print $1}' | sed 's/[^0-9.]*//g'")
+	if not f then
+		return nil
+	end
+	local v = f:read("*all") or ""
+	f:close()
+	return v
+end
+
+local function refresh_remote_version()
+	local f = io.popen("curl -L -k -s --connect-timeout 3 --max-time 8 --user-agent 'Mozilla/5.0' https://api.github.com/repos/caddyserver/caddy/releases/latest 2>/dev/null | grep tag_name | sed 's/[^0-9.]*//g'")
+	if not f then
+		return nil
+	end
+	local v = f:read("*all") or ""
+	f:close()
+	return v
+end
+
+local cpu_state = nil
+
+function caddy_status()
+	local e = {}
+
+	-- PID / running
+	local pid = caddy_pid()
+	e.running = pid ~= nil
+
+	-- Uptime (считается в Lua, без fork)
+	local tagfile = io.open("/tmp/caddy_time", "r")
+	if tagfile then
+		local start_time = tonumber(tagfile:read("*l"))
+		tagfile:close()
+		if start_time then
+			local uptime = os.time() - start_time
+			if uptime < 0 then
+				uptime = 0
+			end
+			local days = math.floor(uptime / 86400)
+			local rem = uptime % 86400
+			e.caddysta = (days > 0 and (days .. "d ") or "") ..
+				string.format("%02dh%02dm%02ds", math.floor(rem / 3600),
+					math.floor((rem % 3600) / 60), rem % 60)
+		end
+	end
+	e.caddysta = e.caddysta or "unknown"
+
+	-- CPU: дельта utime+stime между опросами (без fork)
+	if pid then
+		local ticks = read_stat_ticks(pid)
+		if ticks then
+			local now = os.time()
+			if cpu_state and cpu_state.pid == pid and cpu_state.ticks and now > cpu_state.ts then
+				local pct = (ticks - cpu_state.ticks) / ((now - cpu_state.ts) * get_clk_tck()) * 100
+				if pct < 0 then
+					pct = 0
+				end
+				e.caddycpu = string.format("%.1f", pct)
+			end
+			cpu_state = { pid = pid, ticks = ticks, ts = now }
+		end
+	else
+		cpu_state = nil
+	end
+	e.caddycpu = e.caddycpu or "unknown"
+
+	-- RAM: /proc/<pid>/status (без fork)
+	if pid then
+		local f = io.open("/proc/" .. pid .. "/status", "r")
+		if f then
+			for line in f:lines() do
+				local kb = line:match("^VmRSS:%s+(%d+)%s+kB")
+				if kb then
+					e.caddyram = string.format("%.2f MB", tonumber(kb) / 1024)
+					break
+				end
+			end
+			f:close()
+		end
+	end
+	e.caddyram = e.caddyram or "unknown"
+
+	-- Версии: с кешем и защитой от повторных запросов
+	e.caddytag = cached_tag("/tmp/caddy.tag", refresh_local_version, 86400)
+	e.caddynewtag = cached_tag("/tmp/caddynew.tag", refresh_remote_version, 3600)
+
 	luci.http.prepare_content("application/json")
 	luci.http.write_json(e)
 end
 
 function get_log()
-	luci.http.write(luci.sys.exec("[ -s $(uci -q get caddy.@caddy[0].log_dir) ] && cat $(uci -q get caddy.@caddy[0].log_dir)"))
+	luci.http.prepare_content("text/plain; charset=utf-8")
+	luci.http.write(fs.readfile(log_path()) or "")
 end
 
 function clear_log()
-	luci.sys.call("cat /dev/null > $(uci -q get caddy.@caddy[0].log_dir)")
+	fs.writefile(log_path(), "")
+	luci.http.prepare_content("application/json")
+	luci.http.write_json({ ok = true })
 end
 
 function admin_info()
-	local validate = luci.sys.exec("$(uci -q get caddy.@caddy[0].bin_dir) validate --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1")
-	
+	local out = luci.sys.exec(shell_quote(caddy_bin()) .. " validate --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1")
+
 	luci.http.prepare_content("application/json")
-	luci.http.write_json({ validate = validate })
+	luci.http.write_json({ validate = out })
 end

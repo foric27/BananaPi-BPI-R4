@@ -1,5 +1,3 @@
-<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
-
 <style>
 :root { --bg:#ffffff; --card:#f6f8fa; --text:#222; --border:#ddd; --muted:#666; }
 @media (prefers-color-scheme: dark) { :root { --bg:#0f1115; --card:#1b1e24; --text:#e5e7eb; --border:#333; --muted:#9ca3af; } }
@@ -56,46 +54,32 @@ button.view-json { background:#60a5fa; color:#fff; border:none; }
 <div id="app">
 	<div class="toolbar">
 		<div>
-			<button type="button" class="toggle-btn" @click="toggle">{{ paused ? 'Продолжить обновление' : 'Приостановить обновление' }}</button>
-			<button type="button" class="clear-log" @click="clear">Очистить логи</button>
+			<button type="button" class="toggle-btn" id="btnToggle">Приостановить обновление</button>
+			<button type="button" class="clear-log" id="btnClear">Очистить логи</button>
 		</div>
 		<div style="display:flex;align-items:center;gap:12px;">
 			<label>
-				<select v-model="filterType">
+				<select id="filterType">
 					<option value="all">Все</option>
 					<option value="warn">Предупреждения</option>
 					<option value="err">Ошибки</option>
 				</select>
 			</label>
-			<span>Всего записей: {{ filteredLogs.length }}</span>
+			<span>Всего записей: <span id="totalCount">0</span></span>
 		</div>
 	</div>
 
-	<div v-for="log in filteredLogs" :key="log.id" class="log-card" :class="statusClass(log.status)">
-		<div class="log-inner">
-			<div class="log-row" v-if="log.ts"><span class="label">Время:</span>{{ time(log.ts) }}</div>
-			<div class="log-row" v-if="log.request"><span class="label">Запрос:</span>{{ fullUrl(log) }}</div>
-			<div class="log-row" v-if="log.request && log.request.method"><span class="label">Метод:</span>{{ log.request.method }}</div>
-			<div class="log-row" v-if="log.status"><span class="label">Статус:</span>{{ log.status }}</div>
-			<div class="log-row" v-if="realIp(log)"><span class="label">IP:</span>{{ realIp(log) }}</div>
-			<div class="log-row" v-if="userAgent(log)"><span class="label">Агент:</span>{{ userAgent(log) }}</div>
-			<div class="log-row" v-if="log.duration"><span class="label">Время:</span>{{ (log.duration*1000).toFixed(2) }} мс</div>
+	<div id="logList"></div>
+</div>
 
-			<div class="log-row">
-				<button type="button" class="view-json" @click.prevent="showModal(log)">Просмотреть JSON</button>
-			</div>
+<div class="modal" id="logModal">
+	<div class="modal-content">
+		<div class="modal-header">
+			<h3>Полный лог</h3>
+			<button type="button" class="modal-close" id="btnModalClose">Закрыть</button>
 		</div>
-	</div>
-
-	<div class="modal" :class="{show: modalLog}" @click.self="closeModal">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h3>Полный лог</h3>
-				<button class="modal-close" @click.prevent="closeModal">Закрыть</button>
-			</div>
-			<div class="modal-body">
-				<pre>{{ modalLog ? JSON.stringify(modalLog,null,2) : '' }}</pre>
-			</div>
+		<div class="modal-body">
+			<pre id="modalJson"></pre>
 		</div>
 	</div>
 </div>
@@ -103,22 +87,180 @@ button.view-json { background:#60a5fa; color:#fff; border:none; }
 <div id="toTop">Наверх</div>
 
 <script>
-const { createApp } = Vue;
-createApp({
-	data(){ return { logs: [], paused:false, filterType:'all', modalLog:null }; },
-	computed:{ filteredLogs(){ if(this.filterType==='all') return this.logs; return this.logs.filter(l=>this.statusClass(l.status)===this.filterType); }},
-	methods:{
-		fetch(){ if(this.paused) return; XHR.get('<%=url([[admin]], [[nas]], [[caddy]], [[get_log]])%>', null, x=>{ if(x && x.status===200){ this.logs = x.responseText.split('\n').filter(Boolean).map((l,i)=>{ try{ let obj=JSON.parse(l); obj.id=i; return obj; }catch{return null;} }).filter(Boolean).reverse(); } }); },
-		toggle(){ this.paused = !this.paused; },
-		clear(){ XHR.get('<%=url([[admin]], [[nas]], [[caddy]], [[clear_log]])%>'); this.logs=[]; },
-		time(ts){ return new Date(ts*1000).toLocaleString(); },
-		fullUrl(l){ const h=l.request.headers||{}; const p=h['X-Forwarded-Proto']?h['X-Forwarded-Proto'][0]:'http'; return p+'://'+l.request.host+l.request.uri; },
-		realIp(l){ const h=l.request.headers||{}; return h['Cf-Connecting-Ip']?h['Cf-Connecting-Ip'][0]:l.request.client_ip; },
-		userAgent(l){ const h=l.request.headers||{}; return h['User-Agent']?h['User-Agent'][0]:'Неизвестно'; },
-		statusClass(c){ if(c>=500) return 'err'; if(c>=400) return 'warn'; return 'ok'; },
-		showModal(log){ this.modalLog = log; document.body.style.overflow = 'hidden'; },
-		closeModal(){ this.modalLog = null; document.body.style.overflow = ''; }
-	},
-	mounted(){ this.fetch(); setInterval(this.fetch,2000); const btn=document.getElementById('toTop'); btn.onclick=()=>window.scrollTo({top:0,behavior:'smooth'}); window.addEventListener('scroll',()=>btn.classList.toggle('show',window.scrollY>400)); }
-}).mount('#app');
+(function() {
+	'use strict';
+
+	var MAX_RENDER = 500;
+
+	var logs = [];
+	var paused = false;
+	var filterType = 'all';
+	var lastRaw = '';
+
+	var listEl = document.getElementById('logList');
+	var totalEl = document.getElementById('totalCount');
+	var filterEl = document.getElementById('filterType');
+	var toggleEl = document.getElementById('btnToggle');
+	var modalEl = document.getElementById('logModal');
+	var modalPre = document.getElementById('modalJson');
+
+	function statusClass(c) {
+		c = Number(c) || 0;
+		if (c >= 500) return 'err';
+		if (c >= 400) return 'warn';
+		return 'ok';
+	}
+
+	function el(tag, className, text) {
+		var node = document.createElement(tag);
+		if (className) node.className = className;
+		if (text != null) node.textContent = text;
+		return node;
+	}
+
+	function row(label, value) {
+		var r = el('div', 'log-row');
+		r.appendChild(el('span', 'label', label));
+		r.appendChild(document.createTextNode(value));
+		return r;
+	}
+
+	function fullUrl(l) {
+		var h = (l.request && l.request.headers) || {};
+		var proto = h['X-Forwarded-Proto'] ? h['X-Forwarded-Proto'][0] : 'http';
+		return proto + '://' + (l.request ? ((l.request.host || '') + (l.request.uri || '')) : '-');
+	}
+
+	function realIp(l) {
+		var h = (l.request && l.request.headers) || {};
+		return h['Cf-Connecting-Ip'] ? h['Cf-Connecting-Ip'][0] : (l.request ? l.request.client_ip : '-');
+	}
+
+	function userAgent(l) {
+		var h = (l.request && l.request.headers) || {};
+		return h['User-Agent'] ? h['User-Agent'][0] : 'Неизвестно';
+	}
+
+	function buildCard(log) {
+		var card = el('div', 'log-card ' + statusClass(log.status));
+		var inner = el('div', 'log-inner');
+
+		if (log.ts)
+			inner.appendChild(row('Время:', new Date(log.ts * 1000).toLocaleString()));
+		if (log.request)
+			inner.appendChild(row('Запрос:', fullUrl(log)));
+		if (log.request && log.request.method)
+			inner.appendChild(row('Метод:', log.request.method));
+		if (log.status)
+			inner.appendChild(row('Статус:', log.status));
+		if (realIp(log) !== '-')
+			inner.appendChild(row('IP:', realIp(log)));
+		if (userAgent(log) !== 'Неизвестно')
+			inner.appendChild(row('Агент:', userAgent(log)));
+		if (log.duration)
+			inner.appendChild(row('Время:', (Number(log.duration) * 1000).toFixed(2) + ' мс'));
+
+		var btnRow = el('div', 'log-row');
+		var btn = el('button', 'view-json', 'Просмотреть JSON');
+		btn.type = 'button';
+		btn.addEventListener('click', function() { showModal(log); });
+		btnRow.appendChild(btn);
+		inner.appendChild(btnRow);
+
+		card.appendChild(inner);
+		return card;
+	}
+
+	function render() {
+		var shown = filterType === 'all'
+			? logs
+			: logs.filter(function(l) { return statusClass(l.status) === filterType; });
+
+		listEl.textContent = '';
+
+		var limit = Math.min(shown.length, MAX_RENDER);
+		for (var i = 0; i < limit; i++)
+			listEl.appendChild(buildCard(shown[i]));
+
+		if (shown.length > MAX_RENDER) {
+			var note = el('div', 'log-row');
+			note.style.marginTop = '12px';
+			note.appendChild(el('em', null, 'Показаны последние ' + MAX_RENDER + ' записей из ' + shown.length + '.'));
+			listEl.appendChild(note);
+		}
+
+		totalEl.textContent = shown.length;
+	}
+
+	function fetch() {
+		if (paused || document.hidden)
+			return;
+
+		XHR.get('<%=url([[admin]], [[nas]], [[caddy]], [[get_log]])%>', null, function(x) {
+			if (!x || x.status !== 200 || x.responseText == null)
+				return;
+
+			if (x.responseText === lastRaw)
+				return;
+
+			lastRaw = x.responseText;
+
+			logs = x.responseText.split('\n').filter(Boolean).map(function(line) {
+				try { return JSON.parse(line); } catch (e) { return null; }
+			}).filter(Boolean).reverse();
+
+			render();
+		});
+	}
+
+	function showModal(log) {
+		modalPre.textContent = JSON.stringify(log, null, 2);
+		modalEl.classList.add('show');
+		document.body.style.overflow = 'hidden';
+	}
+
+	function closeModal() {
+		modalEl.classList.remove('show');
+		document.body.style.overflow = '';
+	}
+
+	toggleEl.addEventListener('click', function() {
+		paused = !paused;
+		toggleEl.textContent = paused ? 'Продолжить обновление' : 'Приостановить обновление';
+	});
+
+	document.getElementById('btnClear').addEventListener('click', function() {
+		XHR.get('<%=url([[admin]], [[nas]], [[caddy]], [[clear_log]])%>');
+		logs = [];
+		lastRaw = '';
+		render();
+	});
+
+	filterEl.addEventListener('change', function() {
+		filterType = filterEl.value;
+		render();
+	});
+
+	document.getElementById('btnModalClose').addEventListener('click', closeModal);
+	modalEl.addEventListener('click', function(ev) {
+		if (ev.target === modalEl)
+			closeModal();
+	});
+
+	fetch();
+	setInterval(fetch, 5000);
+
+	document.addEventListener('visibilitychange', function() {
+		if (!document.hidden)
+			fetch();
+	});
+
+	var topBtn = document.getElementById('toTop');
+	topBtn.addEventListener('click', function() {
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	});
+	window.addEventListener('scroll', function() {
+		topBtn.classList.toggle('show', window.scrollY > 400);
+	});
+})();
 </script>
