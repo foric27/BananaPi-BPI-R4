@@ -51,6 +51,7 @@ CONFIG_PACKAGE_regs=y
 CONFIG_PACKAGE_switch=y
 CONFIG_PACKAGE_pce=y
 CONFIG_PACKAGE_mtkhnat_util=y
+CONFIG_PACKAGE_mtk-smp=y
 CONFIG_PACKAGE_ethswbox=y
 CONFIG_PACKAGE_flowtable=y
 CONFIG_PACKAGE_tops-tool=y
