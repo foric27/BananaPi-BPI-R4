@@ -89,14 +89,6 @@ function normalizeFastpathValue(value) {
 	return (!value || value === 'none') ? 'disabled' : value;
 }
 
-function configUsesEngine(config, key) {
-	return normalizeFastpathValue(config && config.fastpath) === key;
-}
-
-function isEngineAvailable(flag, config, key) {
-	return !!flag || configUsesEngine(config, key);
-}
-
 function getDefaultFullcone(features) {
 	return features && features.hasXTFULLCONENAT ? '1' : '2';
 }
@@ -120,33 +112,18 @@ function getConfigState(features) {
 	};
 }
 
-function getAvailableEngines(features, config) {
-	var engines = [];
-
-	if (isEngineAvailable(features.hasFLOWOFFLOADING, config, 'flow_offloading'))
-		engines.push({ key: 'flow_offloading', label: _('Распределение потока') });
-	if (isEngineAvailable(features.hasFASTCLASSIFIER, config, 'fast_classifier'))
-		engines.push({ key: 'fast_classifier', label: _('Быстрый классификатор') });
-	if (isEngineAvailable(features.hasSHORTCUTFECM, config, 'shortcut_fe_cm'))
-		engines.push({ key: 'shortcut_fe_cm', label: _('Менеджер соединений SFE') });
-	if (isEngineAvailable(features.hasMEDIATEKHNAT, config, 'mediatek_hnat'))
-		engines.push({ key: 'mediatek_hnat', label: _('MediaTek HNAT') });
-
-	return engines;
-}
-
 function getEngineLabel(value) {
 	switch (normalizeFastpathValue(value)) {
 	case 'flow_offloading':
-		return _('Распределение потока');
+		return _('Flow offloading');
 	case 'fast_classifier':
-		return _('Быстрый классификатор');
+		return _('Fast classifier');
 	case 'shortcut_fe_cm':
-		return _('Менеджер соединений SFE');
+		return _('SFE connection manager');
 	case 'mediatek_hnat':
 		return _('MediaTek HNAT');
 	default:
-		return _('Отключено');
+		return _('Disabled');
 	}
 }
 
@@ -165,32 +142,17 @@ function getEngineShortLabel(value) {
 	}
 }
 
-function getEngineDescription(value) {
-	switch (normalizeFastpathValue(value)) {
-	case 'flow_offloading':
-		return _('Программная разгрузка маршрутизации/NAT, наиболее универсальна, но ускорение поверхностное.');
-	case 'fast_classifier':
-		return _('Быстрый классификатор для SFE, подходит для сценариев с ускорением моста.');
-	case 'shortcut_fe_cm':
-		return _('Облегчённый менеджер соединений SFE, простой путь, но ограниченная поддержка платформ.');
-	case 'mediatek_hnat':
-		return _('Основной проводной путь ускорения mt798x на 24.10, поддерживает мониторинг привязки через PPE.');
-	default:
-		return _('Основной движок ускорения не активирован.');
-	}
-}
-
 function getRuntimeLabel(token) {
 	token = trimValue(token);
 
 	switch (token) {
 	case 'Flow Offloading':
 	case 'Flow offloading':
-		return _('Распределение потока');
+		return _('Flow offloading');
 	case 'Fast classifier':
-		return _('Быстрый классификатор');
+		return _('Fast classifier');
 	case 'Shortcut-FE CM':
-		return _('Менеджер соединений SFE');
+		return _('SFE connection manager');
 	case 'MediaTek HWNAT':
 	case 'MediaTek HNAT':
 		return _('MediaTek HNAT');
@@ -199,9 +161,9 @@ function getRuntimeLabel(token) {
 	case 'Boardcom Fullcone':
 		return _('Boardcom_FULLCONE_NAT');
 	case 'Ethernet HNAT Disabled':
-		return _('Ethernet HNAT отключён');
+		return _('Ethernet HNAT disabled');
 	case 'HNAT Partially Enabled':
-		return _('HNAT частично включён');
+		return _('HNAT Partially Enabled');
 	default:
 		return token;
 	}
@@ -233,20 +195,20 @@ function buildStatusMeta(value, emptyDetail, activeDetail) {
 	});
 
 	return {
-		primary: parts.length ? parts[0] : _('Отключено'),
+		primary: parts.length ? parts[0] : _('Disabled'),
 		warnings: parts.length > 1 ? parts.slice(1) : [],
-		detail: parts.length > 1 ? parts.slice(1).join(' · ') : (parts.length ? (activeDetail || parts[0]) : (emptyDetail || _('Активный путь ускорения не обнаружен.')))
+		detail: parts.length > 1 ? parts.slice(1).join(' · ') : (parts.length ? (activeDetail || parts[0]) : (emptyDetail || _('No active acceleration path detected.')))
 	};
 }
 
 function getFullconeConfigLabel(value) {
 	switch (trimValue(value)) {
 	case '1':
-		return _('XT_FULLCONE_NAT (лучшая совместимость)');
+		return _('XT_FULLCONE_NAT (best compatibility)');
 	case '2':
-		return _('Boardcom_FULLCONE_NAT (совместимость со старой реализацией)');
+		return _('Boardcom_FULLCONE_NAT (legacy compatible)');
 	default:
-		return _('Отключено');
+		return _('Disabled');
 	}
 }
 
@@ -254,35 +216,17 @@ function getIPv6ModeText(config, features) {
 	var fastpath = normalizeFastpathValue(config.fastpath);
 
 	if (!features.hasIPV6)
-		return _('Недоступно');
+		return _('Unavailable');
 
 	switch (fastpath) {
 	case 'fast_classifier':
-		return config.fastpath_fc_ipv6 ? _('Включено') : _('Отключено');
+		return config.fastpath_fc_ipv6 ? _('Enabled') : _('Disabled');
 	case 'mediatek_hnat':
-		return (config.fastpath_mh_eth_hnat && config.fastpath_mh_eth_hnat_v6) ? _('Включено') : _('Отключено');
+		return (config.fastpath_mh_eth_hnat && config.fastpath_mh_eth_hnat_v6) ? _('Enabled') : _('Disabled');
 	case 'disabled':
-		return _('Отключено');
+		return _('Disabled');
 	default:
-		return _('Следовать основному пути');
-	}
-}
-
-function getIPv6ModeDetail(config, features) {
-	var fastpath = normalizeFastpathValue(config.fastpath);
-
-	if (!features.hasIPV6)
-		return _('Текущая платформа не поддерживает ускорение IPv6.');
-
-	switch (fastpath) {
-	case 'fast_classifier':
-		return config.fastpath_fc_ipv6 ? _('Fast classifier включил ускорение IPv6.') : _('Fast classifier позволяет включить ускорение IPv6 отдельно.');
-	case 'mediatek_hnat':
-		return config.fastpath_mh_eth_hnat_v6 ? _('Проводные сессии IPv6 могут проходить через HNAT.') : _('Ускоряется только IPv4; IPv6 будет использовать обычный стек.');
-	case 'disabled':
-		return _('При отключённом основном пути отдельное ускорение IPv6 недоступно.');
-	default:
-		return _('Текущий движок не имеет отдельного переключателя IPv6.');
+		return _('Follow main path');
 	}
 }
 
@@ -370,6 +314,9 @@ function isDarkTheme() {
 	return luminance < 140;
 }
 
+/* Singleton theme sync state — avoid observer/listener accumulation on re-render */
+applyThemeClass._themeQueue = [];
+
 function applyThemeClass(node, darkClass) {
 	function syncThemeClass() {
 		node.classList.toggle(darkClass, isDarkTheme());
@@ -377,7 +324,6 @@ function applyThemeClass(node, darkClass) {
 
 	var retries = [ 0, 80, 220, 480, 900 ];
 	var index;
-	var themeObserver;
 	var mediaQuery;
 
 	syncThemeClass();
@@ -390,11 +336,24 @@ function applyThemeClass(node, darkClass) {
 			window.requestAnimationFrame(syncThemeClass);
 
 		if (typeof MutationObserver !== 'undefined' && document.documentElement) {
-			themeObserver = new MutationObserver(syncThemeClass);
-			themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: [ 'class', 'style', 'data-theme' ] });
+			if (!applyThemeClass._themeObserver) {
+				applyThemeClass._themeObserver = new MutationObserver(function() {
+					var nodes = applyThemeClass._themeQueue;
+					var i;
 
-			if (document.body && document.body !== document.documentElement)
-				themeObserver.observe(document.body, { attributes: true, attributeFilter: [ 'class', 'style', 'data-theme' ] });
+					for (i = 0; i < nodes.length; i++) {
+						if (nodes[i] && nodes[i].classList)
+							nodes[i].classList.toggle(darkClass, isDarkTheme());
+					}
+				});
+				applyThemeClass._themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: [ 'class', 'style', 'data-theme' ] });
+
+				if (document.body && document.body !== document.documentElement)
+					applyThemeClass._themeObserver.observe(document.body, { attributes: true, attributeFilter: [ 'class', 'style', 'data-theme' ] });
+			}
+
+			if (applyThemeClass._themeQueue.indexOf(node) === -1)
+				applyThemeClass._themeQueue.push(node);
 		}
 
 		if (window.matchMedia) {
@@ -408,18 +367,14 @@ function applyThemeClass(node, darkClass) {
 			}
 		}
 
-		window.addEventListener('pageshow', syncThemeClass);
-		window.addEventListener('focus', syncThemeClass);
+		if (!applyThemeClass._windowListenersAttached) {
+			applyThemeClass._windowListenersAttached = true;
+			window.addEventListener('pageshow', syncThemeClass);
+			window.addEventListener('focus', syncThemeClass);
+		}
 	}
 
 	return node;
-}
-
-function renderChip(text, extraClass) {
-	if (text == null || text === '')
-		return null;
-
-	return E('span', { 'class': 'ta-chip ' + (extraClass || '') }, String(text));
 }
 
 function renderSectionPill(label, value, tone) {
@@ -433,98 +388,6 @@ function renderStatusStrong(value, enabled) {
 	return E('strong', { 'class': 'ta-status-value ' + (enabled ? 'is-enabled' : 'is-disabled') }, displayValue(value));
 }
 
-function renderStatCard(title, value, detail, tone, chips) {
-	chips = compactChildren(chips);
-
-	return E('div', { 'class': 'ta-stat-card ' + (tone || '') }, compactChildren([
-		E('div', { 'class': 'ta-stat-title' }, title),
-		E('div', { 'class': 'ta-stat-value' }, displayValue(value)),
-		detail ? E('div', { 'class': 'ta-stat-detail' }, detail) : null,
-		chips.length ? E('div', { 'class': 'ta-chip-list' }, chips) : null
-	]));
-}
-
-function renderInsightCard(title, value, detail, tone, rows, chips) {
-	rows = (rows || []).filter(function(row) {
-		return row[1] != null && row[1] !== '';
-	});
-	chips = compactChildren(chips);
-
-	return E('div', { 'class': 'ta-insight-card ' + (tone || '') }, compactChildren([
-		E('div', { 'class': 'ta-insight-head' }, [
-			E('div', { 'class': 'ta-insight-title' }, title),
-			E('div', { 'class': 'ta-insight-value' }, displayValue(value))
-		]),
-		detail ? E('div', { 'class': 'ta-insight-detail' }, detail) : null,
-		chips.length ? E('div', { 'class': 'ta-chip-list' }, chips) : null,
-		rows.length ? E('div', { 'class': 'ta-kv-list' }, rows.map(function(row) {
-			return E('div', { 'class': 'ta-kv-row' }, [
-				E('span', { 'class': 'ta-kv-label' }, row[0]),
-				E('strong', { 'class': 'ta-kv-value' }, displayValue(row[1]))
-			]);
-		})) : null
-	]));
-}
-
-function renderInfoGrid(rows) {
-	rows = (rows || []).filter(function(row) {
-		return row[1] != null;
-	});
-
-	if (!rows.length)
-		return null;
-
-	return E('div', { 'class': 'ta-info-grid' }, rows.map(function(row) {
-		return E('div', { 'class': 'ta-info-row' }, [
-			E('div', { 'class': 'ta-info-label' }, row[0]),
-			E('div', { 'class': 'ta-info-value' }, row[1])
-		]);
-	}));
-}
-
-function renderChecklist(title, items, tone) {
-	items = (items || []).filter(function(item) {
-		return item != null && item !== '';
-	});
-
-	if (!items.length)
-		return null;
-
-	return E('div', { 'class': 'ta-note-card ' + (tone || '') }, [
-		E('div', { 'class': 'ta-note-title' }, title),
-		E('ul', { 'class': 'ta-note-list' }, items.map(function(item) {
-			return E('li', {}, item);
-		}))
-	]);
-}
-
-function renderEngineCard(engine, configKey, runtimeKey) {
-	var chips = [];
-	var tone = 'is-neutral';
-
-	if (engine.key === configKey) {
-		chips.push(renderChip(_('Текущая конфигурация'), 'is-info'));
-		tone = 'is-selected';
-	}
-
-	if (engine.key === runtimeKey) {
-		chips.push(renderChip(_('Действует сейчас'), 'is-ok'));
-		tone = 'is-live';
-	}
-
-	if (!chips.length)
-		chips.push(renderChip(_('Доступна смена'), 'is-muted'));
-
-	return E('div', { 'class': 'ta-engine-card ' + tone }, [
-		E('div', { 'class': 'ta-engine-top' }, [
-			E('div', { 'class': 'ta-engine-code' }, getEngineShortLabel(engine.key)),
-			E('div', { 'class': 'ta-engine-name' }, engine.label)
-		]),
-		E('div', { 'class': 'ta-engine-detail' }, getEngineDescription(engine.key)),
-		E('div', { 'class': 'ta-chip-list' }, chips)
-	]);
-}
-
 function renderPPEPanel(ppe) {
 	if (!ppe || !ppe.cards || !ppe.cards.length)
 		return null;
@@ -533,8 +396,8 @@ function renderPPEPanel(ppe) {
 
 	return E('div', { 'class': 'ta-panel ta-ppe-panel' }, [
 		E('div', { 'class': 'ta-panel-head' }, [
-			E('div', { 'class': 'ta-panel-title' }, _('Детали PPE')), 
-			E('div', { 'class': 'ta-panel-subtitle' }, _('Количество привязанных соединений на канал PPE.'))
+			E('div', { 'class': 'ta-panel-title' }, _('PPE details')), 
+			E('div', { 'class': 'ta-panel-subtitle' }, _('Bound sessions per PPE lane.'))
 		]),
 		E('div', { 'class': 'ta-progress-list' }, rows.map(function(card) {
 			var width = card.bound > 0 && card.all > 0 ? Math.max(card.percent, 1) : 0;
@@ -556,82 +419,49 @@ function renderPPEPanel(ppe) {
 	]);
 }
 
-function renderFeatureTag(flag, label) {
-	return renderChip((label ? label + ' · ' : '') + (flag ? _('Доступно') : _('Недоступно')), flag ? 'is-ok' : 'is-muted');
-}
-
 function getHealthState(state) {
-	var features = state.features || {};
 	var config = state.config || {};
 	var service = state.service || [];
-	var ppe = state.ppe || {};
 	var configuredKey = normalizeFastpathValue(config.fastpath);
 	var runtimeType = trimValue(service[0] && service[0].type);
 	var runtimeKey = getRuntimeEngineKey(runtimeType);
-	var runtimeMeta = buildStatusMeta(runtimeType, _('Активный путь ускорения не обнаружен.'), _('Основной путь ускорения, возвращённый ядром.'));
-	var fullconeMeta = buildStatusMeta(service[1] && service[1].type, _('Отключено'));
+	var runtimeMeta = buildStatusMeta(runtimeType, _('No active acceleration path detected.'), _('Main acceleration path reported by the kernel.'));
 	var tcpccaLabel = trimValue(service[2] && service[2].type) || String(config.tcpcca || '').toUpperCase() || '--';
-	var notes = [];
-	var pills = [];
 	var level = 'is-idle';
-	var headline = _('Отключено');
+	var headline = _('Disabled');
 	var headlineTone = 'is-disabled';
-	var summary = _('На текущей странице не обнаружен активный путь данных.');
-	var aligned = configuredKey === runtimeKey || (configuredKey === 'disabled' && runtimeKey === 'disabled');
+	var summary = _('No active data path detected on this page.');
 
 	if (configuredKey === 'disabled' && runtimeKey === 'disabled') {
 		level = 'is-idle';
-		headline = _('Отключено');
+		headline = _('Disabled');
 		headlineTone = 'is-disabled';
-		summary = _('Основной движок ускорения не активирован.');
+		summary = _('No acceleration engine is active.');
 	}
 	else if (configuredKey === 'disabled' && runtimeKey !== 'disabled') {
 		level = 'is-attention';
-		headline = _('Включено');
+		headline = _('Enabled');
 		headlineTone = 'is-enabled';
-		summary = _('Активный путь работает, но конфигурация отключена.');
+		summary = _('Runtime path is active while configuration is disabled.');
 	}
 	else if (configuredKey !== 'disabled' && runtimeKey === configuredKey) {
 		level = 'is-healthy';
-		headline = _('Включено');
+		headline = _('Enabled');
 		headlineTone = 'is-enabled';
-		summary = _('Конфигурация совпадает с активным путём.');
+		summary = _('Configuration matches the active path.');
 	}
 	else if (configuredKey !== 'disabled' && runtimeKey !== 'disabled') {
 		level = 'is-attention';
-		headline = _('Включено');
+		headline = _('Enabled');
 		headlineTone = 'is-enabled';
-		summary = _('Активный путь не совпадает с конфигурацией.');
+		summary = _('Active path does not match the configuration.');
 	}
 	else {
 		level = 'is-warning';
-		headline = _('Отключено');
+		headline = _('Disabled');
 		headlineTone = 'is-disabled';
-		summary = _('Настроено, но активный путь не обнаружен.');
+		summary = _('Configured, but no active path detected.');
 	}
-
-	pills.push(renderChip(_('Настройки') + ' · ' + getEngineLabel(configuredKey), 'is-info'));
-	pills.push(renderChip(_('Мониторинг') + ' · ' + runtimeMeta.primary, runtimeKey === 'disabled' ? 'is-muted' : 'is-ok'));
-	if (configuredKey === 'mediatek_hnat' && ppe.totalAll != null)
-		pills.push(renderChip(_('PPE') + ' · ' + formatSessions(ppe.totalBound, ppe.totalAll), 'is-info'));
-
-	if (!aligned && configuredKey !== 'disabled')
-		notes.push(_('Выбрано: ') + getEngineLabel(configuredKey) + _(', но ядро возвращает ') + runtimeMeta.primary + _('.'));
-
-	if (runtimeMeta.warnings.length)
-		notes.push(_('Предупреждения: ') + runtimeMeta.warnings.join(' · '));
-
-	if (configuredKey === 'mediatek_hnat' && !config.fastpath_mh_eth_hnat)
-		notes.push(_('Выбран MediaTek HNAT, но «Включить проводной HNAT» не активирован.'));
-
-	if (configuredKey === 'mediatek_hnat' && config.fastpath_mh_eth_hnat && features.hasIPV6 && !config.fastpath_mh_eth_hnat_v6)
-		notes.push(_('IPv6 не проходит через HNAT; при необходимости IPv6-сценариев можно включить отдельно.'));
-
-	if (configuredKey === 'fast_classifier' && config.fastpath_fc_br)
-		notes.push(_('Ускорение моста включено; при проблемах с VPN в режиме моста проверьте эту настройку.'));
-
-	if (configuredKey === 'mediatek_hnat' && ppe.totalAll != null)
-		notes.push(_('Общая ёмкость PPE: ') + formatSessions(ppe.totalBound, ppe.totalAll));
 
 	return {
 		level: level,
@@ -640,11 +470,8 @@ function getHealthState(state) {
 		configuredKey: configuredKey,
 		runtimeKey: runtimeKey,
 		runtimeMeta: runtimeMeta,
-		fullconeMeta: fullconeMeta,
 		tcpccaLabel: tcpccaLabel,
-		headlineTone: headlineTone,
-		pills: pills,
-		notes: notes
+		headlineTone: headlineTone
 	};
 }
 
@@ -666,14 +493,14 @@ function renderHero(state, health) {
 				E('span', { 'class': 'ta-hero-badge-dot' })
 			]),
 			E('div', { 'class': 'ta-hero-copy' }, [
-				E('div', { 'class': 'ta-hero-kicker' }, _('Панель управления TurboACC')),
+				E('div', { 'class': 'ta-hero-kicker' }, _('TurboACC dashboard')),
 				E('div', { 'class': 'ta-hero-title ' + health.headlineTone }, health.headline),
 				E('div', { 'class': 'ta-hero-summary' }, health.summary)
 			])
 		]),
 		E('div', { 'class': 'ta-hero-side' }, compactChildren([
-			renderSectionPill(_('Активные пути'), health.runtimeMeta.primary, health.runtimeKey === 'disabled' ? 'is-muted' : 'is-good'),
-			renderSectionPill(hnatProfile ? _('Количество соединений PPE') : _('Текущая конфигурация'), summaryValue, hnatProfile ? 'is-accent' : 'is-info')
+			renderSectionPill(_('Active paths'), health.runtimeMeta.primary, health.runtimeKey === 'disabled' ? 'is-muted' : 'is-good'),
+			renderSectionPill(hnatProfile ? _('PPE sessions') : _('Current configuration'), summaryValue, hnatProfile ? 'is-accent' : 'is-info')
 		]))
 	]);
 }
@@ -683,11 +510,11 @@ function renderStatusStrip(state, health) {
 	var config = state.config || {};
 	var ipv6Text = getIPv6ModeText(config, features);
 	var fullconeEnabled = trimValue(config.fullcone) !== '0';
-	var ipv6Enabled = ipv6Text !== _('Отключено') && ipv6Text !== _('Недоступно');
+	var ipv6Enabled = ipv6Text !== _('Disabled') && ipv6Text !== _('Unavailable');
 
 	return E('div', { 'class': 'ta-status-strip' }, [
 		E('div', { 'class': 'ta-status-item' }, [
-			E('span', {}, _('Настройки')),
+			E('span', {}, _('Configuration')),
 			renderStatusStrong(getEngineLabel(config.fastpath), normalizeFastpathValue(config.fastpath) !== 'disabled')
 		]),
 		E('div', { 'class': 'ta-status-item' }, [
@@ -705,308 +532,6 @@ function renderStatusStrip(state, health) {
 	]);
 }
 
-function renderSummaryGrid(state, health) {
-	var features = state.features || {};
-	var config = state.config || {};
-	var ppe = state.ppe || {};
-	var ipv6Text = getIPv6ModeText(config, features);
-	var availableEngines = getAvailableEngines(features, config);
-	var engineCount = availableEngines.length;
-	var sessionValue = normalizeFastpathValue(config.fastpath) === 'mediatek_hnat'
-		? formatSessions(ppe.totalBound, ppe.totalAll)
-		: String(engineCount);
-	var sessionDetail = normalizeFastpathValue(config.fastpath) === 'mediatek_hnat'
-		? (_('Каналы PPE') + ': ' + displayValue(ppe.count) + ' · ' + _('Порог привязки') + ': ' + config.fastpath_mh_eth_hnat_bind_rate + ' pps')
-		: (_('Доступно движков') + ': ' + String(engineCount));
-
-	return E('div', { 'class': 'ta-summary-grid' }, [
-		renderStatCard(_('Профиль конфигурации'), getEngineLabel(config.fastpath), getEngineDescription(config.fastpath), 'is-primary', [
-			renderChip(config.fastpath === 'disabled' ? _('Не включено') : _('Выбрано'), config.fastpath === 'disabled' ? 'is-muted' : 'is-info')
-		]),
-		renderStatCard(_('Активные пути'), health.runtimeMeta.primary, health.runtimeMeta.detail, 'is-good', health.runtimeMeta.warnings.map(function(tag) {
-			return renderChip(tag, 'is-warning');
-		})),
-		renderStatCard(_('Политика NAT / TCP'), getFullconeConfigLabel(config.fullcone), _('TCP CCA') + ' · ' + health.tcpccaLabel, 'is-warning', [
-			renderChip(_('IPv6') + ' · ' + ipv6Text, ipv6Text === _('Включено') ? 'is-ok' : 'is-muted')
-		]),
-		renderStatCard(normalizeFastpathValue(config.fastpath) === 'mediatek_hnat' ? _('Сессии PPE') : _('Запас движков'), sessionValue, sessionDetail, 'is-accent', [
-			renderChip(_('Мониторинг в реальном времени'), 'is-info')
-		])
-	]);
-}
-
-function renderFocusGrid(state, health) {
-	var features = state.features || {};
-	var config = state.config || {};
-	var ppe = state.ppe || {};
-	var hnatEnabled = normalizeFastpathValue(config.fastpath) === 'mediatek_hnat';
-
-	return E('div', { 'class': 'ta-focus-grid' }, [
-		renderInsightCard(
-			_('Проводной канал данных'),
-			hnatEnabled ? (config.fastpath_mh_eth_hnat ? _('Разрешено') : _('Ожидает разрешения')) : health.runtimeMeta.primary,
-			hnatEnabled ? _('MediaTek HNAT — основной путь ускорения mt798x на 24.10, рекомендуется проверить в первую очередь.') : _('Основной путь определяет большинство операций маршрутизации/NAT.'),
-			'is-primary',
-			[
-				[ _('Активный движок'), health.runtimeMeta.primary ],
-				[ _('Ускорение моста'), config.fastpath_fc_br ? _('Включено') : _('Не включено') ],
-				[ _('Проводной HNAT'), hnatEnabled ? (config.fastpath_mh_eth_hnat ? _('Включено') : _('Не включено')) : null ]
-			],
-			[
-				renderChip(hnatEnabled ? _('Приоритетная проверка') : _('Переключить при необходимости'), 'is-info')
-			]
-		),
-		renderInsightCard(
-			_('Игры и поведение NAT'),
-			getFullconeConfigLabel(config.fullcone),
-			_('Полноценный NAT влияет на онлайн-игры и портовую маршрутизацию, но не гарантирует работу основного пути.'),
-			'is-warning',
-			[
-				[ _('Обратная связь'), health.fullconeMeta.primary ],
-				[ _('Предупреждение'), trimValue(config.fullcone) === '0' ? _('Онлайн-игры больше зависят от ручной портовой маршрутизации') : _('Лучше подходит для игровых консолей и P2P-сценариев') ]
-			],
-			[
-				renderChip(_('Опыт использования'), 'is-warning')
-			]
-		),
-		renderInsightCard(
-			_('IPv6 и расширенная настройка'),
-			getIPv6ModeText(config, features),
-			getIPv6ModeDetail(config, features),
-			'is-accent',
-			[
-				[ _('Порог привязки'), hnatEnabled && config.fastpath_mh_eth_hnat ? (config.fastpath_mh_eth_hnat_bind_rate + ' pps') : null ],
-				[ _('Обзор PPE'), hnatEnabled ? formatSessions(ppe.totalBound, ppe.totalAll) : null ]
-			],
-			[
-				renderChip(_('Дополнительно'), 'is-muted')
-			]
-		)
-	]);
-}
-
-function renderEngineRail(state, health) {
-	var availableEngines = getAvailableEngines(state.features || {}, state.config || {});
-
-	if (!availableEngines.length)
-		return null;
-
-	return E('div', { 'class': 'ta-panel' }, [
-		E('div', { 'class': 'ta-panel-head' }, [
-			E('div', { 'class': 'ta-panel-title' }, _('Кандидаты путей')), 
-			E('div', { 'class': 'ta-panel-subtitle' }, _('Сравнение текущей конфигурации и реального состояния для точной диагностики.'))
-		]),
-		E('div', { 'class': 'ta-engine-grid' }, availableEngines.map(function(engine) {
-			return renderEngineCard(engine, health.configuredKey, health.runtimeKey);
-		}))
-	]);
-}
-
-function renderTelemetryGrid(state, health) {
-	var features = state.features || {};
-	var config = state.config || {};
-	var ppe = state.ppe || {};
-
-	return E('div', { 'class': 'ta-telemetry-grid' }, compactChildren([
-		E('div', { 'class': 'ta-panel' }, [
-			E('div', { 'class': 'ta-panel-head' }, [
-				E('div', { 'class': 'ta-panel-title' }, _('Мониторинг в реальном времени')), 
-				E('div', { 'class': 'ta-panel-subtitle' }, _('Отображаются реальные данные ядра и rpcd, а не только параметры формы.'))
-			]),
-			renderInfoGrid([
-				[ _('Основной движок ускорения'), health.runtimeMeta.primary ],
-				[ _('Предупреждения'), health.runtimeMeta.warnings.length ? E('div', { 'class': 'ta-chip-list' }, health.runtimeMeta.warnings.map(function(tag) {
-					return renderChip(tag, 'is-warning');
-				})) : renderChip(_('Нет'), 'is-ok') ],
-				[ _('Полноценный NAT'), health.fullconeMeta.primary ],
-				[ _('TCP CCA'), health.tcpccaLabel ],
-				[ _('Ускорение IPv6'), getIPv6ModeText(config, features) ],
-				[ _('Каналов PPE'), normalizeFastpathValue(config.fastpath) === 'mediatek_hnat' ? displayValue(ppe.count) : null ],
-				[ _('Привязанные сессии'), normalizeFastpathValue(config.fastpath) === 'mediatek_hnat' ? formatSessions(ppe.totalBound, ppe.totalAll) : null ]
-			])
-		]),
-		E('div', { 'class': 'ta-side-stack' }, compactChildren([
-			renderChecklist(_('Текущий статус'), health.notes.slice(0, 4), health.level),
-			E('div', { 'class': 'ta-note-card is-neutral' }, [
-				E('div', { 'class': 'ta-note-title' }, _('Матрица возможностей')), 
-				E('div', { 'class': 'ta-capability-grid' }, [
-				renderFeatureTag(features.hasFLOWOFFLOADING, _('Распределение потока')),
-				renderFeatureTag(features.hasFASTCLASSIFIER, _('Быстрый классификатор')),
-					renderFeatureTag(features.hasSHORTCUTFECM, _('SFE')),
-					renderFeatureTag(features.hasMEDIATEKHNAT, _('HNAT')),
-					renderFeatureTag(features.hasXTFULLCONENAT, _('FullCone')),
-					renderFeatureTag(features.hasIPV6, _('IPv6'))
-				]),
-				renderInfoGrid([
-				[ _('Распределение потока'), renderFeatureTag(features.hasFLOWOFFLOADING) ],
-				[ _('Быстрый классификатор'), renderFeatureTag(features.hasFASTCLASSIFIER) ],
-				[ _('Менеджер соединений SFE'), renderFeatureTag(features.hasSHORTCUTFECM) ],
-					[ _('MediaTek HNAT'), renderFeatureTag(features.hasMEDIATEKHNAT) ],
-					[ _('XT_FULLCONE_NAT'), renderFeatureTag(features.hasXTFULLCONENAT) ],
-					[ _('Стек IPv6 ядра'), renderFeatureTag(features.hasIPV6) ]
-				])
-			])
-		]))
-	]));
-}
-
-function renderCompactHero(state, health) {
-	var config = state.config || {};
-	var ppe = state.ppe || {};
-	var hnatProfile = normalizeFastpathValue(config.fastpath) === 'mediatek_hnat';
-	var chips = compactChildren([
-		renderChip(_('Настройки') + ' · ' + getEngineLabel(config.fastpath), 'is-info'),
-		renderChip(_('Мониторинг') + ' · ' + health.runtimeMeta.primary, health.runtimeKey === 'disabled' ? 'is-muted' : 'is-ok'),
-		renderChip(_('TCP') + ' · ' + health.tcpccaLabel, 'is-info'),
-		hnatProfile ? renderChip(_('PPE') + ' · ' + formatSessions(ppe.totalBound, ppe.totalAll), 'is-info') : null
-	]);
-
-	return E('div', { 'class': 'ta-panel ta-compact-hero ' + health.level }, compactChildren([
-		E('div', { 'class': 'ta-compact-hero-top' }, [
-			E('div', { 'class': 'ta-compact-hero-copy' }, [
-				E('div', { 'class': 'ta-compact-kicker' }, _('Панель управления TurboACC')),
-				E('div', { 'class': 'ta-compact-headline' }, health.headline),
-				E('div', { 'class': 'ta-compact-summary' }, health.summary)
-			]),
-			E('div', { 'class': 'ta-compact-state ' + health.headlineTone }, health.runtimeMeta.primary)
-		]),
-		chips.length ? E('div', { 'class': 'ta-chip-list' }, chips) : null
-	]));
-}
-
-function renderCompactOverviewLegacy(state, health) {
-	var features = state.features || {};
-	var config = state.config || {};
-	var ppe = state.ppe || {};
-	var rows = [
-		[ _('Основной движок ускорения'), getEngineLabel(config.fastpath) ],
-		[ _('Активные пути'), health.runtimeMeta.primary ],
-		[ _('Полноценный NAT'), health.fullconeMeta.primary ],
-		[ _('TCP CCA'), health.tcpccaLabel ],
-		[ _('IPv6'), getIPv6ModeText(config, features) ]
-	];
-
-	if (normalizeFastpathValue(config.fastpath) === 'mediatek_hnat') {
-		rows.push(
-			[ _('Каналов PPE'), displayValue(ppe.count) ],
-			[ _('Количество соединений PPE'), formatSessions(ppe.totalBound, ppe.totalAll) ],
-			[ _('Порог привязки'), config.fastpath_mh_eth_hnat ? (config.fastpath_mh_eth_hnat_bind_rate + ' pps') : null ]
-		);
-	}
-
-	return E('div', { 'class': 'ta-compact-grid' }, compactChildren([
-		E('div', { 'class': 'ta-panel' }, [
-			E('div', { 'class': 'ta-panel-head' }, [
-				E('div', { 'class': 'ta-panel-title' }, _('Состояние')),
-				E('div', { 'class': 'ta-panel-subtitle' }, _('Отображаются только основные параметры состояния и данные мониторинга.'))
-			]),
-			renderInfoGrid(rows)
-		]),
-		renderChecklist(_('Примечания'), health.notes.slice(0, 3), health.level)
-	]));
-}
-
-function renderCompactOverview(state, health) {
-	var features = state.features || {};
-	var config = state.config || {};
-	var ppe = state.ppe || {};
-	var statusTone = health.level === 'is-healthy'
-		? 'is-good'
-		: (health.level === 'is-attention' || health.level === 'is-warning')
-			? 'is-warning'
-			: 'is-accent';
-	var ipv6Text = getIPv6ModeText(config, features);
-	var runtimeChips = health.runtimeMeta.warnings.length
-		? health.runtimeMeta.warnings.map(function(tag) {
-			return renderChip(tag, 'is-warning');
-		})
-		: [ renderChip(_('Все в норме'), 'is-ok') ];
-	var metricCards = [
-		renderStatCard(
-			_('Общее состояние'),
-			health.headline,
-			health.summary,
-			statusTone,
-			[
-				renderChip(_('Настройки') + ' → ' + getEngineLabel(config.fastpath), 'is-info')
-			]
-		),
-		renderStatCard(
-			_('Активные пути'),
-			health.runtimeMeta.primary,
-			health.runtimeMeta.detail,
-			health.runtimeKey === 'disabled' ? 'is-accent' : 'is-good',
-			runtimeChips
-		),
-		renderStatCard(
-			_('NAT / TCP'),
-			getFullconeConfigLabel(config.fullcone),
-			_('TCP CCA') + ' → ' + health.tcpccaLabel,
-			'is-warning',
-			[
-				renderChip(_('IPv6') + ' → ' + ipv6Text, ipv6Text === _('Включено') ? 'is-ok' : 'is-muted')
-			]
-		)
-	];
-	var rows = [
-		[ _('Основной движок ускорения'), getEngineLabel(config.fastpath) ],
-		[ _('Активные пути'), health.runtimeMeta.primary ],
-		[ _('Предупреждения'), health.runtimeMeta.warnings.length ? health.runtimeMeta.warnings.join(' / ') : _('Нет') ],
-		[ _('Полноценный NAT'), health.fullconeMeta.primary ],
-		[ _('TCP CCA'), health.tcpccaLabel ],
-		[ _('IPv6'), ipv6Text ]
-	];
-
-	if (normalizeFastpathValue(config.fastpath) === 'mediatek_hnat') {
-		metricCards.push(renderStatCard(
-			_('Соединения PPE'),
-			formatSessions(ppe.totalBound, ppe.totalAll),
-			_('Каналы') + ' → ' + displayValue(ppe.count) + ' → ' + _('Порог') + ' → ' +
-				(config.fastpath_mh_eth_hnat ? (config.fastpath_mh_eth_hnat_bind_rate + ' pps') : '--'),
-			'is-accent',
-			[
-				renderChip(
-					config.fastpath_mh_eth_hnat ? _('Проводной HNAT включён') : _('Проводной HNAT отключён'),
-					config.fastpath_mh_eth_hnat ? 'is-ok' : 'is-muted'
-				)
-			]
-		));
-		rows.push(
-			[ _('Каналов PPE'), displayValue(ppe.count) ],
-			[ _('Количество соединений PPE'), formatSessions(ppe.totalBound, ppe.totalAll) ],
-			[ _('Порог привязки'), config.fastpath_mh_eth_hnat ? (config.fastpath_mh_eth_hnat_bind_rate + ' pps') : null ]
-		);
-	}
-	else {
-		metricCards.push(renderStatCard(
-			_('Текущая конфигурация'),
-			getEngineLabel(config.fastpath),
-			getEngineDescription(config.fastpath),
-			'is-primary',
-			[
-				renderChip(_('Основной путь'), 'is-info')
-			]
-		));
-	}
-
-	return E('div', { 'class': 'ta-compact-grid' }, [
-		E('div', { 'class': 'ta-panel ta-compact-status-panel' }, [
-			E('div', { 'class': 'ta-panel-head' }, [
-				E('div', { 'class': 'ta-panel-title' }, _('Состояние')),
-				E('div', { 'class': 'ta-panel-subtitle' }, _('Раздельный просмотр конфигурации, активных путей и ключевых политик для удобной диагностики.'))
-			]),
-			E('div', { 'class': 'ta-summary-grid ta-compact-summary-grid' }, metricCards)
-		]),
-		E('div', { 'class': 'ta-panel ta-compact-detail-panel' }, [
-			E('div', { 'class': 'ta-panel-head' }, [
-				E('div', { 'class': 'ta-panel-title' }, _('Детали работы')),
-				E('div', { 'class': 'ta-panel-subtitle' }, _('Наиболее важные данные мониторинга для удобного просмотра.'))
-			]),
-			renderInfoGrid(rows)
-		])
-	]);
-}
-
 function renderOverviewContent(state) {
 	var health = getHealthState(state);
 
@@ -1018,8 +543,8 @@ function renderOverviewContent(state) {
 }
 
 function buildForm(features, config) {
-	var m = new form.Map('turboacc', _('Панель настройки TurboACC'),
-		_('Доступны основные параметры; сохраните и примените изменения.'));
+	var m = new form.Map('turboacc', _('TurboACC settings'),
+		_('Basic options are available; save and apply your changes.'));
 	var s = m.section(form.NamedSection, 'config', 'turboacc');
 	var o;
 	var tcpccaOptions = parseTokenList(features.hasTCPCCA);
@@ -1028,55 +553,55 @@ function buildForm(features, config) {
 	var showShortcutFeCm = true;
 	var showMediatekHnat = true;
 
-	s.tab('engine', _('Основной путь'), _('Выберите основной движок ускорения.'));
-	s.tab('experience', _('Оптимизация'), _('Настройки NAT и TCP.'));
+	s.tab('engine', _('Main path'), _('Choose the primary acceleration engine.'));
+	s.tab('experience', _('Optimization'), _('NAT and TCP settings.'));
 
 	if (showMediatekHnat)
-		s.tab('hnat', _('Расширенные настройки HNAT'), _('Специальные настройки MediaTek HNAT.'));
+		s.tab('hnat', _('Advanced HNAT settings'), _('MediaTek HNAT specific settings.'));
 
-	o = s.taboption('engine', form.ListValue, 'fastpath', _('Основной движок ускорения'),
-		_('Выберите текущий режим ускорения.'));
-	o.value('disabled', _('Отключить'));
+	o = s.taboption('engine', form.ListValue, 'fastpath', _('Acceleration engine'),
+		_('Select the current acceleration mode.'));
+	o.value('disabled', _('Disable'));
 	if (showFlowOffloading)
-		o.value('flow_offloading', _('Распределение потока'));
+		o.value('flow_offloading', _('Flow offloading'));
 	if (showFastClassifier)
-		o.value('fast_classifier', _('Быстрый классификатор'));
+		o.value('fast_classifier', _('Fast classifier'));
 	if (showShortcutFeCm)
-		o.value('shortcut_fe_cm', _('Менеджер соединений SFE'));
-	o.value('mediatek_hnat', features.hasMEDIATEKHNAT ? _('MediaTek HNAT') : _('MediaTek HNAT (попытка после сохранения)'));
+		o.value('shortcut_fe_cm', _('SFE connection manager'));
+	o.value('mediatek_hnat', features.hasMEDIATEKHNAT ? _('MediaTek HNAT') : _('MediaTek HNAT (load after saving)'));
 	o.default = config.fastpath || 'disabled';
 	o.widget = 'select';
 	o.rmempty = false;
 	var engineStatus = {
 		'disabled': {
-			label: _('Выкл'),
+			label: _('Off'),
 			cls: 'is-neutral',
-			title: _('Отключить ускорение пересылки'),
-			hint: _('Дополнительное ускорение не включено; сеть и Wi-Fi работают в стандартном режиме.')
+			title: _('Disable forwarding acceleration'),
+			hint: _('No extra acceleration is enabled; wired and Wi-Fi traffic use the standard path.')
 		},
 		'flow_offloading': {
-			label: _('Зарезервировано'),
+			label: _('Reserved'),
 			cls: 'is-warning',
-			title: _('Flow Offloading — зарезервированный вариант для совместимости со старыми конфигурациями.'),
-			hint: _('Зарезервировано для старых конфигураций; текущая прошивка обычно использует HNAT, при отсутствии поддержки пропускается.')
+			title: _('Flow Offloading is reserved for legacy configurations.'),
+			hint: _('Reserved for legacy setups; this firmware normally uses HNAT and skips it when unsupported.')
 		},
 		'fast_classifier': {
-			label: _('Зарезервировано'),
+			label: _('Reserved'),
 			cls: 'is-warning',
-			title: _('Fast Classifier — зарезервированный вариант для совместимости со старыми конфигурациями.'),
-			hint: _('Текущая прошивка не содержит модуль Fast Classifier; при невозможности загрузки будет пропущен без влияния на сеть.')
+			title: _('Fast Classifier is reserved for legacy configurations.'),
+			hint: _('This firmware has no Fast Classifier module; it is skipped when it cannot load without affecting the network.')
 		},
 		'shortcut_fe_cm': {
-			label: _('Зарезервировано'),
+			label: _('Reserved'),
 			cls: 'is-warning',
-			title: _('Менеджер соединений SFE — зарезервированный вариант для совместимости со старыми конфигурациями.'),
-			hint: _('Текущая прошивка не содержит модуль менеджера соединений SFE; при невозможности загрузки будет пропущен без влияния на сеть.')
+			title: _('SFE connection manager is reserved for legacy configurations.'),
+			hint: _('This firmware has no SFE connection manager module; it is skipped when it cannot load without affecting the network.')
 		},
 		'mediatek_hnat': {
-			label: features.hasMEDIATEKHNAT ? _('Рекомендуется') : _('Ожидает загрузки'),
+			label: features.hasMEDIATEKHNAT ? _('Recommended') : _('Pending load'),
 			cls: features.hasMEDIATEKHNAT ? 'is-ok' : 'is-warning',
-			title: features.hasMEDIATEKHNAT ? _('MediaTek HNAT доступен, подходит для аппаратного ускорения MT7988.') : _('MediaTek HNAT не обнаружен; будет предпринята попытка загрузки после сохранения.'),
-			hint: features.hasMEDIATEKHNAT ? _('MediaTek HNAT (PPE + WED + HNAT) — аппаратная пересылка в обход CPU, рекомендуется как основной движок.') : _('Модуль HNAT не обнаружен; попытка загрузки будет предпринята после сохранения, базовая сеть не пострадает при неудаче.')
+			title: features.hasMEDIATEKHNAT ? _('MediaTek HNAT is available and suits MT7988 hardware acceleration.') : _('MediaTek HNAT not detected; a load attempt is made after saving.'),
+			hint: features.hasMEDIATEKHNAT ? _('MediaTek HNAT (PPE + WED + HNAT) is hardware forwarding that bypasses the CPU; recommended as the primary engine.') : _('HNAT module not detected; a load attempt is made after saving and the basic network is unaffected on failure.')
 		}
 	};
 	var updateEngineStatus = function(container, value) {
@@ -1132,36 +657,36 @@ function buildForm(features, config) {
 		return value === 'disabled' || value === 'flow_offloading' || value === 'fast_classifier' ||
 			value === 'shortcut_fe_cm' || value === 'mediatek_hnat'
 			? true
-			: _('Недопустимый основной движок ускорения');
+			: _('Invalid acceleration engine');
 	};
 
 	if (showFlowOffloading) {
-		o = s.taboption('engine', form.Flag, 'fastpath_fo_hw', _('Включить аппаратное распределение потока'),
-			_('Доступно при поддержке аппаратным обеспечением.'));
+		o = s.taboption('engine', form.Flag, 'fastpath_fo_hw', _('Enable hardware flow offloading'),
+			_('Available when supported by the hardware.'));
 		o.default = o.disabled;
 		o.rmempty = false;
 		o.depends('fastpath', 'flow_offloading');
 	}
 
 	if (showFastClassifier) {
-		o = s.taboption('engine', form.Flag, 'fastpath_fc_br', _('Включить ускорение моста'),
-			_('Может повлиять на VPN в режиме моста.'));
+		o = s.taboption('engine', form.Flag, 'fastpath_fc_br', _('Enable bridge acceleration'),
+			_('May affect bridge-mode VPN.'));
 		o.default = o.disabled;
 		o.rmempty = false;
 		o.depends('fastpath', 'fast_classifier');
 
 		if (features.hasIPV6) {
-			o = s.taboption('engine', form.Flag, 'fastpath_fc_ipv6', _('Включить IPv6 для Fast classifier'),
-				_('Включить ускорение IPv6.'));
+			o = s.taboption('engine', form.Flag, 'fastpath_fc_ipv6', _('Enable IPv6 for Fast classifier'),
+				_('Enable IPv6 Acceleration.'));
 			o.default = o.disabled;
 			o.rmempty = false;
 			o.depends('fastpath', 'fast_classifier');
 		}
 	}
 
-	o = s.taboption('experience', form.ListValue, 'fullcone', _('Полноценный NAT'),
-		_('Включайте при необходимости для игр или P2P.'));
-	o.value('0', _('Отключить'));
+	o = s.taboption('experience', form.ListValue, 'fullcone', _('Full cone NAT'),
+		_('Enable when needed for gaming or P2P.'));
+	o.value('0', _('Disable'));
 	if (features.hasXTFULLCONENAT || config.fullcone === '1')
 		o.value('1', _('XT_FULLCONE_NAT'));
 	o.value('2', _('Boardcom_FULLCONE_NAT'));
@@ -1172,8 +697,8 @@ function buildForm(features, config) {
 	if (tcpccaOptions.indexOf(config.tcpcca) < 0)
 		tcpccaOptions.push(config.tcpcca);
 
-	o = s.taboption('experience', form.ListValue, 'tcpcca', _('Алгоритм управления перегрузкой TCP'),
-		_('Выберите алгоритм управления перегрузкой TCP. BBR подходит для высокоскоростных каналов, CUBIC — по умолчанию, Reno — наиболее совместим.'));
+	o = s.taboption('experience', form.ListValue, 'tcpcca', _('TCP congestion control algorithm'),
+		_('Select the TCP congestion control algorithm. BBR suits high-speed links, CUBIC is the default, Reno is the most compatible.'));
 	tcpccaOptions.forEach(function(item) {
 		var label;
 		switch (String(item).toLowerCase()) {
@@ -1196,20 +721,20 @@ function buildForm(features, config) {
 	o.rmempty = false;
 
 	if (showMediatekHnat) {
-		o = s.taboption('hnat', form.Flag, 'fastpath_mh_eth_hnat', _('Включить проводной HNAT'),
-			_('Включает hook_toggle MediaTek HNAT; переключатель ядра записывается службой turboacc после сохранения и применения.'));
+		o = s.taboption('hnat', form.Flag, 'fastpath_mh_eth_hnat', _('Enable ethernet HNAT'),
+			_('Toggles the MediaTek HNAT hook; the kernel switch is written by the turboacc service after Save & Apply.'));
 		o.default = o.enabled;
 		o.rmempty = false;
 		o.depends('fastpath', 'mediatek_hnat');
 
-		o = s.taboption('hnat', form.Flag, 'fastpath_mh_eth_hnat_v6', _('Включить проводной IPv6 HNAT'),
-			_('Включить IPv6 HNAT.'));
+		o = s.taboption('hnat', form.Flag, 'fastpath_mh_eth_hnat_v6', _('Enable ethernet IPv6 HNAT'),
+			_('Enable IPv6 HNAT.'));
 		o.default = o.enabled;
 		o.rmempty = false;
 		o.depends({ fastpath: 'mediatek_hnat', fastpath_mh_eth_hnat: '1' });
 
-		o = s.taboption('hnat', form.Value, 'fastpath_mh_eth_hnat_bind_rate', _('Порог привязки HNAT (pps)'),
-			_('По умолчанию 30.'));
+		o = s.taboption('hnat', form.Value, 'fastpath_mh_eth_hnat_bind_rate', _('HNAT bind rate (pps)'),
+			_('Defaults to 30.'));
 		o.optional = true;
 		o.datatype = 'range(1,30)';
 		o.placeholder = '30';
@@ -1262,7 +787,7 @@ function renderStyle() {
 		/* ===== Layout ===== */
 		'.ta-overview{display:flex;flex-direction:column;gap:18px}',
 
-		'.ta-hero,.ta-panel,.ta-stat-card,.ta-insight-card,.ta-note-card,.ta-config-shell{position:relative;border-radius:24px;border:1px solid var(--ta-panel-border);background:var(--ta-panel-bg);box-shadow:var(--ta-shadow);color:var(--ta-text);overflow:hidden}',
+		'.ta-hero,.ta-panel,.ta-config-shell{position:relative;border-radius:24px;border:1px solid var(--ta-panel-border);background:var(--ta-panel-bg);box-shadow:var(--ta-shadow);color:var(--ta-text);overflow:hidden}',
 
 		'.ta-hero{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(310px,.92fr);gap:28px;padding:24px 28px;border-color:rgba(177,225,218,.95);background:linear-gradient(90deg,rgba(226,235,253,.96),rgba(244,241,251,.96) 58%,rgba(239,248,250,.96))}',
 
@@ -1316,8 +841,6 @@ function renderStyle() {
 
 		'.ta-dark .ta-section-pill-value{color:var(--ta-text-strong)}',
 
-		'.ta-chip-list{display:flex;flex-wrap:wrap;gap:8px}',
-
 		'.ta-chip{display:inline-flex;align-items:center;max-width:100%;padding:6px 11px;border-radius:999px;background:var(--ta-chip-bg);border:1px solid var(--ta-chip-border);color:var(--ta-chip);font-size:.8rem;font-weight:700;line-height:1.2;word-break:break-word}',
 
 		'.ta-chip-dot{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:999px;background:currentColor;flex:0 0 auto}',
@@ -1325,10 +848,6 @@ function renderStyle() {
 		'.ta-chip.is-ok{background:var(--ta-good-bg);color:var(--ta-good)}',
 
 		'.ta-chip.is-warning{background:var(--ta-warn-bg);color:var(--ta-warn)}',
-
-		'.ta-chip.is-info{background:var(--ta-info-bg);color:var(--ta-info)}',
-
-		'.ta-chip.is-muted{background:rgba(148,163,184,.14);color:var(--ta-text-muted)}',
 
 		'.ta-chip.is-neutral{background:rgba(148,163,184,.14);color:var(--ta-text-muted)}',
 
@@ -1358,48 +877,6 @@ function renderStyle() {
 
 		'.ta-dark .ta-status-item strong{color:var(--ta-text-strong)}',
 
-		'.ta-summary-grid,.ta-focus-grid,.ta-engine-grid{display:grid;gap:14px}',
-
-		'.ta-summary-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}',
-
-		'.ta-focus-grid{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}',
-
-		'.ta-engine-grid{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}',
-
-		'.ta-stat-card{display:flex;flex-direction:column;gap:10px;padding:18px;min-height:182px}',
-
-		'.ta-stat-card.is-primary{border-color:rgba(37,99,235,.22)}',
-
-		'.ta-stat-card.is-good{border-color:rgba(13,148,136,.24)}',
-
-		'.ta-stat-card.is-warning{border-color:rgba(245,158,11,.24)}',
-
-		'.ta-stat-card.is-accent{border-color:rgba(124,58,237,.24)}',
-
-		'.ta-stat-title{font-size:.82rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ta-text-muted)}',
-
-		'.ta-stat-value{font-size:1.34rem;font-weight:800;line-height:1.25;color:var(--ta-text-strong)}',
-
-		'.ta-stat-detail{margin-top:auto;font-size:.88rem;line-height:1.55;color:var(--ta-text-muted)}',
-
-		'.ta-insight-card{display:flex;flex-direction:column;gap:12px;padding:18px}',
-
-		'.ta-insight-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}',
-
-		'.ta-insight-title{font-size:1rem;font-weight:800;color:var(--ta-text-strong)}',
-
-		'.ta-insight-value{font-size:1rem;font-weight:800;color:var(--ta-text)}',
-
-		'.ta-insight-detail{font-size:.9rem;line-height:1.6;color:var(--ta-text-muted)}',
-
-		'.ta-kv-list{display:grid;gap:10px}',
-
-		'.ta-kv-row{display:grid;grid-template-columns:minmax(112px,42%) 1fr;gap:10px;padding:10px 12px;border-radius:14px;background:var(--ta-info-bg);border:1px solid var(--ta-panel-border-soft)}',
-
-		'.ta-kv-label{font-size:.84rem;color:var(--ta-text-muted);line-height:1.45}',
-
-		'.ta-kv-value{font-size:.9rem;line-height:1.45;color:var(--ta-text-strong);text-align:right;word-break:break-word}',
-
 		'.ta-panel{padding:22px 28px}',
 
 		'.ta-panel-head{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}',
@@ -1409,48 +886,6 @@ function renderStyle() {
 		'.ta-panel-subtitle{font-size:1rem;line-height:1.6;color:#6f84a4}',
 
 		'.ta-dark .ta-panel-subtitle{color:var(--ta-text-muted)}',
-
-		'.ta-engine-card{display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:18px;background:var(--ta-info-bg);border:1px solid var(--ta-panel-border-soft)}',
-
-		'.ta-engine-card.is-selected{border-color:rgba(37,99,235,.25);background:rgba(37,99,235,.06)}',
-
-		'.ta-engine-card.is-live{border-color:rgba(13,148,136,.26);background:rgba(13,148,136,.08)}',
-
-		'.ta-engine-top{display:flex;align-items:center;gap:12px}',
-
-		'.ta-engine-code{display:inline-flex;align-items:center;justify-content:center;min-width:48px;height:34px;padding:0 10px;border-radius:12px;background:var(--ta-hero-badge);color:#fff;font-size:.78rem;font-weight:800;letter-spacing:.06em}',
-
-		'.ta-engine-name{font-size:.96rem;font-weight:800;color:var(--ta-text-strong)}',
-
-		'.ta-engine-detail{font-size:.88rem;line-height:1.55;color:var(--ta-text-muted)}',
-
-		'.ta-telemetry-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.9fr);gap:14px}',
-
-		'.ta-side-stack{display:grid;gap:14px}',
-
-		'.ta-note-card{padding:16px}',
-
-		'.ta-note-title{font-size:.92rem;font-weight:800;color:var(--ta-text-strong);margin-bottom:10px}',
-
-		'.ta-note-list{margin:0;padding-left:18px;display:grid;gap:8px;color:var(--ta-text);line-height:1.55}',
-
-		'.ta-note-card.is-healthy{border-color:rgba(13,148,136,.24)}',
-
-		'.ta-note-card.is-attention{border-color:rgba(245,158,11,.24)}',
-
-		'.ta-note-card.is-warning{border-color:rgba(239,68,68,.24)}',
-
-		'.ta-info-grid{display:grid;gap:10px}',
-
-		'.ta-info-row{display:grid;grid-template-columns:minmax(120px,42%) 1fr;gap:12px;align-items:start;padding:11px 12px;border-radius:14px;background:var(--ta-info-bg);border:1px solid var(--ta-panel-border-soft)}',
-
-		'.ta-info-label{font-size:.84rem;color:var(--ta-text-muted);line-height:1.45}',
-
-		'.ta-info-value{display:flex;align-items:flex-start;justify-content:flex-end;gap:8px;font-size:.9rem;color:var(--ta-text-strong);font-weight:700;line-height:1.45;text-align:right;word-break:break-word}',
-
-		'.ta-info-value .ta-chip-list{justify-content:flex-end}',
-
-		'.ta-capability-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}',
 
 		'.ta-ppe-panel .ta-panel-head{margin-bottom:16px}',
 
@@ -1538,33 +973,6 @@ function renderStyle() {
 		'.ta-config-shell .cbi-page-actions .cbi-button-apply,.ta-config-shell .cbi-page-actions .cbi-button-save{background:linear-gradient(90deg,#5672ef,#5d67ea)!important;border-color:transparent!important;color:#fff!important;box-shadow:none!important}',
 
 		'.ta-config-shell .cbi-page-actions .cbi-button-reset{background:linear-gradient(180deg,#ef4c70,#ea3758)!important;color:#fff!important;border-color:transparent!important}',
-
-		/* ===== Compact overview variants ===== */
-		'.ta-compact-hero{display:grid;gap:14px;padding:18px}',
-
-		'.ta-compact-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}',
-
-		'.ta-compact-hero-copy{display:grid;gap:8px;min-width:0}',
-
-		'.ta-compact-kicker{font-size:.76rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ta-text-muted)}',
-
-		'.ta-compact-headline{font-size:1.18rem;font-weight:800;line-height:1.3;color:var(--ta-text-strong)}',
-
-		'.ta-compact-summary{font-size:.92rem;line-height:1.6;color:var(--ta-text-muted)}',
-
-		'.ta-compact-state{display:inline-flex;align-items:center;justify-content:center;min-width:132px;min-height:42px;padding:0 18px;border-radius:999px;font-size:.92rem;font-weight:800;line-height:1.2;text-align:center;box-shadow:0 8px 16px rgba(15,23,42,.08)}',
-
-		'.ta-compact-state.is-enabled{background:var(--ta-good-bg);color:var(--ta-good)}',
-
-		'.ta-compact-state.is-disabled{background:var(--ta-danger-bg);color:var(--ta-danger)}',
-
-		'.ta-compact-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(240px,.8fr);gap:14px}',
-
-		'.ta-compact-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}',
-
-		'.ta-compact-summary-grid .ta-stat-card{min-height:0;padding:16px}',
-
-		'.ta-compact-detail-panel .ta-info-grid{height:100%}',
 
 		/* ===== Screenshot-matched Argon compact skin ===== */
 		'.ta-page{gap:14px;padding:12px 0 0;--ta-shadow:0 6px 16px rgba(73,99,135,.08);--ta-panel-border:#dfe7f1;--ta-panel-border-soft:#edf2f7;--ta-panel-bg:linear-gradient(180deg,rgba(255,255,255,.98),rgba(249,252,255,.99));--ta-text:#263b58;--ta-text-strong:#0b1830;--ta-text-muted:#6b809c;--ta-button-bg:linear-gradient(180deg,#fbfdff,#f5f8fc)}',
@@ -1680,16 +1088,16 @@ function renderStyle() {
 		'.ta-dark .ta-config-shell select option{color:var(--ta-text-strong)!important;background:#1b2535!important}',
 
 		/* ===== State text colors ===== */
-		'.ta-hero-title.is-enabled,.ta-compact-state.is-enabled,.ta-status-value.is-enabled,.ta-section-pill.is-good .ta-section-pill-value,.ta-chip.is-ok{color:var(--ta-good)!important;-webkit-text-fill-color:var(--ta-good)}',
+		'.ta-hero-title.is-enabled,.ta-status-value.is-enabled,.ta-section-pill.is-good .ta-section-pill-value,.ta-chip.is-ok{color:var(--ta-good)!important;-webkit-text-fill-color:var(--ta-good)}',
 
-		'.ta-hero-title.is-disabled,.ta-compact-state.is-disabled,.ta-status-value.is-disabled,.ta-section-pill.is-muted .ta-section-pill-value,.ta-chip.is-muted{color:var(--ta-text-muted)!important;-webkit-text-fill-color:var(--ta-text-muted)}',
+		'.ta-hero-title.is-disabled,.ta-status-value.is-disabled,.ta-section-pill.is-muted .ta-section-pill-value{color:var(--ta-text-muted)!important;-webkit-text-fill-color:var(--ta-text-muted)}',
 
-		'.ta-hero-title.is-disabled,.ta-compact-state.is-disabled{border-color:rgba(148,163,184,.30);background:rgba(148,163,184,.12)}',
+		'.ta-hero-title.is-disabled{border-color:rgba(148,163,184,.30);background:rgba(148,163,184,.12)}',
 
 		/* ===== Responsive ===== */
-		'@media (max-width:1040px){.ta-hero{grid-template-columns:1fr}.ta-telemetry-grid{grid-template-columns:1fr}.ta-status-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.ta-compact-grid{grid-template-columns:1fr}}',
+		'@media (max-width:1040px){.ta-hero{grid-template-columns:1fr}.ta-status-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}',
 
-		'@media (max-width:760px){.ta-page{padding-top:10px}.ta-page:before{top:-4px;height:4px}.ta-hero{padding:20px}.ta-hero-main{flex-direction:column}.ta-hero-badge{width:84px;height:84px;border-radius:24px}.ta-hero-title{padding:12px 24px}.ta-section-pill,.ta-status-item,.ta-panel{padding:18px 20px}.ta-status-strip{grid-template-columns:1fr}.ta-status-item strong{text-align:left}.ta-kv-row,.ta-info-row{grid-template-columns:1fr}.ta-kv-value,.ta-info-value,.ta-info-value .ta-chip-list{text-align:left;justify-content:flex-start}.ta-progress-head{flex-direction:column;align-items:flex-start}.ta-progress-value{white-space:normal}.ta-compact-hero-top{flex-direction:column;align-items:flex-start}.ta-compact-state{width:100%;justify-content:flex-start}.ta-compact-summary-grid{grid-template-columns:1fr}.ta-config-shell{padding:14px}.ta-config-shell h2{padding:16px 18px}.ta-config-shell select,.ta-config-shell select.ta-engine-select{width:100%;min-width:0}.ta-config-shell .cbi-tabmenu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 0 12px}.ta-config-shell .cbi-tabmenu li{width:100%;min-width:0}.ta-config-shell .cbi-tabmenu li a{padding:10px 8px}.ta-config-shell .cbi-page-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ta-config-shell .cbi-page-actions .cbi-button{width:100%;min-width:0;min-height:42px;padding:0 12px;justify-content:center}.ta-config-shell .cbi-page-actions .cbi-button-apply{grid-column:1/-1;order:-1}}',
+		'@media (max-width:760px){.ta-page{padding-top:10px}.ta-page:before{top:-4px;height:4px}.ta-hero{padding:20px}.ta-hero-main{flex-direction:column}.ta-hero-badge{width:84px;height:84px;border-radius:24px}.ta-hero-title{padding:12px 24px}.ta-section-pill,.ta-status-item,.ta-panel{padding:18px 20px}.ta-status-strip{grid-template-columns:1fr}.ta-status-item strong{text-align:left}.ta-progress-head{flex-direction:column;align-items:flex-start}.ta-progress-value{white-space:normal}.ta-config-shell{padding:14px}.ta-config-shell h2{padding:16px 18px}.ta-config-shell select,.ta-config-shell select.ta-engine-select{width:100%;min-width:0}.ta-config-shell .cbi-tabmenu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 0 12px}.ta-config-shell .cbi-tabmenu li{width:100%;min-width:0}.ta-config-shell .cbi-tabmenu li a{padding:10px 8px}.ta-config-shell .cbi-page-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.ta-config-shell .cbi-page-actions .cbi-button{width:100%;min-width:0;min-height:42px;padding:0 12px;justify-content:center}.ta-config-shell .cbi-page-actions .cbi-button-apply{grid-column:1/-1;order:-1}}',
 
 		'@media (max-width:380px){.ta-config-shell .cbi-tabmenu,.ta-config-shell .cbi-page-actions{grid-template-columns:1fr}.ta-config-shell .cbi-page-actions .cbi-button{min-height:40px}.ta-config-shell .cbi-page-actions .cbi-button-apply{grid-column:auto}}'
 	].join('\n'));

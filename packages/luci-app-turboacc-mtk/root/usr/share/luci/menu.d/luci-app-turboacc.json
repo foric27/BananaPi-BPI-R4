@@ -1,6 +1,6 @@
 {
 	"admin/network/turboacc": {
-		"title": "Сетевое ускорение",
+		"title": "TurboACC",
 		"action": {
 			"type": "view",
 			"path": "turboacc"

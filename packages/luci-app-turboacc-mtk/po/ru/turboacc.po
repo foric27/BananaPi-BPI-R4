@@ -1,278 +1,326 @@
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: luci-app-turboacc-mtk\n"
+"PO-Revision-Date: 2026-09-08 00:00+0000\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:91
-msgid "Acceleration Status"
-msgstr "Состояние ускорения"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Acceleration engine"
+msgstr "Основной движок ускорения"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:191
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Active path does not match the configuration."
+msgstr "Активный путь не совпадает с конфигурацией."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Active paths"
+msgstr "Активные пути"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Advanced HNAT settings"
+msgstr "Расширенные настройки HNAT"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Available when supported by the hardware."
+msgstr "Доступно при поддержке аппаратным обеспечением."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Basic options are available; save and apply your changes."
+msgstr "Доступны основные параметры; сохраните и примените изменения."
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Boardcom_FULLCONE_NAT"
 msgstr "Boardcom_FULLCONE_NAT"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:151
-msgid "Bridge Acceleration"
-msgstr "Ускорение моста"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Boardcom_FULLCONE_NAT (legacy compatible)"
+msgstr "Boardcom_FULLCONE_NAT (совместимость со старой реализацией)"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:95
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:99
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:103
-msgid "Collecting data..."
-msgstr "Сбор данных..."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Bound sessions per PPE lane."
+msgstr "Количество привязанных соединений на канал PPE."
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:120
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:188
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Choose the primary acceleration engine."
+msgstr "Выберите основной движок ускорения."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Configuration"
+msgstr "Настройки"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Configuration matches the active path."
+msgstr "Конфигурация совпадает с активным путём."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Configured, but no active path detected."
+msgstr "Настроено, но активный путь не обнаружен."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Current configuration"
+msgstr "Текущая конфигурация"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Defaults to 30."
+msgstr "По умолчанию 30."
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Disable"
 msgstr "Отключить"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:57
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Disabled"
 msgstr "Отключено"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:159
-msgid "Enable IPv6 Acceleration."
-msgstr "Включить ускорение IPv6."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Disable forwarding acceleration"
+msgstr "Отключить ускорение пересылки"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:152
-msgid ""
-"Enable bridge acceleration (may be functional conflict with bridge-mode VPN "
-"server)."
-msgstr ""
-"Включить ускорение моста (может конфликтовать с VPN-сервером в режиме "
-"моста)."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable bridge acceleration"
+msgstr "Включить ускорение моста"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:165
-msgid "Enable ethernet HNAT"
-msgstr "Включить проводной HNAT"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:171
-msgid "Enable ethernet IPv6 HNAT"
-msgstr "Включить проводной IPv6 HNAT"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:172
-msgid "Enable hardware offloading for wired IPv6 connections."
-msgstr "Включить аппаратное ускорение для проводных IPv6-соединений."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:166
-msgid "Enable hardware offloading for wired connections."
-msgstr "Включить аппаратное ускорение для проводных соединений."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:178
-msgid "Enable hardware offloading for wireless connections."
-msgstr "Включить аппаратное ускорение для беспроводных соединений."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:124
-msgid "Fast classifier"
-msgstr "Быстрый классификатор"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:136
-msgid "Fast classifier connection manager for the shortcut forwarding engine."
-msgstr "Менеджер соединений Fast classifier для движка ускоренной пересылки."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:94
-msgid "FastPath Engine"
-msgstr "Движок быстрого пути"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:118
-msgid "Fastpath engine"
-msgstr "Движок быстрого пути"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:122
-msgid "Flow offloading"
-msgstr "Распределение потока"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:98
-msgid "Full Cone NAT"
-msgstr "Полноценный NAT"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:186
-msgid "Full cone NAT"
-msgstr "Полноценный NAT"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:187
-msgid "Full cone NAT (NAT1) can improve gaming performance effectively."
-msgstr "Полноценный NAT (NAT1) может эффективно улучшить производительность в играх."
-
-#: applications/luci-app-turboacc/root/usr/share/rpcd/acl.d/luci-app-turboacc.json:3
-msgid "Grant UCI access for luci-app-turboacc"
-msgstr "Предоставить доступ UCI для luci-app-turboacc"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:145
-msgid "Hardware flow offloading"
-msgstr "Аппаратное распределение потока"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:158
-msgid "IPv6 acceleration"
-msgstr "Ускорение IPv6"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:128
-msgid "MediaTek HNAT"
-msgstr "MediaTek HNAT"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:140
-msgid "MediaTek's open source hardware offloading engine."
-msgstr "Открытый аппаратный движок распределения потока от MediaTek."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:74
-msgid "Open source flow offloading engine (fast path or hardware NAT)."
-msgstr "Открытый движок распределения потока (быстрый путь или аппаратный NAT)."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:179
-msgid "Redirect to wireless settings"
-msgstr "Перейти к настройкам беспроводной сети"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:146
-msgid "Requires hardware NAT support. Implemented at least for mt7621."
-msgstr "Требуется поддержка аппаратного NAT. Реализовано как минимум для mt7621."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:126
-msgid "SFE connection manager"
-msgstr "Менеджер соединений SFE"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:138
-msgid "Simple connection manager for the shortcut forwarding engine."
-msgstr "Простой менеджер соединений для движка ускоренной пересылки."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:134
-msgid "Software based offloading for routing/NAT."
-msgstr "Программная разгрузка для маршрутизации/NAT."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:102
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:195
-msgid "TCP CCA"
-msgstr "TCP CCA"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:196
-msgid "TCP congestion control algorithm."
-msgstr "Алгоритм управления перегрузкой TCP."
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:119
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:142
-msgid "The offloading engine for routing/NAT."
-msgstr "Движок разгрузки для маршрутизации/NAT."
-
-#: applications/luci-app-turboacc/root/usr/share/luci/menu.d/luci-app-turboacc.json:3
-msgid "TurboACC"
-msgstr "Сетевое ускорение"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:73
-msgid "TurboACC settings"
-msgstr "Настройки сетевого ускорения"
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:190
-msgid "XT_FULLCONE_NAT"
-msgstr "XT_FULLCONE_NAT"
-
-msgid "Apply this setting after reboot."
-msgstr "Применить эту настройку после перезагрузки."
-
-msgid "Bind Entrys"
-msgstr "Привязанные соединения"
-
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Enabled"
 msgstr "Включено"
 
-msgid "Available"
-msgstr "Доступно"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable ethernet HNAT"
+msgstr "Включить проводной HNAT"
 
-msgid "Unavailable"
-msgstr "Недоступно"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable ethernet IPv6 HNAT"
+msgstr "Включить проводной IPv6 HNAT"
 
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable hardware flow offloading"
+msgstr "Включить аппаратное распределение потока"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable IPv6 Acceleration."
+msgstr "Включить ускорение IPv6."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable IPv6 for Fast classifier"
+msgstr "Включить IPv6 для Fast classifier"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable IPv6 HNAT."
+msgstr "Включить IPv6 HNAT."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable when needed for gaming or P2P."
+msgstr "Включайте при необходимости для игр или P2P."
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Ethernet HNAT disabled"
 msgstr "Ethernet HNAT отключён"
 
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Fast classifier"
+msgstr "Быстрый классификатор"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Fast Classifier is reserved for legacy configurations."
+msgstr "Fast Classifier — зарезервированный вариант для совместимости со старыми конфигурациями."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Flow offloading"
+msgstr "Распределение потока"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Flow Offloading is reserved for legacy configurations."
+msgstr "Flow Offloading — зарезервированный вариант для совместимости со старыми конфигурациями."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Follow main path"
+msgstr "Следовать основному пути"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Full cone NAT"
+msgstr "Полноценный NAT"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Grant UCI access for luci-app-turboacc"
+msgstr "Предоставить доступ UCI для luci-app-turboacc"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "HNAT bind rate (pps)"
+msgstr "Порог привязки HNAT (pps)"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "HNAT module not detected; a load attempt is made after saving and the basic network is unaffected on failure."
+msgstr "Модуль HNAT не обнаружен; попытка загрузки будет предпринята после сохранения, базовая сеть не пострадает при неудаче."
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "HNAT Partially Enabled"
 msgstr "HNAT частично включён"
 
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Invalid acceleration engine"
+msgstr "Недопустимый основной движок ускорения"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "IPv6"
+msgstr "IPv6"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Main acceleration path reported by the kernel."
+msgstr "Основной путь ускорения, возвращённый ядром."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Main path"
+msgstr "Основной путь"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "May affect bridge-mode VPN."
+msgstr "Может повлиять на VPN в режиме моста."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT"
+msgstr "MediaTek HNAT"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT is available and suits MT7988 hardware acceleration."
+msgstr "MediaTek HNAT доступен, подходит для аппаратного ускорения MT7988."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT (load after saving)"
+msgstr "MediaTek HNAT (попытка после сохранения)"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT not detected; a load attempt is made after saving."
+msgstr "MediaTek HNAT не обнаружен; будет предпринята попытка загрузки после сохранения."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT (PPE + WED + HNAT) is hardware forwarding that bypasses the CPU; recommended as the primary engine."
+msgstr "MediaTek HNAT (PPE + WED + HNAT) — аппаратная пересылка в обход CPU, рекомендуется как основной движок."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT specific settings."
+msgstr "Специальные настройки MediaTek HNAT."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "NAT"
+msgstr "NAT"
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "NAT and TCP settings."
+msgstr "Настройки NAT и TCP."
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "No acceleration engine is active."
+msgstr "Основной движок ускорения не активирован."
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "No active acceleration path detected."
 msgstr "Активный путь ускорения не обнаружен."
 
-msgid "The current platform exposes IPv6, but this engine has no dedicated IPv6 toggle."
-msgstr "Текущая платформа поддерживает IPv6, но выбранный движок не имеет отдельного переключателя IPv6."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "No active data path detected on this page."
+msgstr "На текущей странице не обнаружен активный путь данных."
 
-msgid "Optimize the routing/NAT data plane for MediaTek 24.10 with live runtime telemetry."
-msgstr "Оптимизация данных маршрутизации/NAT для MediaTek 24.10 с мониторингом в реальном времени."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "No extra acceleration is enabled; wired and Wi-Fi traffic use the standard path."
+msgstr "Дополнительное ускорение не включено; сеть и Wi-Fi работают в стандартном режиме."
 
-msgid "MediaTek HNAT is the primary wired acceleration path on mt798x under 24.10."
-msgstr "MediaTek HNAT — основной проводной путь ускорения на mt798x в 24.10."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Off"
+msgstr "Выкл"
 
-msgid "Save & Apply is required before live runtime cards reflect configuration changes."
-msgstr "Необходимо сохранить и применить, чтобы карточки мониторинга отразили изменения конфигурации."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Optimization"
+msgstr "Оптимизация"
 
-msgid "Live data plane"
-msgstr "Данные в реальном времени"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Pending load"
+msgstr "Ожидает загрузки"
 
-msgid "Configured profile"
-msgstr "Текущая конфигурация"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "PPE details"
+msgstr "Детали PPE"
 
-msgid "Bound sessions"
-msgstr "Привязанные сессии"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "PPE sessions"
+msgstr "Количество соединений PPE"
 
-msgid "NAT & congestion"
-msgstr "NAT и перегрузка"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Recommended"
+msgstr "Рекомендуется"
 
-msgid "Configured NAT mode"
-msgstr "Текущий режим NAT"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Reserved"
+msgstr "Зарезервировано"
 
-msgid "Current TCP CCA"
-msgstr "Текущий TCP CCA"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Reserved for legacy setups; this firmware normally uses HNAT and skips it when unsupported."
+msgstr "Зарезервировано для старых конфигураций; текущая прошивка обычно использует HNAT, при отсутствии поддержки пропускается."
 
-msgid "Available engines"
-msgstr "Доступные движки"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Runtime path is active while configuration is disabled."
+msgstr "Активный путь работает, но конфигурация отключена."
 
-msgid "PPE session load"
-msgstr "Нагрузка сессий PPE"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Select the current acceleration mode."
+msgstr "Выберите текущий режим ускорения."
 
-msgid "Runtime details"
-msgstr "Данные мониторинга"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Select the TCP congestion control algorithm. BBR suits high-speed links, CUBIC is the default, Reno is the most compatible."
+msgstr "Выберите алгоритм управления перегрузкой TCP. BBR подходит для высокоскоростных каналов, CUBIC — по умолчанию, Reno — наиболее совместим."
 
-msgid "Route/NAT engine"
-msgstr "Движок маршрутизации/NAT"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "SFE connection manager"
+msgstr "Менеджер соединений SFE"
 
-msgid "Runtime warnings"
-msgstr "Предупреждения"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "SFE connection manager is reserved for legacy configurations."
+msgstr "Менеджер соединений SFE — зарезервированный вариант для совместимости со старыми конфигурациями."
 
-msgid "PPE lanes"
-msgstr "Каналы PPE"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "TCP"
+msgstr "TCP"
 
-msgid "Total sessions"
-msgstr "Всего сессий"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "TCP congestion control algorithm"
+msgstr "Алгоритм управления перегрузкой TCP"
 
-msgid "Capability matrix"
-msgstr "Матрица возможностей"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "This firmware has no Fast Classifier module; it is skipped when it cannot load without affecting the network."
+msgstr "Текущая прошивка не содержит модуль Fast Classifier; при невозможности загрузки будет пропущен без влияния на сеть."
 
-msgid "Kernel IPv6 stack"
-msgstr "Стек IPv6 ядра"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "This firmware has no SFE connection manager module; it is skipped when it cannot load without affecting the network."
+msgstr "Текущая прошивка не содержит модуль менеджера соединений SFE; при невозможности загрузки будет пропущен без влияния на сеть."
 
-msgid "Operating notes"
-msgstr "Примечания"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Toggles the MediaTek HNAT hook; the kernel switch is written by the turboacc service after Save & Apply."
+msgstr "Включает hook_toggle MediaTek HNAT; переключатель ядра записывается службой turboacc после сохранения и применения."
 
-msgid "Tune wired acceleration, NAT behavior and congestion control without leaving this page."
-msgstr "Настройка проводного ускорения, поведения NAT и управления перегрузкой на этой странице."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "TurboACC"
+msgstr "Сетевое ускорение"
 
-msgid "Acceleration profile"
-msgstr "Профиль ускорения"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "TurboACC dashboard"
+msgstr "Панель управления TurboACC"
 
-msgid "Choose the primary acceleration engine used for routing and NAT."
-msgstr "Выберите основной движок ускорения для маршрутизации и NAT."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "TurboACC settings"
+msgstr "Панель настройки TurboACC"
 
-msgid "HNAT tuning"
-msgstr "Настройка HNAT"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Unavailable"
+msgstr "Недоступно"
 
-msgid "Tune wired HNAT behavior for MediaTek targets."
-msgstr "Настройка проводного HNAT для платформ MediaTek."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "XT_FULLCONE_NAT"
+msgstr "XT_FULLCONE_NAT"
 
-msgid "Pick the main data plane. Runtime cards above show what the kernel is actually using."
-msgstr "Выберите основной путь данных. Карточки мониторинга показывают фактическое состояние ядра."
-
-msgid "Preferred HNAT path for MediaTek mt798x on OpenWrt 24.10."
-msgstr "Предпочтительный путь HNAT для MediaTek mt798x на OpenWrt 24.10."
-
-msgid "Keep wired IPv6 sessions on the HNAT path when supported by the current driver."
-msgstr "Направлять проводные IPv6-сессии через HNAT при поддержке текущим драйвером."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "XT_FULLCONE_NAT (best compatibility)"
+msgstr "XT_FULLCONE_NAT (лучшая совместимость)"

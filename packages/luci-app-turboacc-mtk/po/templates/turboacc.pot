@@ -1,181 +1,326 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8"
+msgstr ""
+"Project-Id-Version: luci-app-turboacc-mtk\n"
+"PO-Revision-Date: 2026-09-08 00:00+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"MIME-Version: 1.0\n"
+"Language: \n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:91
-msgid "Acceleration Status"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Acceleration engine"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:191
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Active path does not match the configuration."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Active paths"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Advanced HNAT settings"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Available when supported by the hardware."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Basic options are available; save and apply your changes."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Boardcom_FULLCONE_NAT"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:151
-msgid "Bridge Acceleration"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Boardcom_FULLCONE_NAT (legacy compatible)"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:95
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:99
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:103
-msgid "Collecting data..."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Bound sessions per PPE lane."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:120
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:188
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Choose the primary acceleration engine."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Configuration"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Configuration matches the active path."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Configured, but no active path detected."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Current configuration"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Defaults to 30."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Disable"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:57
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Disabled"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:159
-msgid "Enable IPv6 Acceleration."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Disable forwarding acceleration"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:177
-msgid "Enable AP Mode"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable bridge acceleration"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:178
-msgid "Fill in ip to enable AP Mode(reboot needed)"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enabled"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:183
-msgid "HNAT bind rate threshold (pps)"
-msgstr ""
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:184
-msgid "The smaller the threshold, the easier it is for the connection to be accelerated."
-msgstr ""
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:152
-msgid ""
-"Enable bridge acceleration (may be functional conflict with bridge-mode VPN "
-"server)."
-msgstr ""
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:165
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Enable ethernet HNAT"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:171
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Enable ethernet IPv6 HNAT"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:172
-msgid "Enable hardware offloading for wired IPv6 connections."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable hardware flow offloading"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:166
-msgid "Enable hardware offloading for wired connections."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable IPv6 Acceleration."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:178
-msgid "Enable hardware offloading for wireless connections."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable IPv6 for Fast classifier"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:124
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable IPv6 HNAT."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Enable when needed for gaming or P2P."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Ethernet HNAT disabled"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Fast classifier"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:136
-msgid "Fast classifier connection manager for the shortcut forwarding engine."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Fast Classifier is reserved for legacy configurations."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:94
-msgid "FastPath Engine"
-msgstr ""
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:118
-msgid "Fastpath engine"
-msgstr ""
-
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:122
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Flow offloading"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:98
-msgid "Full Cone NAT"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Flow Offloading is reserved for legacy configurations."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:186
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Follow main path"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Full cone NAT"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:187
-msgid "Full cone NAT (NAT1) can improve gaming performance effectively."
-msgstr ""
-
-#: applications/luci-app-turboacc/root/usr/share/rpcd/acl.d/luci-app-turboacc.json:3
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "Grant UCI access for luci-app-turboacc"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:145
-msgid "Hardware flow offloading"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "HNAT bind rate (pps)"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:158
-msgid "IPv6 acceleration"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "HNAT module not detected; a load attempt is made after saving and the basic network is unaffected on failure."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:128
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "HNAT Partially Enabled"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Invalid acceleration engine"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "IPv6"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Main acceleration path reported by the kernel."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Main path"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "May affect bridge-mode VPN."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "MediaTek HNAT"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:140
-msgid "MediaTek's open source hardware offloading engine."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT is available and suits MT7988 hardware acceleration."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:74
-msgid "Open source flow offloading engine (fast path or hardware NAT)."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT (load after saving)"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:179
-msgid "Redirect to wireless settings"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT not detected; a load attempt is made after saving."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:146
-msgid "Requires hardware NAT support. Implemented at least for mt7621."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT (PPE + WED + HNAT) is hardware forwarding that bypasses the CPU; recommended as the primary engine."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:126
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "MediaTek HNAT specific settings."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "NAT"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "NAT and TCP settings."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "No acceleration engine is active."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "No active acceleration path detected."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "No active data path detected on this page."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "No extra acceleration is enabled; wired and Wi-Fi traffic use the standard path."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Off"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Optimization"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Pending load"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "PPE details"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "PPE sessions"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Recommended"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Reserved"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Reserved for legacy setups; this firmware normally uses HNAT and skips it when unsupported."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Runtime path is active while configuration is disabled."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Select the current acceleration mode."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Select the TCP congestion control algorithm. BBR suits high-speed links, CUBIC is the default, Reno is the most compatible."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "SFE connection manager"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:138
-msgid "Simple connection manager for the shortcut forwarding engine."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "SFE connection manager is reserved for legacy configurations."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:134
-msgid "Software based offloading for routing/NAT."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "TCP"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:102
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:195
-msgid "TCP CCA"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "TCP congestion control algorithm"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:196
-msgid "TCP congestion control algorithm."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "This firmware has no Fast Classifier module; it is skipped when it cannot load without affecting the network."
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:119
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:142
-msgid "The offloading engine for routing/NAT."
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "This firmware has no SFE connection manager module; it is skipped when it cannot load without affecting the network."
 msgstr ""
 
-#: applications/luci-app-turboacc/root/usr/share/luci/menu.d/luci-app-turboacc.json:3
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Toggles the MediaTek HNAT hook; the kernel switch is written by the turboacc service after Save & Apply."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "TurboACC"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:73
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "TurboACC dashboard"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "TurboACC settings"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:190
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "Unavailable"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/turboacc.js
 msgid "XT_FULLCONE_NAT"
 msgstr ""
 
-#: applications/luci-app-turboacc/htdocs/luci-static/resources/view/turboacc.js:191
-msgid "Boardcom_FULLCONE_NAT"
+#: htdocs/luci-static/resources/view/turboacc.js
+msgid "XT_FULLCONE_NAT (best compatibility)"
 msgstr ""
