@@ -1,0 +1,42 @@
+net: ethernet: mtk_ppe_offload: reject tc flowtable when HNAT owns the PPE
+
+When the SDK HNAT module is part of the build (CONFIG_NET_MEDIATEK_HNAT /
+CONFIG_NET_MEDIATEK_HNAT_MODULE), mtk_probe() compiles out PPE init and
+mtk_eth_offload_init(), leaving eth->flow_table as an uninitialized
+rhashtable (tbl == NULL). mtk_eth_setup_tc_block() still registers the
+tc block callback, so a firewall flowtable with hardware offload enabled
+calls into mtk_flow_offload_replace() -> rhashtable_lookup(), which
+dereferences the NULL bucket table ("Unable to handle kernel read from
+unreadable memory at virtual address 0000000000000008" inside
+mtk_flow_offload_replace, workqueue nf_ft_offload_add) and panics the
+board roughly when the WAN comes up.
+
+Guard the callback with a runtime check: without a bucket table the
+tc/PPE offload path cannot work; hardware NAT is handled by the HNAT
+module through its own netfilter hooks instead.
+
+Signed-off-by: local
+---
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
+@@ -1001,10 +1001,20 @@
+ 	flow_setup_cb_t *cb;
+
+ 	if (!eth->soc->offload_version)
+ 		return -EOPNOTSUPP;
+
++	/* PPE flowtable is not initialized when the SDK HNAT module is
++	 * built: mtk_probe() compiles out PPE init and mtk_eth_offload_init()
++	 * for CONFIG_NET_MEDIATEK_HNAT(_MODULE), leaving eth->flow_table as
++	 * an uninitialized rhashtable (tbl == NULL). Serving a tc flowtable
++	 * offload request would dereference the NULL bucket table inside
++	 * rhashtable_lookup() and crash the kernel. Hardware NAT is handled
++	 * by the HNAT module through its own netfilter hooks instead. */
++	if (!eth->flow_table.tbl)
++		return -EOPNOTSUPP;
++
+ 	if (f->binder_type != FLOW_BLOCK_BINDER_TYPE_CLSACT_INGRESS)
+ 		return -EOPNOTSUPP;
+
+ 	cb = mtk_eth_setup_tc_block_cb;
+ 	f->driver_block_list = &block_cb_list;

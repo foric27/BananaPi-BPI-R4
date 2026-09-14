@@ -158,6 +158,30 @@ if [ -f "$_mt975" ]; then
     fi
 fi
 
+# ============================================================
+# Kernel patch: guard tc-flowtable при включённом SDK HNAT (модуль mtkhnat).
+# mtk_probe() компилирует out PPE init + mtk_eth_offload_init() при
+# CONFIG_NET_MEDIATEK_HNAT(_MODULE); eth->flow_table.tbl остаётся NULL,
+# и вызов ndo_setup_tc (firewall flow_offloading_hw=1) падает в
+# rhashtable_lookup() → kernel panic (~48с после загрузки).
+# Патч ставится в patches-6.12 (quilt применит последним: 999-zzz-5301
+# > всех 999-*). git clean -fd при обновлении openwrt/ его стирает —
+# копируем заново при каждом запуске.
+# ============================================================
+_KPATCH_NAME="999-zzz-5301-mtk_ppe_offload-reject-tc-flowtable-when-hnat-owns-ppe.patch"
+_KPATCH_SRC="$GITHUB_WORKSPACE/patches/filogic/25.12/$_KPATCH_NAME"
+_KPATCH_DST="target/linux/mediatek/patches-6.12"
+if [ ! -f "$_KPATCH_SRC" ]; then
+    echo "[DIY] Kernel patch не найден: $_KPATCH_SRC" >&2
+    exit 1
+fi
+cp "$_KPATCH_SRC" "$_KPATCH_DST/$_KPATCH_NAME"
+grep -q 'if (!eth->flow_table.tbl)' "$_KPATCH_DST/$_KPATCH_NAME" || {
+    echo "[DIY] Kernel patch $_KPATCH_NAME повреждён (нет маркера гварда)" >&2
+    exit 1
+}
+echo "[DIY] tc-flowtable guard (HNAT) установлен в patches-6.12"
+
 # MTK Wi-Fi профили: замена версии chasey-dev на mt7990-only сборку padavanonly
 # (версия chasey-dev ссылается на несуществующие файлы mt7622/mt7615 и использует сломанную
 # подстановку shell-команд для значений Kconfig). Частичный sparse-клон: скачивается
