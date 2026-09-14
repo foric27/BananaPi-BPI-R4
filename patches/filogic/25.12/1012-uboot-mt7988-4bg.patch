@@ -1,0 +1,72 @@
+From 2d45172138203e5b2a7619146ad8e71aa5295736 Mon Sep 17 00:00:00 2001
+From: Frank Wunderlich <frank-w@public-files.de>
+Date: Tue, 6 Jan 2026 23:16:14 +0100
+Subject: [PATCH] uboot-mediatek: add mt7988 4bg builds
+
+This allows builds for Bananapi R4 (Pro) with 8GB RAM.
+
+Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
+Link: https://github.com/openwrt/openwrt/pull/21437
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ package/boot/uboot-mediatek/Makefile | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/package/boot/uboot-mediatek/Makefile b/package/boot/uboot-mediatek/Makefile
+index d626e0398c7..383fd222789 100644
+--- a/package/boot/uboot-mediatek/Makefile
++++ b/package/boot/uboot-mediatek/Makefile
+@@ -925,7 +925,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-emmc
+   BL2_BOOTDEV:=emmc
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-emmc-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-emmc-comb +trusted-firmware-a-mt7988-emmc-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-sdmmc
+@@ -937,7 +937,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-sdmmc
+   BL2_BOOTDEV:=sdmmc
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-sdmmc-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-sdmmc-comb +trusted-firmware-a-mt7988-sdmmc-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-snand
+@@ -949,7 +949,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-snand
+   BL2_BOOTDEV:=spim-nand-ubi
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-spim-nand-ubi-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-spim-nand-ubi-comb +trusted-firmware-a-mt7988-spim-nand-ubi-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-poe-emmc
+@@ -961,7 +961,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-poe-emmc
+   BL2_BOOTDEV:=emmc
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-emmc-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-emmc-comb +trusted-firmware-a-mt7988-emmc-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-poe-sdmmc
+@@ -973,7 +973,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-poe-sdmmc
+   BL2_BOOTDEV:=sdmmc
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-sdmmc-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-sdmmc-comb +trusted-firmware-a-mt7988-sdmmc-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-poe-snand
+@@ -985,7 +985,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-poe-snand
+   BL2_BOOTDEV:=spim-nand-ubi
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-spim-nand-ubi-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-spim-nand-ubi-comb +trusted-firmware-a-mt7988-spim-nand-ubi-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_tplink_tl-7dr7230-v1

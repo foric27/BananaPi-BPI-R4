@@ -159,6 +159,28 @@ if [ -f "$_mt975" ]; then
 fi
 
 # ============================================================
+# BPI-R4 8GB RAM: артефакты sdcard_8g.img.gz и preloader'ы -8g
+# Перенос из ImmortalWrt master: 6141cd1dbc92 (TF-A mt7988 4bg),
+# 2d4517213820 (uboot-mediatek 4bg builds), 02b2dd350832 (filogic 8GB builds).
+# В 1012 исправлен хвостовой контекст под дерево chasey-dev
+# (после bpi-r4-poe-snand идёт tplink, а не mt7987_rfb-emmc).
+# ============================================================
+for _patch in 1011-atf-mt7988-4bg.patch 1012-uboot-mt7988-4bg.patch 1013-filogic-bpi-r4-8g.patch; do
+    apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/$_patch"
+    echo "[DIY] 8GB RAM: применён $_patch"
+done
+grep -q 'sdcard_8g.img.gz' target/linux/mediatek/image/filogic.mk || {
+    echo "[DIY] 8GB RAM: sdcard_8g.img.gz отсутствует в filogic.mk" >&2
+    exit 1
+}
+grep -q 'comb-4bg' package/boot/uboot-mediatek/Makefile && \
+    grep -q 'comb-4bg' package/boot/arm-trusted-firmware-mediatek/Makefile || {
+    echo "[DIY] 8GB RAM: comb-4bg отсутствует в uboot/tf-a Makefile" >&2
+    exit 1
+}
+echo "[DIY] 8GB RAM: sdcard_8g.img.gz и preloader'ы -8g включены"
+
+# ============================================================
 # Kernel patch: guard tc-flowtable при включённом SDK HNAT (модуль mtkhnat).
 # mtk_probe() компилирует out PPE init + mtk_eth_offload_init() при
 # CONFIG_NET_MEDIATEK_HNAT(_MODULE); eth->flow_table.tbl остаётся NULL,
