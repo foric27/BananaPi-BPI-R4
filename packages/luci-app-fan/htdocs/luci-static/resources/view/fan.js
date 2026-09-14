@@ -229,7 +229,7 @@ var dashboardStyle = [
 	'.lf-temp-readout { position: absolute; top: 50%; left: 50%; z-index: 1; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }',
 	'.lf-temp-number { font-size: 42px; line-height: 1; font-weight: 700; }',
 	'.lf-temp-unit { margin-top: 4px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(238, 246, 239, 0.72); }',
-	'.lf-temp-caption { margin-top: 8px; font-size: 12px; color: rgba(238, 246, 239, 0.82); }',
+	'.lf-temp-caption { margin-top: 8px; font-size: 12px; max-width: 92%; overflow-wrap: break-word; color: rgba(238, 246, 239, 0.82); }',
 
 	/* Demand bar — smooth width transition with strong ease-in-out */
 	'.lf-demand { width: 100%; box-sizing: border-box; padding: 16px 18px 18px; border-radius: 18px; background: var(--lf-frost-soft); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(10px); }',
@@ -581,7 +581,7 @@ return view.extend({
 		return Math.round((percent * resolvedMaxRpm) / 100);
 	},
 
-	formatRpm: function(value, source) {
+	formatRpm: function(value) {
 		if (value === null || typeof value === 'undefined' || isNaN(value))
 			return texts.notAvailable;
 
@@ -729,7 +729,7 @@ return view.extend({
 		var display = this.buildDisplayState(preview);
 
 		this.setText(this.nodes.metricCpu, this.formatTemp(this.runtime && this.runtime.zone_temp));
-		this.setText(this.nodes.metricFan, this.formatRpm(display.fanRpm, display.rpmSource));
+		this.setText(this.nodes.metricFan, this.formatRpm(display.fanRpm));
 		this.setText(this.nodes.metricPwm, this.formatPercent(display.dutyPercent));
 		this.setText(this.nodes.metricMode, this.modeLabel(preview.mode));
 		this.setText(this.nodes.configEnabled, preview.enabled ? texts.enabled : texts.disabled);
@@ -737,7 +737,7 @@ return view.extend({
 		this.setText(this.nodes.configManual, this.formatPercent(preview.manual_pwm));
 		this.setText(this.nodes.configOn, this.formatTemp(preview.on));
 		this.setText(this.nodes.configOff, this.formatTemp(preview.off));
-		this.setText(this.nodes.configRpm, this.formatRpm(display.fanRpm, display.rpmSource));
+		this.setText(this.nodes.configRpm, this.formatRpm(display.fanRpm));
 	},
 
 	setMarker: function(node, value, minimum, maximum) {
