@@ -28,8 +28,6 @@ if [ -z "$$IPKG_INSTROOT" ]; then
 	[ -f /etc/uci-defaults/40_luci-sfp-status ] && chmod 0755 /etc/uci-defaults/40_luci-sfp-status
 	[ -f /usr/libexec/rpcd/luci.sfp-status ] && chmod 0755 /usr/libexec/rpcd/luci.sfp-status
 	rm -rf /tmp/luci-sfp-status
-	uci -q delete sfp-status.settings.interface
-	uci -q commit sfp-status
 	rm -rf /tmp/luci-modulecache/ /var/luci-modulecache/
 	rm -f /tmp/luci-indexcache /tmp/luci-indexcache.* /var/luci-indexcache.* 2>/dev/null
 	[ -x /etc/init.d/rpcd ] && /etc/init.d/rpcd reload >/dev/null 2>&1 || true
