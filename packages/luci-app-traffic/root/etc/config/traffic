@@ -1,0 +1,56 @@
+
+config traffic 'settings'
+	option enabled '1'
+	# sampling interval in seconds
+	option interval '10'
+	# where the hourly history is kept (the live counters stay in /tmp)
+	option datadir '/etc/traffic'
+	# leave empty to auto-detect from AdGuard Home's workdir
+	option querylog ''
+	# dnsmasq's own query log, read as a second name source.  On a router where
+	# passwall has taken dnsmasq over, the proxied domains are answered by
+	# passwall and never reach AdGuard Home, and the queries AdGuard does see
+	# come from dnsmasq rather than from the device.  dnsmasq's log has both.
+	# Leave empty to use it if it exists.  It needs dnsmasq log-queries plus a
+	# file log-facility:
+	#   uci set dhcp.@dnsmasq[0].logqueries='1'
+	#   uci set dhcp.@dnsmasq[0].logfacility='/tmp/dnsmasq.log'
+	#   uci commit dhcp && /etc/init.d/dnsmasq restart
+	option dnsmasq_log ''
+	# leave empty to auto-detect from the LAN interface
+	option lan4 ''
+	option lan6 ''
+	# addresses of the box itself on the LAN, separated by spaces.  Traffic they
+	# source is the router talking (mostly the outbound connections of a local
+	# proxy), not a client, so it is counted as tunnel traffic instead of being
+	# listed as a device.  Leave empty to auto-detect every address on the LAN
+	# interface.
+	option self ''
+	# per-host byte counters in nftables.  These are what the client totals come
+	# from: they count every packet a host sends or receives, independent of the
+	# conntrack table and of the DNS correlation, so proxied traffic and anything
+	# the conntrack accounting misses is still included.  Set to 0 to fall back
+	# to the conntrack totals alone, which is also what happens with no nft.
+	option accounting '1'
+	# optional: map a registrable domain to a friendlier application name
+	option appmap '/etc/traffic/apps.tsv'
+	# how many days of hourly history to keep
+	option retention_days '7'
+	option top_apps '50'
+	option top_clients '20'
+# minimum seconds between reads of the application catalogue.  Fresh host names
+# keep arriving while someone browses and re-reading the whole catalogue for
+# each of them would cost more than the accounting itself; inside this window
+# they wait, and until then they show as their registrable domain.  A large
+# batch (first start, or a burst) is resolved immediately either way.
+option resolve_interval '30'
+# upper bound on the (client, host, ip) map; older entries are dropped once an
+# hour.  Names already resolved are cached separately, so this bounds memory
+# without losing the catalogue's answers.
+option dnsmap_max '50000'
+# The page has no clear button: the collector bounds its own history instead,
+# dropping it once a calendar month and again whenever the data directory passes
+# this many megabytes.  Only history goes (the hourly archive, the two series and
+# the name maps); the live counters are the session in progress and are kept, so
+# a purge never blanks what the page is showing.
+option purge_size_mb '100'

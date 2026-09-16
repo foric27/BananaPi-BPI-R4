@@ -194,7 +194,7 @@ make defconfig
 
 # Гейт: все наши переведённые пакеты обязаны остаться в .config.
 # make defconfig молча сбрасывает =y при неудовлетворённой зависимости.
-REQUIRED_IN_CONFIG="caddy luci-app-caddy luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband mtk-smp"
+REQUIRED_IN_CONFIG="caddy luci-app-caddy luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband mtk-smp luci-app-traffic"
 for _sym in $REQUIRED_IN_CONFIG; do
     if ! grep -q "^CONFIG_PACKAGE_${_sym}=y" .config; then
         error "Пакет выпал из конфигурации: CONFIG_PACKAGE_${_sym}=y (неудовлетворённая зависимость?)"

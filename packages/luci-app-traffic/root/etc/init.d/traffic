@@ -1,0 +1,38 @@
+#!/bin/sh /etc/rc.common
+# Traffic statistics collector.
+#
+# The collector is a plain shell loop that samples conntrack and reads AdGuard
+# Home's querylog; procd keeps it alive.  It runs after the network is up
+# (START=95) because it needs the LAN prefix to tell client traffic from the
+# router's own (the proxy tunnel).
+
+START=95
+USE_PROCD=1
+PROG=/usr/share/traffic/collector.sh
+
+start_service() {
+	procd_open_instance
+	procd_set_param command /bin/sh "$PROG"
+	procd_set_param respawn 3600 5 5
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+	procd_close_instance
+}
+
+stop_service() {
+	# Nothing to flush: the live counters are in /tmp and the hourly history
+	# is written as it happens.  The per-host counter table does have to go:
+	# it is firewall state this package created, and leaving it behind after a
+	# stop would keep counting - and counting is the whole point of stopping.
+	command -v nft >/dev/null 2>&1 && nft delete table inet traffic_acct 2>/dev/null
+	:
+}
+
+service_triggers() {
+	procd_add_reload_trigger traffic
+}
+
+reload_service() {
+	stop
+	start
+}
