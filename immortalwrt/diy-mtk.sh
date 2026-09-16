@@ -215,6 +215,8 @@ if ! git clone --depth=1 --filter=blob:none --sparse --quiet \
         https://github.com/padavanonly/immortalwrt-mt798x-6.6.git \
         /tmp/padavanonly-wifi-profile 2>/dev/null; then
     echo "[DIY] sparse-clone недоступен, используется полный клон" >&2
+    # Неудачный sparse-клон оставляет каталог — чистим перед fallback
+    rm -rf /tmp/padavanonly-wifi-profile
     git clone --depth=1 --quiet -b mt798x-mt799x-6.6-mtwifi \
         https://github.com/padavanonly/immortalwrt-mt798x-6.6.git \
         /tmp/padavanonly-wifi-profile
