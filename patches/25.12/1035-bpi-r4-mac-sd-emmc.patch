@@ -1,0 +1,39 @@
+mediatek: filogic: stable MAC for BPI-R4 on SD/eMMC
+
+The Factory nvmem cells and gmac nvmem references live only in the
+spim-nand-nmbm DT overlay, so SD/eMMC boots fall back to random MACs
+(and the old case derived WAN from the random eth0). Read MAC from the
+Factory partition when available, otherwise derive a stable base from
+the SD/eMMC card CID, and assign stable MACs to the LAN/WAN bridges and
+the two SFP ports.
+
+---
+--- a/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
++++ b/target/linux/mediatek/filogic/base-files/etc/board.d/02_network
+@@ -421,10 +421,25 @@
+ 		;;
+ 	bananapi,bpi-r3|\
+ 	bananapi,bpi-r3-mini|\
+-	bananapi,bpi-r4|\
+ 	bananapi,bpi-r4-lite)
+ 		wan_mac=$(macaddr_add $(cat /sys/class/net/eth0/address) 1)
+ 		;;
++	bananapi,bpi-r4)
++		# MAC из Factory (SPI-NAND/eMMC), иначе стабильно из CID SD/eMMC
++		base_mac=""
++		for _part in Factory factory; do
++			base_mac=$(mtd_get_mac_binary "$_part" 0xFFFF4 2>/dev/null) || base_mac=""
++			[ -n "$base_mac" ] && break
++		done
++		[ -n "$base_mac" ] || base_mac=$(macaddr_generate_from_mmc_cid mmcblk0)
++		if [ -n "$base_mac" ]; then
++			lan_mac=$base_mac
++			wan_mac=$(macaddr_add "$base_mac" 1)
++			label_mac=$base_mac
++			ucidef_set_network_device_mac sfp-lan "$(macaddr_add "$base_mac" 2)"
++			ucidef_set_network_device_mac sfp-wan "$(macaddr_add "$base_mac" 3)"
++		fi
++		;;
+ 	h3c,magic-nx30-pro)
+ 		wan_mac=$(mtd_get_mac_ascii pdt_data_1 ethaddr)
+ 		lan_mac=$(macaddr_add "$wan_mac" 1)

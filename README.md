@@ -1,66 +1,204 @@
-# BananaPi R4 Firmware
+# BananaPi BPI-R4 — OpenWrt + MediaTek SDK
 
-## Tips
-* Default Gateway: 192.168.1.1
-* Password: none
-* Support BRI-R4-NIC-BE14 Model
-* Support MTK-HNAT
+Сборка OpenWrt для BananaPi BPI-R4 (SoC MediaTek MT7988, платформа Filogic)
+на **последних стабильных ветках** с патчами официального MediaTek SDK.
 
-## Настройка автоматических сборок
+* **База:** [`openwrt/openwrt`](https://github.com/openwrt/openwrt), ветка `openwrt-25.12` (HEAD)
+* **SDK:** [`mediatek/mtk-openwrt-feeds`](https://github.com/mediatek/mtk-openwrt-feeds), ветка `main` (HEAD)
+* **Ядро:** Linux 6.12 (6.12.108 на момент последней сборки)
+* **WiFi:** стек MTK SoftMAC из `mtk-openwrt-feeds@main` — `mt76` (116 патчей MTK) +
+  `mac80211` (backports 6.18.7) + `hostapd` (снапшот 2026.02.19, 265 патчей) +
+  `wifi-scripts`/`iw`/`ucode`. Берётся из `autobuild/unified/filogic/mac80211/25.12`;
+  обязательность применения проверяется гейтом в `customize.sh` (иначе сборка падает)
+* **Поддержка:** BPI-R4 / BPI-R4 (NIC BE14), MTK-HNAT, 8GB RAM, MTK U-Boot/ATF
 
-### Секреты (Secrets)
+---
 
-**Секрет `RELEASES_TOKEN` больше не требуется** — удаление старых релизов
-выполняется встроенным `GITHUB_TOKEN` через gh-CLI (права workflow:
-`contents: write` + `actions: write`). Персональный токен можно удалить
-из **Settings → Secrets and variables → Actions**.
+## Быстрый старт
 
-### Настройки Actions
+```bash
+# Полная сборка (клон баз + применение всех патчей + образы)
+./build.sh --no-menuconfig
 
-Убедитесь, что Actions разрешены:
-1. **GitHub repo → Settings → Actions → General**
-2. **Workflow permissions** → "Read and write permissions"
-3. **Allow all actions and reusable workflows** → включено
+# Опции
+./build.sh --help
+#   --no-menuconfig     не запускать интерактивный menuconfig
+#   --jobs N            число потоков компиляции (по умолчанию nproc)
+#   --refresh-go-cache  очистить кеш Go-модулей перед сборкой
+```
 
-### Ручной запуск
+Результат — в `output/` (см. раздел «Артефакты»).
 
-1. Перейдите в **Actions → immortalwrt_25.12_wifi7**
-2. Нажмите **Run workflow**
-3. Сборка запустится автоматически
+---
 
-### Автоматический запуск
+## Структура репозитория
 
-Сборка выполняется ежедневно в 01:00 МСК по расписанию.
+| Путь | Назначение |
+|---|---|
+| `build.sh` | Локальная сборка (полная реплика CI-workflow) |
+| `scripts/customize.sh` | Кастомизация дерева: MTK-фид, патчи, адаптации, пакеты, фиксы |
+| `config/defconfig` | Конфигурация сборки (`.config`) |
+| `packages/` | Локальные пакеты (русифицированы) |
+| `patches/25.12/` | Патчи и адаптации |
+| `src/` | Внешние деревья `openwrt/` и `mtk-openwrt-feeds/` (клон `build.sh`, gitignore) |
+| `output/` | Готовые образы и пакеты |
+| `.github/workflows/bpi-r4-openwrt-build.yml` | CI-сборка (расписание + ручной запуск) |
+| `LICENSE` | GNU General Public License v2.0 |
 
-## References
-* https://github.com/immortalwrt/immortalwrt
-* https://github.com/P3TERX/Actions-OpenWrt
-* https://github.com/padavanonly/immortalwrt-mt798x-6.6
+---
+
+## Как собирается прошивка
+
+`build.sh` / CI выполняют:
+
+1. Клонируют/обновляют `openwrt/openwrt@openwrt-25.12` и `mediatek/mtk-openwrt-feeds@main`
+2. Сбрасывают фиды до чистого состояния
+3. Запускают `scripts/customize.sh`:
+   - подключают MTK-фид, `feeds update/install`
+   - копируют `25.12/files/*` и host-тулы фида (`fdt-patch-dm-verify`, `crc32sum`, `ar-tool`)
+   - применяют патчи MTK: **88** (`patches-base`) + **6** (`patches-feeds`)
+   - применяют вариант mac80211: **116** патчей `mt76`, **142** патча `mac80211`, **265** патчей `hostapd`, файлы `wifi-scripts`/`iw`/`ucode`
+   - применяют наши адаптации и фиксы (см. ниже)
+   - копируют локальные и сторонние LuCI-приложения
+4. Загружают исходники, собирают с гейтами обязательных пакетов/артефактов
+
+---
+
+## Адаптации патчей MTK под актуальную базу
+
+База и фид живут в разных релизных циклах, поэтому часть патчей MTK
+адаптируется к дереву патчами из `patches/25.12/`:
+
+| Патч | Что решает |
+|---|---|
+| `0981-backports-sockaddr-unsized-revert.patch` | Колбэки сокетов в backports варианта рассчитаны на новое ядро (`struct sockaddr_unsized`), а в 6.12 — `struct sockaddr`. Возвращаем совместимый тип (qrtr/ath qmi) |
+| `0982-backports-drop-qrtr-mhi.patch` | backports 6.18.7 тянут собственные QRTR/MHI и конфликтуют с ядерными модулями (`redefinition`). Выкидываем их — используются ядерные `kmod-qrtr`/`kmod-mhi` (как в апстриме) |
+| `1020-dtc-werror-off.patch` | `dtc` собирается с `-Werror` и падает на GCC 15 |
+| `1011-atf-mt7988-4bg.patch` | TF-A: сборки `mt7988-*-comb-4bg` (8GB RAM) |
+| `1012-uboot-mt7988-4bg.patch` | U-Boot bpi-r4: зависимость на `*-comb-4bg` TF-A |
+| `1013-filogic-bpi-r4-8g.patch` | Возврат ARTIFACTS bpi-r4 (MTK-фид их удалял) + `sdcard_8g.img.gz` и `preloader-8g.bin` |
+
+Дополнительно в `customize.sh`:
+
+* **hostapd-снапшот** `2026.02.19~53d12cd4` отсутствует в зеркалах — тарболл
+  префетчится из `git.w1.fi` по зафиксированному SHA (HTTP/1.1, ретраи),
+  `PKG_MIRROR_HASH` отключается
+* **vpnc** — `mkdir` без `-p` (не идемпотентен)
+* **mbedtls** — обход GCC 14 + musl fortify
+* **символы ядра** — фиксация новых Kconfig-символов MTK, `NF_CONNTRACK=y`,
+  `NF_FLOW_TABLE=y`, `PTP_1588_CLOCK=y` (иначе `vmlinux` не линкуется из-за
+  встроенного `mtk_ppe*`)
+
+---
+
+## 8GB RAM и загрузчик
+
+**8GB RAM (BPI-R4):** включены сборки TF-A/U-Boot `comb-4bg`, артефакты
+`sdcard_8g.img.gz`, `emmc-preloader-8g.bin`, `snand-preloader-8g.bin`.
+Патчи портированы из OpenWrt/ImmortalWrt (PR
+[openwrt#21437](https://github.com/openwrt/openwrt/pull/21437), автор
+[Frank Wunderlich](https://github.com/frank-w)).
+
+**Загрузчик:** используется официальный MediaTek U-Boot и TF-A из
+`mtk-openwrt-feeds` (те же бинари, что выпускает `autobuild`). В артефактах:
+`*-bl31-uboot.fip`, `*-preloader.bin` / `*-preloader-8g.bin`, `emmc-gpt.bin`.
+
+---
+
+## Артефакты (`output/`)
+
+| Файл | Назначение |
+|---|---|
+| `*-squashfs-sysupgrade.itb` | Обновление установленной системы (LuCI / sysupgrade) |
+| `*-sdcard.img.gz` | Загрузочный образ SD (4GB/обычная RAM) |
+| `*-sdcard_8g.img.gz` | Загрузочный образ SD для плат с 8GB RAM |
+| `*-initramfs-recovery.itb` | Восстановительный образ (initramfs) |
+| `*-emmc-preloader.bin` / `*-snand-preloader.bin` | BL2 для eMMC / SPI-NAND |
+| `*-emmc-preloader-8g.bin` / `*-snand-preloader-8g.bin` | BL2 для 8GB RAM |
+| `*-emmc-bl31-uboot.fip` / `*-snand-bl31-uboot.fip` | FIT с BL31 + U-Boot |
+| `*-emmc-gpt.bin` | Таблица разделов GPT для eMMC |
+
+Загрузочные образы (SD) содержат U-Boot, BL2 и установочный раздел —
+с их помощью прошиваются SPI-NAND/eMMC. `initramfs-recovery` шьётся отдельно
+(в SD-образ не включён: MTK recovery ~47М не влезает в отведённое окно).
+
+**Сеть по умолчанию:** `192.168.1.1`, пароль отсутствует.
+
+---
 
 ## Локальные пакеты
 
-LuCI-приложения взяты из [MedyMa/luci-app](https://github.com/MedyMa/luci-app) и переведены на русский язык:
+Русифицированы; исходно из [MedyMa/luci-app](https://github.com/MedyMa/luci-app)
+(адаптированы, обновлены, переведены):
 
 | Пакет | Описание | Автор |
 |---|---|---|
-| luci-app-fan | Управление вентилятором (BPI-R4) | [MedyMa](https://github.com/MedyMa/luci-app) |
-| luci-app-sfp-status | Статус SFP-модулей | [MedyMa](https://github.com/MedyMa/luci-app) |
-| luci-app-modemband | Управление полосами модема | [MedyMa](https://github.com/MedyMa/luci-app) |
-| luci-app-turboacc-mtk | Сетевое ускорение MediaTek | [MedyMa](https://github.com/MedyMa/luci-app) |
-| openwrt-caddy | Веб-сервер Caddy v2.11.4 | [caddyserver](https://github.com/caddyserver/caddy) |
-| luci-app-caddy | LuCI-интерфейс для Caddy | [kiddin9](https://github.com/kiddin9/op-packages) |
+| `luci-app-fan` | Управление вентилятором BPI-R4 | [MedyMa](https://github.com/MedyMa/luci-app) |
+| `luci-app-sfp-status` | Статус SFP-модулей | [MedyMa](https://github.com/MedyMa/luci-app) |
+| `luci-app-modemband` | Управление полосами модема | [MedyMa](https://github.com/MedyMa/luci-app) |
+| `luci-app-turboacc-mtk` | Сетевое ускорение MediaTek (HNAT) | [MedyMa](https://github.com/MedyMa/luci-app) |
+| `luci-app-traffic` (+ ru) | Статистика трафика по приложениям | [MedyMa](https://github.com/MedyMa/luci-app) |
+| `modemband` | Утилита управления полосами модема | [Cezary Jackiewicz](https://eko.one.pl) |
+| `openwrt-caddy` | Веб-сервер Caddy 2.x | [caddyserver/caddy](https://github.com/caddyserver/caddy) |
+| `luci-app-caddy` | LuCI-интерфейс для Caddy | [kiddin9/op-packages](https://github.com/kiddin9/op-packages) |
 
 ## Сторонние LuCI-приложения
 
-Приложения подключены при сборке через `git clone` (не локальные пакеты):
+Подключаются при сборке через `git clone`:
 
-| Пакет | Описание | Автор | Репозиторий |
-|---|---|---|---|
-| luci-theme-argon | Тема Argon | [jerrykuku](https://github.com/jerrykuku) | [luci-theme-argon](https://github.com/jerrykuku/luci-theme-argon) |
-| luci-app-argon-config | Настройки темы Argon | [jerrykuku](https://github.com/jerrykuku) | [luci-app-argon-config](https://github.com/jerrykuku/luci-app-argon-config) |
-| luci-app-temp-status | Датчики температуры | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-temp-status](https://github.com/gSpotx2f/luci-app-temp-status) |
-| luci-app-cpu-status | Загрузка CPU | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-cpu-status](https://github.com/gSpotx2f/luci-app-cpu-status) |
-| luci-app-cpu-perf | Управление производительностью CPU | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-cpu-perf](https://github.com/gSpotx2f/luci-app-cpu-perf) |
-| luci-app-interfaces-statistics | Статистика сетевых интерфейсов | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-interfaces-statistics](https://github.com/gSpotx2f/luci-app-interfaces-statistics) |
-| luci-app-disks-info | Информация о дисках | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-disks-info](https://github.com/gSpotx2f/luci-app-disks-info) |
-| luci-app-internet-detector | Детектор интернета | [gSpotx2f](https://github.com/gSpotx2f) | [luci-app-internet-detector](https://github.com/gSpotx2f/luci-app-internet-detector) |
+| Пакет | Описание | Автор |
+|---|---|---|
+| `luci-theme-argon`, `luci-app-argon-config` | Тема Argon и её настройки | [jerrykuku](https://github.com/jerrykuku) |
+| `luci-app-temp-status` | Датчики температуры | [gSpotx2f](https://github.com/gSpotx2f) |
+| `luci-app-cpu-status` | Загрузка CPU | [gSpotx2f](https://github.com/gSpotx2f) |
+| `luci-app-cpu-perf` | Производительность CPU | [gSpotx2f](https://github.com/gSpotx2f) |
+| `luci-app-interfaces-statistics` | Статистика интерфейсов | [gSpotx2f](https://github.com/gSpotx2f) |
+| `luci-app-disks-info` | Информация о дисках | [gSpotx2f](https://github.com/gSpotx2f) |
+| `luci-app-internet-detector` | Детектор интернета | [gSpotx2f](https://github.com/gSpotx2f) |
+
+---
+
+## CI (GitHub Actions)
+
+Workflow [`.github/workflows/bpi-r4-openwrt-build.yml`](.github/workflows/bpi-r4-openwrt-build.yml):
+
+* запуск по расписанию (ежедневно, 01:00 МСК) и вручную (**Actions → bpi-r4-openwrt → Run workflow**)
+* кеши toolchain (`klever1988/cachewrtbuild`) и ccache, очистка старых кешей/запусков
+* публикация артефактов и релиза, хранение 3 последних релизов
+* `RELEASES_TOKEN` не требуется — используется встроенный `GITHUB_TOKEN`
+  (права `contents: write`, `actions: write`)
+
+Используемые Actions: [actions/checkout](https://github.com/actions/checkout),
+[actions/upload-artifact](https://github.com/actions/upload-artifact),
+[actions/cache](https://github.com/actions/cache),
+[actions/github-script](https://github.com/actions/github-script),
+[easimon/maximize-build-space](https://github.com/easimon/maximize-build-space),
+[klever1988/cachewrtbuild](https://github.com/klever1988/cachewrtbuild),
+[softprops/action-gh-release](https://github.com/softprops/action-gh-release).
+
+Структура воркфлоу вдохновлена [P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt).
+
+---
+
+## Авторы и лицензии
+
+Проект распространяется под **GNU GPL v2.0** (см. [`LICENSE`](LICENSE)).
+Компоненты сохраняют собственные лицензии.
+
+| Компонент | Авторы / источник | Лицензия |
+|---|---|---|
+| OpenWrt | [openwrt/openwrt](https://github.com/openwrt/openwrt) | GPL-2.0 |
+| MediaTek SDK (патчи, драйверы, U-Boot/ATF) | [mediatek/mtk-openwrt-feeds](https://github.com/mediatek/mtk-openwrt-feeds) | GPL-2.0 |
+| mt76 / mac80211 / hostapd | [openwrt/mt76](https://github.com/openwrt/mt76), [w1.fi/hostap](https://w1.fi/hostap.git) | GPL-2.0 / BSD |
+| Патчи 8GB RAM | [Frank Wunderlich](https://github.com/frank-w), ImmortalWrt/OpenWrt PR [#21437](https://github.com/openwrt/openwrt/pull/21437) | GPL-2.0 |
+| Предыдущая база (историческая) | [chasey-dev/immortalwrt-mt798x-rebase](https://github.com/chasey-dev/immortalwrt-mt798x-rebase) | GPL-2.0 |
+| Форк-источник проекта | [MedyMa/BananaPi-BPI-R4](https://github.com/MedyMa/BananaPi-BPI-R4) | GPL-2.0 |
+| Локальные LuCI-пакеты | [MedyMa/luci-app](https://github.com/MedyMa/luci-app), [kiddin9/op-packages](https://github.com/kiddin9/op-packages) | см. репозитории |
+| Caddy | [caddyserver/caddy](https://github.com/caddyserver/caddy) | Apache-2.0 |
+| modemband | Cezary Jackiewicz ([eko.one.pl](https://eko.one.pl)) | MIT |
+| Тема Argon | [jerrykuku](https://github.com/jerrykuku) | GPL-3.0 |
+| gSpotx2f-приложения | [gSpotx2f](https://github.com/gSpotx2f) | GPL-2.0 |
+| CI-шаблон | [P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt) | MIT |
+
+Отдельные файлы локальных пакетов могут содержать собственные заголовки
+лицензий (MIT/Apache/GPL) — они имеют приоритет для соответствующих файлов.

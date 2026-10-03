@@ -1,96 +1,83 @@
-# chasey-dev 25.12-dev-wifi7 / BPI-R4
+# OpenWrt 25.12 + mediatek/mtk-openwrt-feeds (kernel 6.12) / BPI-R4
 
 CONFIG_TARGET_mediatek=y
 CONFIG_TARGET_mediatek_filogic=y
 CONFIG_TARGET_mediatek_filogic_DEVICE_bananapi_bpi-r4=y
-CONFIG_PACKAGE_kmod-mediatek_hnat=y
+
+# --- Сборка / отладка ---
 CONFIG_DEVEL=y
 CONFIG_CCACHE=y
-CONFIG_TOOLCHAINOPTS=y
-# CONFIG_TARGET_ROOTFS_INITRAMFS is not set
 CONFIG_TARGET_ROOTFS_PARTSIZE=8192
-CONFIG_UNETD_VXLAN_SUPPORT=y
-CONFIG_VPNC_GNUTLS=y
 CONFIG_ZRAM_DEF_COMP_LZORLE=y
 CONFIG_IPV6=y
+
+# --- WiFi (upstream mt76, NIC BE14 = mt7996) ---
 CONFIG_DRIVER_11AC_SUPPORT=y
 CONFIG_DRIVER_11AX_SUPPORT=y
 CONFIG_DRIVER_11BE_SUPPORT=y
-
-# nftables firewall
-CONFIG_PACKAGE_firewall4=y
-CONFIG_PACKAGE_odhcp6c=y
-CONFIG_PACKAGE_odhcpd-ipv6only=y
-CONFIG_PACKAGE_iptables-nft=y
-CONFIG_PACKAGE_ip6tables-nft=y
-CONFIG_PACKAGE_ppp=y
-CONFIG_PACKAGE_ppp-mod-pppoe=y
-
-# --- WiFi (upstream mac80211/mt76 mt7996e stack) ---
 CONFIG_PACKAGE_kmod-cfg80211=y
 CONFIG_PACKAGE_kmod-mac80211=y
-CONFIG_PACKAGE_kmod-mtk_wed=y
-CONFIG_PACKAGE_kmod-mt76-connac=y
 CONFIG_PACKAGE_kmod-mt76-core=y
+CONFIG_PACKAGE_kmod-mt76-connac=y
+CONFIG_PACKAGE_kmod-mt7996e=y
 CONFIG_PACKAGE_kmod-mt7990-firmware=y
-CONFIG_PACKAGE_kmod-mt7996-233-firmware=y
 CONFIG_PACKAGE_kmod-mt7996-firmware=y
 CONFIG_PACKAGE_kmod-mt7996-firmware-common=y
-CONFIG_PACKAGE_kmod-mt7996e=y
-CONFIG_PACKAGE_nand-utils=y
+CONFIG_PACKAGE_kmod-mt7996-233-firmware=y
+CONFIG_PACKAGE_wifi-scripts=y
 
-# --- HNAT ---
+# --- HNAT (MTK feeds) ---
 CONFIG_PACKAGE_kmod-mediatek_hnat=y
-CONFIG_KERNEL_NET_MEDIATEK_HNAT=y
-CONFIG_KERNEL_MEDIATEK_NETSYS_V3=y
-# CONFIG_KERNEL_MEDIATEK_NETSYS_V2 is not set
+CONFIG_PACKAGE_mtkhnat_util=y
+CONFIG_PACKAGE_smp_util=y
 
-# --- Platform tools ---
+# --- MTK platform tools ---
 CONFIG_PACKAGE_mii_mgr=y
 CONFIG_PACKAGE_regs=y
 CONFIG_PACKAGE_switch=y
-CONFIG_PACKAGE_pce=y
-CONFIG_PACKAGE_mtkhnat_util=y
-CONFIG_PACKAGE_mtk-smp=y
 CONFIG_PACKAGE_ethswbox=y
-CONFIG_PACKAGE_flowtable=y
 CONFIG_PACKAGE_tops-tool=y
+CONFIG_PACKAGE_ephy-utils=y
+CONFIG_PACKAGE_netsys_dbg_util=y
 
-# 5G / WWAN / SFP bring-up and diagnostics.
-CONFIG_MODEMMANAGER_WITH_MBIM=y
-CONFIG_MODEMMANAGER_WITH_QMI=y
-CONFIG_MODEMMANAGER_WITH_QRTR=y
-CONFIG_PACKAGE_kmod-eeprom-at24=y
-CONFIG_PACKAGE_aqr10g-phy-fw=y
-CONFIG_PACKAGE_kmod-hwmon-pwmfan=y
-CONFIG_PACKAGE_kmod-i2c-mux-pca954x=y
+# --- Ethernet / PHY / SFP ---
+CONFIG_PACKAGE_kmod-mt798x-2p5g-phy=y
 CONFIG_PACKAGE_kmod-phy-aquantia=y
 CONFIG_PACKAGE_kmod-phy-marvell-10g=y
 CONFIG_PACKAGE_kmod-phy-realtek=y
-CONFIG_PACKAGE_kmod-rtc-pcf8563=y
 CONFIG_PACKAGE_kmod-sfp=y
 CONFIG_PACKAGE_kmod-usb3=y
+
+# --- I2C / RTC / PWM ---
+CONFIG_PACKAGE_kmod-eeprom-at24=y
+CONFIG_PACKAGE_kmod-hwmon-pwmfan=y
+CONFIG_PACKAGE_kmod-i2c-mux-pca954x=y
+CONFIG_PACKAGE_kmod-rtc-pcf8563=y
+
+# --- 5G / WWAN ---
 CONFIG_PACKAGE_kmod-usb-serial-option=y
 CONFIG_PACKAGE_kmod-usb-serial-qualcomm=y
 CONFIG_PACKAGE_kmod-usb-acm=y
 CONFIG_PACKAGE_kmod-usb-wdm=y
 CONFIG_PACKAGE_kmod-usb-net-cdc-mbim=y
 CONFIG_PACKAGE_kmod-usb-net-qmi-wwan=y
-CONFIG_PACKAGE_kmod-usb-net-qmi-wwan-fibocom=y
-CONFIG_PACKAGE_kmod-pcie_mhi=y
+CONFIG_PACKAGE_kmod-mhi-pci-generic=y
 CONFIG_PACKAGE_kmod-mhi-bus=y
 CONFIG_PACKAGE_kmod-mhi-wwan-mbim=y
 CONFIG_PACKAGE_kmod-wwan=y
-CONFIG_PACKAGE_kmod-qrtr-mhi=y
 CONFIG_PACKAGE_kmod-mtk-t7xx=y
-CONFIG_PACKAGE_usbmode=y
-CONFIG_PACKAGE_ethtool-full=y
-CONFIG_PACKAGE_pciids=y
-CONFIG_PACKAGE_pciutils=y
-CONFIG_PACKAGE_usbids=y
-CONFIG_PACKAGE_usbutils=y
-CONFIG_PACKAGE_tcpdump-mini=y
-CONFIG_PACKAGE_iperf3=y
+CONFIG_PACKAGE_usb-modeswitch=y
+CONFIG_PACKAGE_umbim=y
+CONFIG_PACKAGE_uqmi=y
+CONFIG_PACKAGE_modemmanager=y
+CONFIG_PACKAGE_luci-proto-modemmanager=y
+CONFIG_PACKAGE_luci-proto-qmi=y
+CONFIG_PACKAGE_luci-proto-mbim=y
+CONFIG_PACKAGE_luci-proto-3g=y
+CONFIG_PACKAGE_modemband=y
+CONFIG_PACKAGE_luci-app-modemband=y
+
+# --- Хранилища / ФС ---
 CONFIG_PACKAGE_blkid=y
 CONFIG_PACKAGE_btrfs-progs=y
 CONFIG_PACKAGE_dosfstools=y
@@ -111,17 +98,15 @@ CONFIG_PACKAGE_smartmontools=y
 CONFIG_PACKAGE_smartmontools-drivedb=y
 CONFIG_PACKAGE_fdisk=y
 CONFIG_PACKAGE_kmod-nvme=y
-
-# Core services
-CONFIG_PACKAGE_bash=y
-CONFIG_PACKAGE_autocore-arm=y
+CONFIG_PACKAGE_kmod-usb-storage=y
 CONFIG_PACKAGE_block-mount=y
+
+# --- Базовые сервисы ---
+CONFIG_PACKAGE_bash=y
 CONFIG_PACKAGE_ca-bundle=y
 CONFIG_PACKAGE_ca-certificates=y
-CONFIG_PACKAGE_cpufreq=y
 CONFIG_PACKAGE_curl=y
 CONFIG_PACKAGE_dnsmasq-full=y
-CONFIG_PACKAGE_fibocom-dial=y
 CONFIG_PACKAGE_htop=y
 CONFIG_PACKAGE_ip-full=y
 CONFIG_PACKAGE_ipset=y
@@ -141,47 +126,43 @@ CONFIG_PACKAGE_libreadline=y
 CONFIG_PACKAGE_librt=y
 CONFIG_PACKAGE_luaposix=y
 CONFIG_PACKAGE_libuci-lua=y
-CONFIG_PACKAGE_meig-cm=y
 CONFIG_PACKAGE_miniupnpd-nftables=y
-CONFIG_PACKAGE_modemband=y
-CONFIG_PACKAGE_modemmanager=y
 CONFIG_PACKAGE_netdata=y
 CONFIG_PACKAGE_nlbwmon=y
 CONFIG_PACKAGE_openssl-util=y
-CONFIG_PACKAGE_quectel-cm=y
 CONFIG_PACKAGE_rpcd-mod-ucode=y
-CONFIG_PACKAGE_ruby=y
-CONFIG_PACKAGE_ruby-yaml=y
-CONFIG_PACKAGE_sms-tool=y
 CONFIG_PACKAGE_sqm-scripts=y
 CONFIG_PACKAGE_tar=y
 CONFIG_PACKAGE_ttyd=y
-CONFIG_PACKAGE_umbim=y
 CONFIG_PACKAGE_ucode-mod-digest=y
 CONFIG_PACKAGE_ucode-mod-fs=y
 CONFIG_PACKAGE_ucode-mod-socket=y
 CONFIG_PACKAGE_unzip=y
-CONFIG_PACKAGE_uqmi=y
 CONFIG_PACKAGE_wget-ssl=y
 CONFIG_PACKAGE_wireless-tools=y
-CONFIG_PACKAGE_wrtbwmon=y
 CONFIG_PACKAGE_xz-utils=y
-CONFIG_PACKAGE_yq=y
 CONFIG_PACKAGE_zlib=y
 
-# LuCI core + stable apps
+# --- Firewall / nftables ---
+CONFIG_PACKAGE_firewall4=y
+CONFIG_PACKAGE_odhcp6c=y
+CONFIG_PACKAGE_odhcpd-ipv6only=y
+CONFIG_PACKAGE_iptables-nft=y
+CONFIG_PACKAGE_ip6tables-nft=y
+CONFIG_PACKAGE_ppp=y
+CONFIG_PACKAGE_ppp-mod-pppoe=y
+
+# --- LuCI core + apps ---
 CONFIG_LUCI_LANG_ru=y
+CONFIG_PACKAGE_luci=y
 CONFIG_PACKAGE_luci-compat=y
 CONFIG_PACKAGE_luci-lib-chartjs=y
 CONFIG_PACKAGE_luci-ssl-openssl=y
 CONFIG_PACKAGE_luci-app-filemanager=y
 CONFIG_PACKAGE_luci-app-firewall=y
-CONFIG_PACKAGE_luci-app-modemband=y
-# CONFIG_PACKAGE_luci-app-mtwifi-cfg is not set
 CONFIG_PACKAGE_luci-app-nlbwmon=y
 CONFIG_PACKAGE_luci-app-sqm=y
 CONFIG_PACKAGE_luci-app-ttyd=y
-CONFIG_PACKAGE_luci-app-eqos-mtk=y
 CONFIG_PACKAGE_luci-app-turboacc-mtk=y
 CONFIG_PACKAGE_luci-app-upnp=y
 CONFIG_PACKAGE_luci-app-temp-status=y
@@ -191,28 +172,60 @@ CONFIG_PACKAGE_luci-app-interfaces-statistics=y
 CONFIG_PACKAGE_luci-app-disks-info=y
 CONFIG_PACKAGE_luci-app-internet-detector=y
 CONFIG_PACKAGE_luci-i18n-base-ru=y
-CONFIG_PACKAGE_luci-proto-3g=y
-CONFIG_PACKAGE_luci-proto-mbim=y
-CONFIG_PACKAGE_luci-proto-modemmanager=y
-CONFIG_PACKAGE_luci-proto-qmi=y
-CONFIG_PACKAGE_luci-proto-quectel=y
 CONFIG_PACKAGE_luci-proto-vpnc=y
 CONFIG_PACKAGE_luci-proto-vxlan=y
-CONFIG_PACKAGE_luci-proto-wireguard=y
+# CONFIG_PACKAGE_luci-proto-wireguard is not set
 
-# Community LuCI apps
+# --- Community LuCI / локальные пакеты ---
 CONFIG_PACKAGE_luci-theme-argon=y
 CONFIG_PACKAGE_luci-app-argon-config=y
-CONFIG_PACKAGE_caddy=y
 CONFIG_PACKAGE_luci-app-caddy=y
+CONFIG_PACKAGE_caddy=y
 CONFIG_PACKAGE_luci-app-fan=y
 CONFIG_PACKAGE_luci-app-commands=y
-CONFIG_PACKAGE_luci-app-cpufreq=y
-CONFIG_PACKAGE_luci-app-diskman=y
-CONFIG_PACKAGE_luci-app-diskman_INCLUDE_btrfs_progs=y
-CONFIG_PACKAGE_luci-app-diskman_INCLUDE_lsblk=y
-CONFIG_PACKAGE_luci-app-netdata=y
-CONFIG_PACKAGE_luci-app-ramfree=y
 CONFIG_PACKAGE_luci-app-sfp-status=y
 CONFIG_PACKAGE_luci-app-traffic=y
-CONFIG_PACKAGE_luci-app-wrtbwmon=y
+
+# --- VPN / сеть ---
+# CONFIG_PACKAGE_kmod-wireguard is not set
+# CONFIG_PACKAGE_wireguard-tools is not set
+CONFIG_PACKAGE_strongswan=y
+CONFIG_UNETD_VXLAN_SUPPORT=y
+CONFIG_VPNC_GNUTLS=y
+CONFIG_PACKAGE_kmod-qrtr-mhi=y
+CONFIG_MODEMMANAGER_WITH_QRTR=y
+CONFIG_LIBQMI_WITH_QRTR_GLIB=y
+
+# --- Bootloader (MTK U-Boot + TF-A, включая 8GB/comb-4bg) ---
+CONFIG_PACKAGE_trusted-firmware-a-mt7988-emmc-comb=y
+CONFIG_PACKAGE_trusted-firmware-a-mt7988-emmc-comb-4bg=y
+CONFIG_PACKAGE_trusted-firmware-a-mt7988-sdmmc-comb=y
+CONFIG_PACKAGE_trusted-firmware-a-mt7988-sdmmc-comb-4bg=y
+CONFIG_PACKAGE_trusted-firmware-a-mt7988-spim-nand-ubi-comb=y
+CONFIG_PACKAGE_trusted-firmware-a-mt7988-spim-nand-ubi-comb-4bg=y
+CONFIG_PACKAGE_uboot-mediatek-mt7988_bananapi_bpi-r4-emmc=y
+CONFIG_PACKAGE_uboot-mediatek-mt7988_bananapi_bpi-r4-sdmmc=y
+CONFIG_PACKAGE_uboot-mediatek-mt7988_bananapi_bpi-r4-snand=y
+
+# --- Фиксация символов ядра (объявлены в config/Config-kernel.in патчем 1030) ---
+# Без NF_CONNTRACK/NF_FLOW_TABLE встроенными vmlinux не линкуется:
+# mtk_ppe* (built-in) вызывает nf_*. Символы MTK-патчей пиним, чтобы
+# syncconfig не задавал интерактивные запросы (NEW).
+CONFIG_KERNEL_NF_CONNTRACK=y
+CONFIG_KERNEL_NF_FLOW_TABLE=y
+CONFIG_KERNEL_PTP_1588_CLOCK=y
+CONFIG_KERNEL_NET_MEDIATEK_HNAT=m
+CONFIG_KERNEL_MEDIATEK_NETSYS_V3=y
+# CONFIG_KERNEL_MEDIATEK_NETSYS_V2 is not set
+# CONFIG_KERNEL_NET_DSA_MXL862 is not set
+# CONFIG_KERNEL_NET_DSA_TAG_MXL862 is not set
+# CONFIG_KERNEL_NET_DSA_TAG_MXL862_8021Q is not set
+# CONFIG_KERNEL_MT753X_GSW is not set
+# CONFIG_KERNEL_AN8855_GSW is not set
+# CONFIG_KERNEL_ZTS8032 is not set
+# CONFIG_KERNEL_ZTS8232 is not set
+# CONFIG_KERNEL_MTK_EMIMPU is not set
+# CONFIG_KERNEL_AIR_AN8811HB_PHY is not set
+# CONFIG_KERNEL_AIR_AN8811HB_PHY_DEBUGFS is not set
+# CONFIG_KERNEL_AIROHA_AN8801_PHY is not set
+# CONFIG_KERNEL_USB_XHCI_MTK_DEBUGFS is not set

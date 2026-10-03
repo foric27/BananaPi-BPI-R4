@@ -1,8 +1,8 @@
 */.DS_Store
 .DS_Store
 
-# Build directory
-openwrt/
+# External source trees (cloned by build.sh)
+src/
 
 # Build output
 output/
@@ -17,3 +17,6 @@ build-*.log
 
 # Agent instruction files
 AGENTS.md
+
+# Local work/logs
+.work/

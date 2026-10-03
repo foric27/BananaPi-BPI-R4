@@ -1,0 +1,86 @@
+config: declare kernel option pins for the BPI-R4 build
+
+Raw CONFIG_KERNEL_* lines are dropped by make defconfig unless the
+option is declared, so declare the options whose values the build pins
+(needed for MTK PPE/HNAT to link and to keep MTK Kconfig NEW symbols
+from prompting). Values themselves live in config/defconfig.
+
+---
+--- a/config/Config-kernel.in
++++ b/config/Config-kernel.in
+@@ -1576,3 +1576,75 @@
+ 	endchoice
+ 
+ endif
++
++config KERNEL_NF_CONNTRACK
++	bool "Netfilter connection tracking (pinned for MTK PPE)"
++	default n
++
++config KERNEL_NF_FLOW_TABLE
++	bool "Netfilter flow table (pinned for MTK PPE)"
++	default n
++
++config KERNEL_PTP_1588_CLOCK
++	bool "PTP 1588 clock support (pinned for MTK eth)"
++	default n
++
++config KERNEL_NET_MEDIATEK_HNAT
++	tristate "MediaTek HNAT (pinned)"
++	default n
++
++config KERNEL_MEDIATEK_NETSYS_V3
++	bool "MediaTek NETSYS v3 (pinned)"
++	default n
++
++config KERNEL_NET_DSA_MXL862
++	bool "MTK pin: NET_DSA_MXL862 off"
++	default n
++
++config KERNEL_NET_DSA_TAG_MXL862
++	bool "MTK pin: NET_DSA_TAG_MXL862 off"
++	default n
++
++config KERNEL_NET_DSA_TAG_MXL862_8021Q
++	bool "MTK pin: NET_DSA_TAG_MXL862_8021Q off"
++	default n
++
++config KERNEL_MT753X_GSW
++	bool "MTK pin: MT753X_GSW off"
++	default n
++
++config KERNEL_AN8855_GSW
++	bool "MTK pin: AN8855_GSW off"
++	default n
++
++config KERNEL_ZTS8032
++	bool "MTK pin: ZTS8032 off"
++	default n
++
++config KERNEL_ZTS8232
++	bool "MTK pin: ZTS8232 off"
++	default n
++
++config KERNEL_MTK_EMIMPU
++	bool "MTK pin: MTK_EMIMPU off"
++	default n
++
++config KERNEL_AIR_AN8811HB_PHY
++	bool "MTK pin: AIR_AN8811HB_PHY off"
++	default n
++
++config KERNEL_AIR_AN8811HB_PHY_DEBUGFS
++	bool "MTK pin: AIR_AN8811HB_PHY_DEBUGFS off"
++	default n
++
++config KERNEL_AIROHA_AN8801_PHY
++	bool "MTK pin: AIROHA_AN8801_PHY off"
++	default n
++
++config KERNEL_USB_XHCI_MTK_DEBUGFS
++	bool "MTK pin: USB_XHCI_MTK_DEBUGFS off"
++	default n
++
++config KERNEL_MEDIATEK_NETSYS_V2
++	bool "MTK pin: MEDIATEK_NETSYS_V2 off"
++	default n

@@ -1,9 +1,11 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# build.sh -- Локальная сборка immortalwrt_25.12_wifi7 для BananaPi BPI-R4
+# build.sh -- Локальная сборка OpenWrt для BananaPi BPI-R4 (стабильные ветки)
 #
-# Реплицирует GitHub Actions workflow immortalwrt_25.12_wifi7.yml
-# для запуска на локальной машине (Ubuntu/Debian).
+# База: openwrt/openwrt (openwrt-25.12, HEAD) + mediatek/mtk-openwrt-feeds (main, HEAD)
+# Патчи MTK адаптируются к актуальной базе. Реплицирует CI-workflow
+# .github/workflows/bpi-r4-openwrt-build.yml для локальной машины.
 #
 # Опции:
 #   --no-menuconfig     Пропустить интерактивный menuconfig
@@ -19,15 +21,21 @@ set -o pipefail
 # ============================================================
 # Конфигурация (из env-переменных workflow)
 # ============================================================
-REPO_URL="https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git"
-REPO_BRANCH="25.12-dev-wifi7"
-CONFIG_FILE="immortalwrt/MTK/defconfig-vendor-wifi"
-DIY_SH="immortalwrt/diy-mtk.sh"
+REPO_URL="https://github.com/openwrt/openwrt.git"
+REPO_BRANCH="openwrt-25.12"
+MTK_FEED_URL="https://github.com/mediatek/mtk-openwrt-feeds.git"
+MTK_FEED_BRANCH="main"
+CONFIG_FILE="config/defconfig"
+DIY_SH="scripts/customize.sh"
+# Внешние деревья (клон/сборка) и служебные каталоги
+SOURCE_DIR="src"
+OPENWRT_DIR="$SOURCE_DIR/openwrt"
+MTK_FEED_DIR="$SOURCE_DIR/mtk-openwrt-feeds"
 NPROC=$(nproc)
 NO_MENUCONFIG=0
 REFRESH_GO_CACHE=0
 
-# GITHUB_WORKSPACE нужен diy-mtk.sh для поиска патчей
+# GITHUB_WORKSPACE нужен customize.sh для поиска патчей
 export GITHUB_WORKSPACE="$(pwd)"
 
 usage() {
@@ -87,14 +95,17 @@ info()  { echo -e "${GREEN}[INFO]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
-# Очистка PATH от Windows-путей с пробелами/скобками (WSL)
-_filtered_path="$(printf '%s\n' "$PATH" | tr ':' '\n' | grep -v ' ' | grep -v '(' | grep -v '^\s*$' | tr '\n' ':' | sed 's/:$//' || true)"
-if [ -z "$_filtered_path" ]; then
-    error "После фильтрации PATH пуст — проверьте окружение (WSL?)"
-    exit 1
-fi
-export PATH="$_filtered_path"
-unset _filtered_path
+# Повтор сетевых git-операций (GitHub бывает недоступен/флапает)
+git_retry() {
+    local _try=1
+    while [ "$_try" -le 5 ]; do
+        if "$@"; then return 0; fi
+        warn "git-операция не удалась (попытка $_try/5): $*"
+        _try=$((_try + 1))
+        sleep 10
+    done
+    return 1
+}
 
 # Очистка старых логов (старше 7 дней)
 find "$GITHUB_WORKSPACE" -maxdepth 1 -name "build-*.log" -mtime +7 -delete 2>/dev/null || true
@@ -107,7 +118,7 @@ info "=== Проверка зависимостей ==="
 REQUIRED_PACKAGES=(
     build-essential clang flex g++ gawk gcc-multilib gettext
     git libncurses-dev libssl-dev python3-setuptools rsync unzip
-    zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils
+    zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils zstd
     ccache rename libelf-dev perl
 )
 
@@ -129,52 +140,67 @@ else
 fi
 
 # ============================================================
-# Шаг 2: Информация о системе
+# Шаг 2: Клонирование / Обновление исходников
 # ============================================================
-info "=== Информация о системе ==="
-chmod +x "$GITHUB_WORKSPACE/immortalwrt/"*.sh
-"$GITHUB_WORKSPACE/immortalwrt/system-Information.sh"
-echo ""
+mkdir -p "$SOURCE_DIR"
 
-# ============================================================
-# Шаг 3: Клонирование / Обновление исходников
-# ============================================================
-if [ -d "openwrt" ] && [ ! -d "openwrt/.git" ]; then
-    error "Директория openwrt/ существует, но не является git-репозиторием."
-    error "Удалите её (rm -rf openwrt) и перезапустите скрипт."
+if [ -d "$OPENWRT_DIR" ] && [ ! -d "$OPENWRT_DIR/.git" ]; then
+    error "Директория $OPENWRT_DIR/ существует, но не является git-репозиторием."
+    error "Удалите её (rm -rf $OPENWRT_DIR) и перезапустите скрипт."
     exit 1
 fi
 
-if [ -d "openwrt" ]; then
-    info "Директория openwrt/ существует, обновление до свежего $REPO_BRANCH..."
-    git -C openwrt fetch --depth 1 origin "$REPO_BRANCH"
-    git -C openwrt reset --hard FETCH_HEAD
-    git -C openwrt clean -fd
+if [ -d "$OPENWRT_DIR" ]; then
+    info "Директория $OPENWRT_DIR/ существует, обновление до свежего $REPO_BRANCH..."
+    git_retry git -C "$OPENWRT_DIR" fetch --depth 1 origin "$REPO_BRANCH"
+    git -C "$OPENWRT_DIR" reset --hard FETCH_HEAD
+    git -C "$OPENWRT_DIR" clean -fd
 else
-    info "Клонирование $REPO_URL (ветка $REPO_BRANCH)..."
-    if ! git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" openwrt; then
+    info "Клонирование $REPO_URL (ветка $REPO_BRANCH) в $OPENWRT_DIR..."
+    if ! git_retry git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" "$OPENWRT_DIR"; then
         error "Не удалось склонировать репозиторий"
         exit 1
     fi
-    git -C openwrt log --pretty=tformat:"%h" -n1 tools toolchain || echo "Нет истории toolchain"
+    git -C "$OPENWRT_DIR" log --pretty=tformat:"%h" -n1 tools toolchain || echo "Нет истории toolchain"
+fi
+
+# MTK feed (патчи/файлы/пакеты MTK для 25.12)
+if [ -d "$MTK_FEED_DIR" ]; then
+    info "Обновление $MTK_FEED_DIR ($MTK_FEED_BRANCH)..."
+    git_retry git -C "$MTK_FEED_DIR" fetch --depth 1 origin "$MTK_FEED_BRANCH"
+    git -C "$MTK_FEED_DIR" reset --hard FETCH_HEAD
+    git -C "$MTK_FEED_DIR" clean -fd
+else
+    info "Клонирование $MTK_FEED_URL (ветка $MTK_FEED_BRANCH) в $MTK_FEED_DIR..."
+    git_retry git clone --depth 1 "$MTK_FEED_URL" -b "$MTK_FEED_BRANCH" "$MTK_FEED_DIR"
+fi
+
+# Сброс фидов (MTK-патчи применяются к ним; повторный прогон должен быть чистым)
+if [ -d "$OPENWRT_DIR/feeds" ]; then
+    info "Сброс фидов до чистого состояния..."
+    for _feed_dir in "$OPENWRT_DIR"/feeds/*/; do
+        [ -d "${_feed_dir}.git" ] || continue
+        git -C "$_feed_dir" reset --hard -q 2>/dev/null || true
+        git -C "$_feed_dir" clean -fdq 2>/dev/null || true
+    done
 fi
 
 # ============================================================
-# Шаг 4: DIY-скрипт (кастомизация пакетов + патчи + фиды)
+# Шаг 4: DIY-скрипт (MTK files/patches + пакеты + фиксы фидов)
 # ============================================================
-info "=== Запуск diy-mtk.sh ==="
+info "=== Запуск $DIY_SH ==="
 chmod +x "$GITHUB_WORKSPACE/$DIY_SH"
-git -C openwrt rev-parse --short HEAD
-# diy-mtk.sh работает с относительными путями package/... —
-# запускать строго из корня дерева openwrt/
-( cd openwrt && "$GITHUB_WORKSPACE/$DIY_SH" )
+git -C "$OPENWRT_DIR" rev-parse --short HEAD
+# customize.sh работает с относительными путями package/... —
+# запускать строго из корня дерева OpenWrt
+( cd "$OPENWRT_DIR" && "$GITHUB_WORKSPACE/$DIY_SH" )
 
 # ============================================================
 # Шаг 5: Загрузка конфигурации
 # ============================================================
 info "=== Загрузка конфигурации ==="
 if [ -e "$CONFIG_FILE" ]; then
-    cat "$CONFIG_FILE" > openwrt/.config
+    cat "$CONFIG_FILE" > "$OPENWRT_DIR/.config"
     info "Конфигурация скопирована из $CONFIG_FILE"
 else
     error "Файл конфигурации не найден: $CONFIG_FILE"
@@ -185,7 +211,7 @@ fi
 # Шаг 6: Сборка
 # ============================================================
 info "=== Сборка прошивки ==="
-cd openwrt
+cd "$OPENWRT_DIR"
 
 BUILD_START=$(date +%s)
 
@@ -194,7 +220,7 @@ make defconfig
 
 # Гейт: все наши переведённые пакеты обязаны остаться в .config.
 # make defconfig молча сбрасывает =y при неудовлетворённой зависимости.
-REQUIRED_IN_CONFIG="caddy luci-app-caddy luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband mtk-smp luci-app-traffic"
+REQUIRED_IN_CONFIG="caddy luci-app-caddy luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband luci-app-traffic smp_util mtkhnat_util"
 for _sym in $REQUIRED_IN_CONFIG; do
     if ! grep -q "^CONFIG_PACKAGE_${_sym}=y" .config; then
         error "Пакет выпал из конфигурации: CONFIG_PACKAGE_${_sym}=y (неудовлетворённая зависимость?)"
@@ -211,9 +237,6 @@ else
     info "menuconfig пропущен"
 fi
 
-info "Ключевые опции конфигурации:"
-grep -E "^CONFIG_TARGET|^CONFIG_PACKAGE_luci|^CONFIG_PACKAGE_kmod-mediatek" .config | head -20 || true
-
 # Кеш Go-модулей сохраняется между сборками; очистка --refresh-go-cache
 if [ "$REFRESH_GO_CACHE" -eq 1 ]; then
     info "Очистка Go-кеша (--refresh-go-cache)..."
@@ -221,6 +244,8 @@ if [ "$REFRESH_GO_CACHE" -eq 1 ]; then
 fi
 
 info "Загрузка пакетов (make download -j$NPROC)..."
+# Таймауты curl против зависаний на сторожевых зеркалах (download.pl читает CURL_OPTIONS)
+export CURL_OPTIONS="${CURL_OPTIONS:---connect-timeout 10 --max-time 300 --speed-time 30 --speed-limit 2048}"
 make download -j"$NPROC" 2>&1
 # Удаление битых (обрезанных) загрузок в dl/ верхнего уровня
 # (только файлы верхнего уровня: dl/go-mod-cache не трогаем)
@@ -256,26 +281,27 @@ fi
 BUILD_END=$(date +%s)
 BUILD_DURATION=$((BUILD_END - BUILD_START))
 
-# Статистика ccache
-if [ -d "openwrt/.ccache" ] && command -v ccache >/dev/null 2>&1; then
-    info "=== Статистика ccache ==="
-    CCACHE_DIR="$PWD/openwrt/.ccache" ccache --show-stats
-    du -sh openwrt/.ccache
-fi
-
 # ============================================================
 # Шаг 7: Копирование прошивки
 # ============================================================
 info "=== Копирование прошивки ==="
 mkdir -p output
 rm -rf output/*
-cp -r openwrt/bin/targets/mediatek/filogic/* output/
+cp -r "$OPENWRT_DIR"/bin/targets/mediatek/filogic/* output/
 [ -f "$LOG_FILE" ] && cp "$LOG_FILE" output/
 
 if ! ls output/*.img.gz >/dev/null 2>&1 && ! ls output/*.itb >/dev/null 2>&1; then
     error "Прошивка не найдена в output/ (ожидается *.img.gz или *.itb)"
     exit 1
 fi
+
+# Гейт 8GB: должны быть sdcard_8g и preloader -8g
+for _art in sdcard_8g.img.gz preloader-8g.bin; do
+    if ! ls output/*"$_art" >/dev/null 2>&1; then
+        error "Не найден 8GB-артефакт: *$_art"
+        exit 1
+    fi
+done
 
 # ============================================================
 # Итог

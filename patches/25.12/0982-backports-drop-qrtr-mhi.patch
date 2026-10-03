@@ -1,0 +1,35 @@
+backports: drop QRTR and MHI (use kernel-provided ones)
+
+Backports 6.18.7 bundle QRTR and MHI, which conflict with the kernel
+modules selected by our config (redefinitions). Drop them from the
+backports build so the kernel-provided kmod-qrtr/kmod-mhi are used,
+matching upstream OpenWrt. Adapted to the post-MTK-variant source.
+
+---
+--- a/Makefile.kernel
++++ b/Makefile.kernel
+@@ -38,9 +38,7 @@
+ 
+ obj-$(CPTCFG_CFG80211) += net/wireless/
+ obj-$(CPTCFG_MAC80211) += net/mac80211/
+-obj-$(CPTCFG_QRTR) += net/qrtr/
+ obj-$(CPTCFG_QCOM_QMI_HELPERS) += drivers/soc/qcom/
+-obj-$(CPTCFG_MHI_BUS) += drivers/bus/mhi/
+ #obj-$(CPTCFG_WLAN) += drivers/net/wireless/
+ obj-$(CPTCFG_USB_NET_RNDIS_WLAN) += drivers/net/usb/
+ 
+--- a/drivers/net/wireless/ath/ath11k/Kconfig
++++ b/drivers/net/wireless/ath/ath11k/Kconfig
+@@ -25,9 +25,9 @@
+ 	tristate "Atheros ath11k PCI support"
+ 	depends on m
+ 	depends on ATH11K && PCI
+-	select MHI_BUS
+-	select QRTR
+-	select QRTR_MHI
++	depends on MHI_BUS
++	depends on QRTR
++	depends on QRTR_MHI
+ 	select PCI_PWRCTRL_PWRSEQ if HAVE_PWRCTRL
+ 	help
+ 	  This module adds support for PCIE bus

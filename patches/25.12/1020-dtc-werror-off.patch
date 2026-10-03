@@ -1,0 +1,16 @@
+dtc: disable werror so the host build passes with GCC 15
+
+dtc's meson.build defaults werror=true, and libfdt/fdt_overlay.c trips
+-Wdiscarded-qualifiers on newer GCC, failing the OpenWrt host build
+(this package gains a host build for MTK image tools).
+
+--- a/meson.build
++++ b/meson.build
+@@ -1,7 +1,7 @@
+ project('dtc', 'c',
+   version: files('VERSION.txt'),
+   license: ['GPL2+', 'BSD-2'],
+-  default_options: 'werror=true',
++  default_options: 'werror=false',
+   meson_version: '>=0.57.0'
+ )

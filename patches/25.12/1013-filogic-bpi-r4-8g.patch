@@ -1,0 +1,53 @@
+mediatek: filogic: add BPI-R4 SD-card artifacts incl. 8GB RAM variants
+
+Re-adds preloader/sdcard artifacts (removed by MTK feeds) and adds 8GB
+(comb-4bg) preloader and SD-card images for BananaPi BPI-R4. The
+initramfs-recovery stage is omitted from the SD-card layout: the MTK
+recovery image (~47M) does not fit the upstream 32M window and would
+make check-size delete the image.
+
+---
+--- a/target/linux/mediatek/image/filogic.mk
++++ b/target/linux/mediatek/image/filogic.mk
+@@ -698,6 +698,41 @@
+   IMAGES := sysupgrade.itb
+   KERNEL_INITRAMFS_SUFFIX := -recovery.itb
+   KERNEL_IN_UBI := 1
++  ARTIFACTS := \
++	       emmc-gpt.bin emmc-preloader.bin emmc-preloader-8g.bin emmc-bl31-uboot.fip \
++	       sdcard.img.gz sdcard_8g.img.gz \
++	       snand-preloader.bin snand-preloader-8g.bin snand-bl31-uboot.fip
++  ARTIFACT/emmc-gpt.bin		:= mt798x-gpt emmc
++  ARTIFACT/emmc-preloader.bin	:= mt7988-bl2 emmc-comb
++  ARTIFACT/emmc-preloader-8g.bin	:= mt7988-bl2 emmc-comb-4bg
++  ARTIFACT/emmc-bl31-uboot.fip	:= mt7988-bl31-uboot $$(DEVICE_NAME)-emmc
++  ARTIFACT/snand-preloader.bin	:= mt7988-bl2 spim-nand-ubi-comb
++  ARTIFACT/snand-preloader-8g.bin	:= mt7988-bl2 spim-nand-ubi-comb-4bg
++  ARTIFACT/snand-bl31-uboot.fip	:= mt7988-bl31-uboot $$(DEVICE_NAME)-snand
++  ARTIFACT/sdcard.img.gz	:= mt798x-gpt sdmmc |\
++				   pad-to 17k | mt7988-bl2 sdmmc-comb |\
++				   pad-to 6656k | mt7988-bl31-uboot $$(DEVICE_NAME)-sdmmc |\
++				   pad-to 44M | mt7988-bl2 spim-nand-ubi-comb |\
++				   pad-to 45M | mt7988-bl31-uboot $$(DEVICE_NAME)-snand |\
++				   pad-to 51M | mt7988-bl2 emmc-comb |\
++				   pad-to 52M | mt7988-bl31-uboot $$(DEVICE_NAME)-emmc |\
++				   pad-to 56M | mt798x-gpt emmc |\
++				$(if $(CONFIG_TARGET_ROOTFS_SQUASHFS),\
++				   pad-to 64M | append-image squashfs-sysupgrade.itb | check-size |\
++				) \
++				  gzip
++  ARTIFACT/sdcard_8g.img.gz	:= mt798x-gpt sdmmc |\
++				   pad-to 17k | mt7988-bl2 sdmmc-comb-4bg |\
++				   pad-to 6656k | mt7988-bl31-uboot $$(DEVICE_NAME)-sdmmc |\
++				   pad-to 44M | mt7988-bl2 spim-nand-ubi-comb-4bg |\
++				   pad-to 45M | mt7988-bl31-uboot $$(DEVICE_NAME)-snand |\
++				   pad-to 51M | mt7988-bl2 emmc-comb-4bg |\
++				   pad-to 52M | mt7988-bl31-uboot $$(DEVICE_NAME)-emmc |\
++				   pad-to 56M | mt798x-gpt emmc |\
++				$(if $(CONFIG_TARGET_ROOTFS_SQUASHFS),\
++				   pad-to 64M | append-image squashfs-sysupgrade.itb | check-size |\
++				) \
++				  gzip
+   IMAGES := sysupgrade.itb
+   IMAGE/sysupgrade.itb := append-kernel | fit gzip $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb external-with-rootfs | pad-rootfs | append-metadata
+ ifeq ($(DUMP),)

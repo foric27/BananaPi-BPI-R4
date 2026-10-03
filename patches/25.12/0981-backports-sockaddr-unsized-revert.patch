@@ -1,0 +1,72 @@
+backports: revert sockaddr_unsized to struct sockaddr for kernel 6.12
+
+The MTK mac80211 variant carries wireless-next patches that assume a
+newer kernel where socket op callbacks take struct sockaddr_unsized.
+Our kernel (6.12) still uses struct sockaddr, so qrtr (and ath qmi)
+callbacks fail to compile. Revert those to struct sockaddr.
+
+---
+--- a/net/qrtr/ns.c
++++ b/net/qrtr/ns.c
+@@ -714,7 +714,7 @@
+ 	sq.sq_port = QRTR_PORT_CTRL;
+ 	qrtr_ns.local_node = sq.sq_node;
+ 
+-	ret = kernel_bind(qrtr_ns.sock, (struct sockaddr_unsized *)&sq, sizeof(sq));
++	ret = kernel_bind(qrtr_ns.sock, (struct sockaddr *)&sq, sizeof(sq));
+ 	if (ret < 0) {
+ 		pr_err("failed to bind to socket\n");
+ 		goto err_wq;
+--- a/net/qrtr/af_qrtr.c
++++ b/net/qrtr/af_qrtr.c
+@@ -824,7 +824,7 @@
+ }
+ 
+ /* Bind socket to specified sockaddr. */
+-static int qrtr_bind(struct socket *sock, struct sockaddr_unsized *saddr, int len)
++static int qrtr_bind(struct socket *sock, struct sockaddr *saddr, int len)
+ {
+ 	DECLARE_SOCKADDR(struct sockaddr_qrtr *, addr, saddr);
+ 	struct qrtr_sock *ipc = qrtr_sk(sock->sk);
+@@ -1084,7 +1084,7 @@
+ 	return rc;
+ }
+ 
+-static int qrtr_connect(struct socket *sock, struct sockaddr_unsized *saddr,
++static int qrtr_connect(struct socket *sock, struct sockaddr *saddr,
+ 			int len, int flags)
+ {
+ 	DECLARE_SOCKADDR(struct sockaddr_qrtr *, addr, saddr);
+--- a/drivers/net/wireless/ath/ath10k/qmi.c
++++ b/drivers/net/wireless/ath/ath10k/qmi.c
+@@ -986,7 +986,7 @@
+ 
+ 	ath10k_dbg(ar, ATH10K_DBG_QMI, "wifi fw qmi service found\n");
+ 
+-	ret = kernel_connect(qmi_hdl->sock, (struct sockaddr_unsized *)&qmi->sq,
++	ret = kernel_connect(qmi_hdl->sock, (struct sockaddr *)&qmi->sq,
+ 			     sizeof(qmi->sq), 0);
+ 	if (ret) {
+ 		ath10k_err(ar, "failed to connect to a remote QMI service port\n");
+--- a/drivers/net/wireless/ath/ath11k/qmi.c
++++ b/drivers/net/wireless/ath/ath11k/qmi.c
+@@ -3177,7 +3177,7 @@
+ 	sq->sq_node = service->node;
+ 	sq->sq_port = service->port;
+ 
+-	ret = kernel_connect(qmi_hdl->sock, (struct sockaddr_unsized *)sq,
++	ret = kernel_connect(qmi_hdl->sock, (struct sockaddr *)sq,
+ 			     sizeof(*sq), 0);
+ 	if (ret) {
+ 		ath11k_warn(ab, "failed to connect to qmi remote service: %d\n", ret);
+--- a/drivers/net/wireless/ath/ath12k/qmi.c
++++ b/drivers/net/wireless/ath/ath12k/qmi.c
+@@ -3919,7 +3919,7 @@
+ 	sq->sq_node = service->node;
+ 	sq->sq_port = service->port;
+ 
+-	ret = kernel_connect(qmi_hdl->sock, (struct sockaddr_unsized *)sq,
++	ret = kernel_connect(qmi_hdl->sock, (struct sockaddr *)sq,
+ 			     sizeof(*sq), 0);
+ 	if (ret) {
+ 		ath12k_warn(ab, "qmi failed to connect to remote service %d\n", ret);

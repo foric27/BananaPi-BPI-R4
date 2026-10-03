@@ -1,4 +1,4 @@
-name: immortalwrt_25.12_wifi7
+name: bpi-r4-openwrt
 
 on:
   schedule:
@@ -16,14 +16,16 @@ permissions:
   contents: write
 
 env:
-  REPO_URL: https://github.com/chasey-dev/immortalwrt-mt798x-rebase.git
-  REPO_BRANCH: 25.12-dev-wifi7
-  CONFIG_FILE: immortalwrt/MTK/defconfig-vendor-wifi
-  DIY_P1_SH: immortalwrt/diy-mtk.sh
+  REPO_URL: https://github.com/openwrt/openwrt.git
+  REPO_BRANCH: openwrt-25.12
+  MTK_FEED_URL: https://github.com/mediatek/mtk-openwrt-feeds.git
+  MTK_FEED_BRANCH: main
+  CONFIG_FILE: config/defconfig
+  DIY_P1_SH: scripts/customize.sh
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Europe/Moscow
-  OPENWRT_NAME: immortalwrt
+  OPENWRT_NAME: openwrt
   OPENWRT_DEVICE: mediatek
 
 jobs:
@@ -50,7 +52,7 @@ jobs:
       run: |
         ( sudo -E apt-get -qq update
         sudo -E apt-get -qq install build-essential clang flex g++ gawk gcc-multilib gettext \
-        git libncurses-dev libssl-dev python3-setuptools rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils ccache libelf-dev
+        git libncurses-dev libssl-dev python3-setuptools rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils zstd ccache libelf-dev
         sudo -E apt-get -qq purge azure-cli ghc* zulu* hhvm llvm* firefox powershell openjdk* dotnet* google* mysql* php* android* speedtest-cli
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq autoremove --purge
@@ -59,18 +61,13 @@ jobs:
         # Ждём фоновую apt-установку: следующие шаги зависят от пакетов
         wait
 
-    - name: Initialize Environment and Display System Info
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        chmod +x $OPENWRT_NAME/*.sh
-        $GITHUB_WORKSPACE/$OPENWRT_NAME/system-Information.sh
-
     - name: Download firmware source code
       run: |
-        git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
-        cd openwrt
+        git clone --depth 1 $REPO_URL -b $REPO_BRANCH src/openwrt
+        cd src/openwrt
         git log --pretty=tformat:"%h" -n1 tools toolchain || echo "No toolchain history"
+        cd $GITHUB_WORKSPACE
+        git clone --depth 1 $MTK_FEED_URL -b $MTK_FEED_BRANCH src/mtk-openwrt-feeds
 
     - name: Generate cache keys
       id: cache-key
@@ -81,37 +78,37 @@ jobs:
       uses: klever1988/cachewrtbuild@54ed4fe2f7d8b5cfbc0b928c159266ee892c2d3d
       with:
         ccache: 'false'
-        prefix: ${{ github.workspace }}/openwrt
+        prefix: ${{ github.workspace }}/src/openwrt
         mixkey: ${{ env.OPENWRT_NAME }}-${{ env.OPENWRT_DEVICE }}-${{ env.REPO_BRANCH }}
 
     - name: Restore ccache
       id: ccache-restore
       uses: actions/cache/restore@v6.1.0
       with:
-        path: openwrt/.ccache
+        path: src/openwrt/.ccache
         key: ccache-${{ env.OPENWRT_NAME }}-${{ env.OPENWRT_DEVICE }}-${{ env.REPO_BRANCH }}-${{ steps.cache-key.outputs.ccache_period }}
         restore-keys: |
           ccache-${{ env.OPENWRT_NAME }}-${{ env.OPENWRT_DEVICE }}-${{ env.REPO_BRANCH }}-
 
     - name: Load feeds and community packages
       run: |
-        chmod +x $OPENWRT_NAME/*.sh
-        cd openwrt
+        chmod +x scripts/*.sh
+        cd src/openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
 
     - name: Load config
       run: |
-        [ -e "$CONFIG_FILE" ] && cat "$CONFIG_FILE" > openwrt/.config
+        [ -e "$CONFIG_FILE" ] && cat "$CONFIG_FILE" > src/openwrt/.config
 
     - name: Download the installation package
       id: package
       run: |
-        cd openwrt
+        cd src/openwrt
         make defconfig
 
         # Гейт: все наши переведённые пакеты обязаны остаться в .config
         # (make defconfig молча сбрасывает =y при неудовлетворённой зависимости)
-        REQUIRED_IN_CONFIG="caddy luci-app-caddy luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband mtk-smp luci-app-traffic"
+        REQUIRED_IN_CONFIG="caddy luci-app-caddy luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband luci-app-traffic smp_util mtkhnat_util"
         for _sym in $REQUIRED_IN_CONFIG; do
           grep -q "^CONFIG_PACKAGE_${_sym}=y" .config || {
             echo "::error::Пакет выпал из конфигурации: CONFIG_PACKAGE_${_sym}=y (неудовлетворённая зависимость?)"
@@ -128,7 +125,7 @@ jobs:
     - name: Compile the firmware
       id: compile
       run: |
-        cd openwrt
+        cd src/openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j$(($(nproc)/2 + 1)) || make -j1 V=s
         CCACHE_DIR="$PWD/.ccache" staging_dir/host/bin/ccache --show-stats
@@ -140,7 +137,7 @@ jobs:
       if: steps.compile.outputs.status == 'success' && steps.ccache-restore.outputs.cache-hit != 'true'
       uses: actions/cache/save@v6.1.0
       with:
-        path: openwrt/.ccache
+        path: src/openwrt/.ccache
         key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
 
     - name: Prune old caches
@@ -253,7 +250,7 @@ jobs:
       id: organize
       if: ${{ steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled() }}
       run: |
-        cd openwrt/bin/targets/mediatek/filogic
+        cd src/openwrt/bin/targets/mediatek/filogic
         rm -rf packages *mt798* *.config *.buildinfo *.json sha256sums
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
@@ -301,5 +298,5 @@ jobs:
       run: |
         # Хранить 3 новейших релиза ветки (аналог keep_latest: 3), теги удалять
         gh release list --limit 100 --json tagName,createdAt \
-          --jq '[.[] | select(.tagName | test("-immortalwrt_25\\.12-dev-wifi7$"))] | sort_by(.createdAt) | reverse | .[3:][].tagName' \
+          --jq '[.[] | select(.tagName | test("-openwrt_openwrt-25\\.12$"))] | sort_by(.createdAt) | reverse | .[3:][].tagName' \
         | xargs -r -I{} gh release delete "{}" --cleanup-tag --yes || true
