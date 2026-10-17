@@ -30,7 +30,11 @@ OPENWRT_REF="${OPENWRT_REF:-$REPO_BRANCH}"
 MTK_FEED_URL="https://github.com/mediatek/mtk-openwrt-feeds.git"
 MTK_FEED_BRANCH="main"
 MTK_FEED_REF="${MTK_FEED_REF:-$MTK_FEED_BRANCH}"
-CONFIG_FILE="config/defconfig"
+# hostapd's src/build.rules uses CONFIG_FILE as an include path; an inherited
+# CONFIG_FILE would make the afc sub-build look for config/defconfig relative
+# to its own directory. Keep our own name and clear any inherited value.
+unset CONFIG_FILE
+OWRT_CONFIG_FILE="config/defconfig"
 DIY_SH="scripts/customize.sh"
 # Внешние деревья (клон/сборка) и служебные каталоги
 SOURCE_DIR="src"
@@ -288,11 +292,11 @@ git -C "$OPENWRT_DIR" rev-parse --short HEAD
 # Шаг 5: Загрузка конфигурации
 # ============================================================
 info "=== Загрузка конфигурации ==="
-if [ -e "$CONFIG_FILE" ]; then
-    cat "$CONFIG_FILE" > "$OPENWRT_DIR/.config"
-    info "Конфигурация скопирована из $CONFIG_FILE"
+if [ -e "$OWRT_CONFIG_FILE" ]; then
+    cat "$OWRT_CONFIG_FILE" > "$OPENWRT_DIR/.config"
+    info "Конфигурация скопирована из $OWRT_CONFIG_FILE"
 else
-    error "Файл конфигурации не найден: $CONFIG_FILE"
+    error "Файл конфигурации не найден: $OWRT_CONFIG_FILE"
     exit 1
 fi
 

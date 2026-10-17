@@ -22,7 +22,9 @@ env:
   # (ветка, тег или 40-hex SHA). Пустое значение = следить за веткой.
   OPENWRT_REF: ${{ vars.OPENWRT_REF }}
   MTK_FEED_REF: ${{ vars.MTK_FEED_REF }}
-  CONFIG_FILE: config/defconfig
+  # Not CONFIG_FILE: hostapd's src/build.rules includes $(CONFIG_FILE) and
+  # builds afc from its own directory, so that name breaks the build.
+  OWRT_CONFIG_FILE: config/defconfig
   DIY_P1_SH: scripts/customize.sh
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
@@ -203,8 +205,8 @@ jobs:
     - name: Load config
       run: |
         set -euo pipefail
-        [ -e "$CONFIG_FILE" ] || { echo "::error::Файл конфигурации не найден: $CONFIG_FILE"; exit 1; }
-        cat "$CONFIG_FILE" > src/openwrt/.config
+        [ -e "$OWRT_CONFIG_FILE" ] || { echo "::error::Файл конфигурации не найден: $OWRT_CONFIG_FILE"; exit 1; }
+        cat "$OWRT_CONFIG_FILE" > src/openwrt/.config
 
     - name: Download the installation package
       id: package
