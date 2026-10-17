@@ -95,6 +95,13 @@ run_retry ./scripts/feeds update -a
 echo "[CUSTOM] feeds install -a"
 ./scripts/feeds install -a
 
+# luci-app-weechat <-> weechat-full/minimal образуют цикл select в Kconfig:
+# make defconfig печатает "recursive dependency detected". На роутере они не
+# нужны, поэтому снимаем их с установки. Исходники остаются в фиде, так что
+# блок повторяется на каждой сборке; ошибка "не установлен" безвредна.
+./scripts/feeds uninstall luci-app-weechat weechat >/dev/null 2>&1 || true
+echo "[CUSTOM] weechat/luci-app-weechat сняты с установки (Kconfig select cycle)"
+
 # ============================================================
 # 2. Файлы MTK (target/linux/mediatek, package/mtk, scripts, tools, generic)
 # ============================================================

@@ -124,6 +124,9 @@ done
 * **символы ядра** — фиксация новых Kconfig-символов MTK, `NF_CONNTRACK=y`,
   `NF_FLOW_TABLE=y`, `PTP_1588_CLOCK=y` (иначе `vmlinux` не линкуется из-за
   встроенного `mtk_ppe*`)
+* **weechat** — `luci-app-weechat` и `weechat-full/minimal` снимаются с
+  установки (`scripts/feeds uninstall`): их Kconfig-цикл `select` вызывает
+  `recursive dependency detected` в `make defconfig`, а на роутере они не нужны
 
 ---
 

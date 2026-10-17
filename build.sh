@@ -197,9 +197,21 @@ done
 
 if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
     warn "Отсутствуют пакеты: ${MISSING_PACKAGES[*]}"
-    info "Установка недостающих пакетов..."
-    sudo apt-get update -qq
-    sudo apt-get install -y -qq "${MISSING_PACKAGES[@]}"
+    # В неинтерактивном окружении sudo без пароля может зависнуть на запросе.
+    # Лучше сразу назвать команду установки, чем ждать таймаут.
+    if [ -t 0 ]; then
+        info "Установка недостающих пакетов..."
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq "${MISSING_PACKAGES[@]}"
+    elif sudo -n true 2>/dev/null; then
+        info "Установка недостающих пакетов (passwordless sudo)..."
+        sudo -n apt-get update -qq
+        sudo -n apt-get install -y -qq "${MISSING_PACKAGES[@]}"
+    else
+        error "Нет TTY и passwordless sudo. Установите вручную:"
+        error "  sudo apt-get install -y ${MISSING_PACKAGES[*]}"
+        exit 1
+    fi
     info "Пакеты установлены"
 else
     info "Все зависимости установлены"

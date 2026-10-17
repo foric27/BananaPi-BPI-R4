@@ -35,6 +35,7 @@ jobs:
   checks:
     name: Lint and offline tests
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -91,6 +92,7 @@ jobs:
     # быстрый lint, но не 20-минутную сборку и не новый релиз.
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 360
     permissions:
       actions: write
       contents: write
