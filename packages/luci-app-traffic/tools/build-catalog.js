@@ -33,6 +33,10 @@ const { spawnSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const DATA_DIR = path.join(ROOT, 'root', 'etc', 'traffic');
 const ICON_DIR = path.join(ROOT, 'htdocs', 'luci-static', 'resources', 'traffic', 'icons');
+/* The provenance manifest is not page data.  It is kept with the package (so the
+ * redistributed icons keep their licensing record) and out of the web directory,
+ * because nothing on the router reads it and it need not be served to clients. */
+const MANIFEST = path.join(ROOT, 'root', 'usr', 'share', 'traffic', 'icons', 'SOURCES.tsv');
 const CACHE = process.env.TRAFFIC_CATALOG_CACHE || path.join(os.tmpdir(), 'traffic-catalog');
 const GH_TOKEN = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || '';
 
@@ -41,13 +45,35 @@ const BM7_TREE = 'https://api.github.com/repos/blackmatrix7/ios_rule_script/git/
 const DASHBOARD_TREE = 'https://api.github.com/repos/homarr-labs/dashboard-icons/git/trees/main?recursive=1';
 const SIMPLE_TREE = 'https://api.github.com/repos/simple-icons/simple-icons/git/trees/develop?recursive=1';
 const SELFHST_TREE = 'https://api.github.com/repos/selfhst/icons/git/trees/main?recursive=1';
-const ICONIFY_LOGOS = 'https://api.iconify.design/collection?prefix=logos';
+/* Iconify collections used for the second, slower icon pass.  They are NOT used
+ * for the first pass: widening the candidate list in one go was tried and made
+ * the result *worse* (573 brand marks against 580, 1075 misses against 1051),
+ * because arcticons alone contributes ~15k names that an application name can
+ * almost never reach, and the flood of requests got the API to rate-limit the
+ * ones that would have succeeded.  Kept for a second pass over what the first
+ * pass could not resolve, where a miss costs nothing and the rate stays low. */
+/* Several Iconify collections carry brand and application marks.  `logos` is
+ * gilbarbara/logos (~1.9k brand marks); the rest close the gap that
+ * simple-icons left when it withdrew a number of consumer brands.
+ *
+ * ORDER MATTERS, and it is not by quality of the set but by its STYLE.  These
+ * were previously consulted in the order they are listed inside fetchBrand, and
+ * arcticons came first among them - so a name arcticons happened to carry was
+ * drawn as its thin-line Android outline instead of the proper brand mark that
+ * selfhst or simple-icons would have supplied.  Apple Music, Youku, iQIYI,
+ * Pinduoduo, Xianyu and Migu were all shipped that way, and 105 of the 863
+ * icons came from arcticons in total.  Colour brand sets are therefore tried
+ * first and the line-art sets last: an outline is a worse answer than a faded
+ * colour mark, and both are worse than the real logo. */
+const ICONIFY_COLOUR = [ 'logos', 'devicon', 'skill-icons', 'simple-icons', 'cib', 'token' ];
+const ICONIFY_LINE = [ 'arcticons' ];
+const ICONIFY_PREFIXES = ICONIFY_COLOUR.concat(ICONIFY_LINE);
 
 const argv = process.argv.slice(2);
 const opt = {
 	skipIcons: argv.includes('--skip-icons'),
 	limitIcons: 0,
-	maxCategoryKeys: 2500,
+	maxCategoryKeys: 0,
 	cache: CACHE,
 };
 for (let i = 0; i < argv.length; i++) {
@@ -97,8 +123,57 @@ async function ghTree(url, cacheName) {
 	return JSON.parse(json);
 }
 
-/** Run `worker` over `items` with a bounded number of concurrent workers. */
-async function pool(items, worker, concurrency) {
+/** Iconify collection index, cached on disk for a week.
+ *
+ *  The API is rate limited, and a 429 is the easiest possible failure to
+ *  misread: fetching the collections four at a time earned a 429 for every one
+ *  of them, the error was swallowed into an empty index, and the run printed a
+ *  line that simply stopped after the third set.  arcticons - 15k application
+ *  icons, the set that matches app names best - was never consulted and nothing
+ *  said so.  Cached, this costs one request per collection per week; when the
+ *  cache is warm the run is deterministic and needs no network for them. */
+async function iconifyCollection(prefix) {
+	const file = path.join(CACHE_DIR, `iconify-${prefix}.json`);
+	if (fs.existsSync(file) && Date.now() - fs.statSync(file).mtimeMs < 7 * 24 * 3600e3) {
+		try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { /* refetch */ }
+	}
+	/* Two sources for the same data.  The API is the canonical one but it hands
+	 * out 429s in bursts long enough to outlast 10/20/30s of retries, which left
+	 * the whole run without arcticons; the @iconify-json packages on jsdelivr are
+	 * the same collection and are served from a CDN that does not do that.  The
+	 * names are read from `icons` as well as `uncategorized`, so both shapes
+	 * yield the same membership set. */
+	const SOURCES = [
+		`https://api.iconify.design/collection?prefix=${prefix}`,
+		`https://cdn.jsdelivr.net/npm/@iconify-json/${prefix}@latest/icons.json`,
+	];
+	for (const url of SOURCES) {
+		for (let attempt = 1; attempt <= 2; attempt++) {
+			try {
+				const txt = await httpText(url, { tries: 1 });
+				const idx = JSON.parse(txt);
+				fs.writeFileSync(file, txt, 'utf8');
+				return idx;
+			} catch (err) {
+				if (attempt === 2) break;
+				await sleep(6000 * attempt);
+			}
+		}
+	}
+	return null;
+}
+
+/** Every icon name an Iconify collection index offers, whichever shape it has. */
+function iconifyNames(idx) {
+	const s = new Set();
+	for (const n of (idx.uncategorized || [])) s.add(n);
+	for (const arr of Object.values(idx.categories || {})) for (const n of arr) s.add(n);
+	for (const n of Object.keys(idx.icons || {})) s.add(n);
+	for (const n of Object.keys(idx.aliases || {})) s.add(n);
+	return s;
+}
+
+/** Run `worker` over `items` with a bounded number of concurrent workers. */async function pool(items, worker, concurrency) {
 	const results = new Array(items.length);
 	let next = 0;
 	const runners = new Array(Math.min(concurrency, items.length)).fill(0).map(async () => {
@@ -129,7 +204,8 @@ const NAME_FIX = {
 	'appleid': 'Apple Account', 'applemail': 'iCloud Mail', 'applemusic': 'Apple Music',
 	'applenews': 'Apple News', 'appleproxy': 'iCloud Private Relay', 'appletv': 'Apple TV',
 	'appstore': 'App Store', 'autodesk': 'Autodesk', 'aws': 'AWS', 'azure': 'Microsoft Azure',
-	'baidu': 'Baidu', 'baidutieba': 'Baidu Tieba', 'battle': 'Battle.net', 'battlenet': 'Battle.net',
+	'baidu': 'Baidu', 'baidu-ai-cloud': 'Baidu AI Cloud', 'baidutieba': 'Baidu Tieba',
+	'battle': 'Battle.net', 'battlenet': 'Battle.net',
 	'beats': 'Beats', 'bilibili': 'Bilibili', 'bilibiliintl': 'Bilibili (Intl)', 'bitly': 'Bitly',
 	'blizzard': 'Blizzard', 'bmw': 'BMW', 'bytedance': 'ByteDance', 'cainiao': 'Cainiao',
 	'cloudflare': 'Cloudflare', 'cloudfront': 'Amazon CloudFront', 'ctrip': 'Trip.com',
@@ -138,6 +214,7 @@ const NAME_FIX = {
 	'ea': 'EA', 'ebay': 'eBay', 'electron': 'Electron', 'epic': 'Epic Games', 'epicgames': 'Epic Games',
 	'facebook': 'Facebook', 'fastly': 'Fastly', 'figma': 'Figma', 'firebase': 'Firebase',
 	'garena': 'Garena', 'github': 'GitHub', 'gitlab': 'GitLab', 'gmail': 'Gmail', 'gog': 'GOG',
+	'microsoft-365-copilot': 'Microsoft 365 Copilot',
 	'google': 'Google', 'googleai': 'Google AI', 'googlecloud': 'Google Cloud',
 	'googledeepmind': 'Google DeepMind', 'googledrive': 'Google Drive', 'googleearth': 'Google Earth',
 	'googlefcm': 'Google Firebase', 'googleplay': 'Google Play', 'googlescholar': 'Google Scholar',
@@ -211,6 +288,10 @@ function prettyName(slugName) {
  * own (a more specific exact-host rule, such as Adobe's activation hosts, still
  * wins at lookup time). */
 const CURATED = [
+	/* Certificate infrastructure must keep its own owner even when a smaller
+	 * unrelated upstream rule set happens to include the shared host. */
+	['DigiCert', 'digicert.com'],
+	['Product Hunt', 'producthunt.com'], ['Brandfetch', 'brandfetch.io'],
 	/* --- China: shopping, payments, services */
 	['Taobao', 'taobao.com'], ['Tmall', 'tmall.com'], ['Alipay', 'alipay.com'],
 	['Alibaba', 'alibaba.com'], ['AliCDN', 'alicdn.com'], ['Alibaba Cloud', 'aliyuncs.com'],
@@ -225,7 +306,7 @@ const CURATED = [
 	/* --- China: media, social, tools */
 	['WeChat', 'weixin.qq.com', 'H'], ['WeChat', 'wechat.com'], ['WeChat', 'weixin.com'],
 	['WeChat', 'wx.qq.com', 'H'], ['QQ', 'qq.com'], ['QQ', 'qpic.cn'], ['QQ', 'qlogo.cn'],
-	['Tencent Video', 'v.qq.com', 'H'], ['Tencent Video', 'qq.com', 'H'],
+	['Tencent Video', 'v.qq.com', 'H'],
 	['Tencent Cloud', 'tencentcloudapi.com'], ['Tencent Cloud', 'myqcloud.com'],
 	['Tencent Cloud', 'qcloud.com'], ['Tencent', 'gtimg.cn'], ['Tencent', 'gtimg.com'],
 	['Weibo', 'weibo.com'], ['Weibo', 'sinaimg.cn'], ['Weibo', 'weibo.cn'], ['Sina', 'sina.com.cn'],
@@ -234,16 +315,16 @@ const CURATED = [
 	['Douyin', 'douyinpic.com'], ['Douyin', 'douyinstatic.com'], ['Douyin', 'douyinvod.com'],
 	['TikTok', 'tiktokcdn.com'], ['TikTok', 'tiktokv.com'], ['TikTok', 'tiktokcdn-us.com'],
 	['ByteDance', 'bytedance.com'], ['ByteDance', 'byteimg.com'], ['ByteDance', 'pstatp.com'],
-	['ByteDance', 'snssdk.com'], ['ByteDance', 'toutiao.com'], ['ByteDance', 'ixigua.com'],
+	['ByteDance', 'snssdk.com'], ['ByteDance', 'ixigua.com'],
 	['Kuaishou', 'kuaishou.com'], ['Kuaishou', 'kwimgs.com'], ['Kuaishou', 'gifshow.com'],
 	['Zhihu', 'zhihu.com'], ['Zhihu', 'zhimg.com'], ['Douban', 'douban.com'], ['Douban', 'doubanio.com'],
 	['Baidu', 'baidu.com'], ['Baidu', 'bdstatic.com'], ['Baidu', 'bdimg.com'],
-	['Baidu', 'baidupcs.com'], ['Baidu', 'bcebos.com'], ['Baidu', 'hao123.com'],
+	['Baidu', 'hao123.com'],
 	['Xiaomi', 'mi.com'], ['Xiaomi', 'miui.com'], ['Xiaomi', 'xiaomi.com'], ['Xiaomi', 'mifile.cn'],
 	['Huawei', 'huawei.com'], ['Huawei', 'hicloud.com'], ['Huawei', 'dbankcdn.com'],
 	['Honor', 'hihonor.com'], ['OPPO', 'oppo.com'], ['vivo', 'vivo.com.cn'],
 	['NetEase', '163.com'], ['NetEase', '126.com'], ['NetEase', '126.net'],
-	['NetEase Cloud Music', 'music.163.com', 'H'], ['NetEase Cloud Music', '126.net', 'H'],
+	['NetEase Cloud Music', 'music.163.com', 'H'],
 	['QQ Music', 'y.qq.com', 'H'], ['QQ Music', 'qqmusic.qq.com', 'H'],
 	['Kugou', 'kugou.com'], ['Kuwo', 'kuwo.cn'], ['Ximalaya', 'ximalaya.com'],
 	['Qidian', 'qidian.com'], ['Jjwxc', 'jjwxc.net'], ['Zongheng', 'zongheng.com'],
@@ -262,23 +343,153 @@ const CURATED = [
 	['Apple Music', 'mzstatic.com'], ['Apple Developer', 'developer.apple.com', 'H'],
 	['Apple Firmware', 'swcdn.apple.com', 'H'], ['Apple Push', 'push.apple.com', 'H'],
 	['Homebrew', 'brew.sh'], ['Setapp', 'setapp.com'], ['MacPaw', 'macpaw.com'],
+	['Apple', 'apple-cloudkit.com'], ['Apple', 'mac.com'], ['Apple', 'apple.news'],
+	['iCloud', 'icloud-content.com'], ['iCloud', 'cvws.icloud-content.com', 'H'],
+	['Apple Maps', 'apple-mapkit.com'], ['Apple Maps', 'ls.apple.com'],
+	['Apple Push', 'courier.push.apple.com', 'H'], ['Apple CDN', 'appldnld.apple.com', 'H'],
+	['Apple CDN', 'iosapps.itunes.apple.com', 'H'], ['Apple TV', 'tv.apple.com', 'H'],
+	['Apple Pay', 'applepay.com'], ['Beats', 'beatsbydre.com'],
+	['Apple', 'mesu.apple.com', 'H'], ['Apple', 'ocsp.apple.com', 'H'],
+	['Apple', 'crl.apple.com', 'H'], ['Apple', 'xp.apple.com', 'H'],
+	['Apple', 'metrics.apple.com', 'H'], ['Apple', 'configuration.apple.com', 'H'],
+	/* --- Google, split out of the bundle it is usually filed under */
+	['Google', 'googleapis.com'], ['Google', 'gstatic.com'],
+	['Google', 'googleusercontent.com'], ['Google', 'ggpht.com'], ['Google', 'gvt1.com'],
+	['Google', 'gvt2.com'], ['Google', 'google-analytics.com'], ['Google', 'googletagmanager.com'],
+	['Google Ads', 'googlesyndication.com'], ['Google Ads', 'doubleclick.net'],
+	['Google Ads', 'googleadservices.com'], ['Google Play', 'play.googleapis.com', 'H'],
+	['Google Play', 'android.clients.google.com', 'H'],
+	['Gmail', 'gmail.com'], ['Gmail', 'googlemail.com'], ['Gmail', 'mtalk.google.com', 'H'],
+	['Gmail', 'alt1-mtalk.google.com', 'H'], ['Gmail', 'alt2-mtalk.google.com', 'H'],
+	['Google Meet', 'meet.google.com', 'H'], ['Google Photos', 'photos.google.com', 'H'],
+	['Google Drive', 'drive.google.com', 'H'], ['Google Drive', 'drive.usercontent.google.com', 'H'],
+	['Google Docs', 'docs.google.com', 'H'], ['Google Docs', 'sheets.google.com', 'H'],
+	['Google Docs', 'slides.google.com', 'H'], ['Google Translate', 'translate.googleapis.com', 'H'],
+	['Google Maps', 'maps.googleapis.com', 'H'], ['Google Maps', 'maps.gstatic.com', 'H'],
+	['Google Maps', 'khms0.googleapis.com', 'H'], ['Google Maps', 'khms1.googleapis.com', 'H'],
+	['Google Fonts', 'fonts.gstatic.com', 'H'], ['Google Fonts', 'fonts.googleapis.com', 'H'],
+	['Google', 'ssl.gstatic.com', 'H'], ['Google', 'recaptcha.net'], ['Google', 'g.co'],
+	['Google', 'firebaseinstallations.googleapis.com', 'H'], ['Google', 'app-measurement.com'],
+	['Firebase', 'firebaseio.com'], ['Firebase', 'crashlytics.com'],
+	['Blogger', 'blogger.com'], ['Blogger', 'blogspot.com'], ['Google', 'withgoogle.com'],
+	/* --- Baidu */
+	['Baidu', 'baiducontent.com'], ['Baidu', 'bdurl.net'],
+	['Baidu', 'baifubao.com'], ['Baidu', 'mipcdn.com'],
+	['Baidu Netdisk', 'pan.baidu.com', 'H'],
+	/* Baidu's cloud platform is a product of its own, not the search brand.
+	 * Leaving the BCE estate on "Baidu" gave 百度智能云 the same mark as
+	 * 百度网盘, which is the one thing the two rows had to be told apart by;
+	 * with them on their own name the two marks also come from their own
+	 * icons instead of both resolving to baidu.svg. */
+	['Baidu AI Cloud', 'baidubce.com'], ['Baidu AI Cloud', 'baidubce.cn'],
+	['Baidu AI Cloud', 'baidubce.com.cn'], ['Baidu AI Cloud', 'baidubce.net.cn'],
+	['Baidu AI Cloud', 'baidubcr.com'], ['Baidu AI Cloud', 'baidubos.com'],
+	['Baidu AI Cloud', 'baiducloudapi.com'],
+	['Baidu AI Cloud', 'baiduyuncdn.com'], ['Baidu AI Cloud', 'baiduyuncdn.cn'],
+	['Baidu AI Cloud', 'baiduyuncdn.net'],
+	['Baidu AI Cloud', 'baiduyundns.com'], ['Baidu AI Cloud', 'baiduyundns.cn'],
+	['Baidu AI Cloud', 'baiduyundns.net'], ['Baidu AI Cloud', 'baiduyunwaf.com'],
+	/* BOS and VOD are BCE products, so they carry the cloud name too */
+	['Baidu AI Cloud', 'bcebos.com'], ['Baidu AI Cloud', 'bcevod.com'],
+	/* The pcs domains are the netdisk family that pcs.baidu.com already belongs
+	 * to, so they get the netdisk name rather than the search one. */
+	['Baidu Netdisk', 'baidupcs.com'], ['Baidu Netdisk', 'baidupcs.cn'],
+	['Baidu Netdisk', 'baidupcs.com.cn'], ['Baidu Netdisk', 'baidupcs.net'],
+	['Baidu Netdisk', 'pcs.baidu.com', 'H'], ['Baidu Netdisk', 'd.pcs.baidu.com', 'H'],
+	['Baidu Tieba', 'tieba.baidu.com', 'H'], ['Baidu Zhidao', 'zhidao.baidu.com', 'H'],
+	['Baidu Wenku', 'wenku.baidu.com', 'H'], ['Baidu Map', 'map.baidu.com', 'H'],
+	['Baidu', 'pos.baidu.com', 'H'], ['Baidu', 'mobads.baidu.com', 'H'],
+	['Baidu', 'union.baidu.com', 'H'], ['Baidu', 'cpro.baidu.com', 'H'],
+	/* --- Alibaba / Ant */
+	['Alibaba', 'alibabacorp.com'], ['Alibaba', 'alibaba-inc.com'], ['Alibaba', 'aliimg.com'],
+	['Alibaba', 'alimama.com'], ['Alibaba', 'tanx.com'], ['Alibaba', 'mmstat.com'],
+	['Alibaba', 'cnzz.com'], ['Alibaba Cloud', 'alibabacloud.com'], ['Alibaba Cloud', 'aliyun-inc.com'],
+	['Taobao', 'taobaocdn.com'], ['Taobao', 'tbcdn.cn'], ['Taobao', 'taobao.net'],
+	['Tmall', 'tmall.hk'], ['Alipay', 'alipayobjects.com'], ['Alipay', 'alipaydev.com'],
+	['DingTalk', 'dingtalkapps.com'],
+	['Toutiao', 'toutiao.com'],
+	['WeChat Official Accounts', 'mp.weixin.qq.com'],
+	/* --- Tencent */
+	['Tencent', 'tencent.com'], ['Tencent', 'tencent-cloud.net'], ['Tencent', 'tencentcs.com'],
+	['Tencent', 'idqqimg.com'], ['Tencent', 'weixinbridge.com'], ['Tencent', 'tenpay.com'],
+	['Tencent', 'dnspod.com'], ['Tencent', 'dnspod.cn'], ['Tencent', 'soso.com'],
+	['Tencent Cloud', 'qcloudimg.com'], ['Tencent Cloud', 'qcloudcdn.com'],
+	['Tencent Cloud', 'tencentcos.cn'], ['WeChat', 'wechatpay.cn'],
+	['QQ Mail', 'qqmail.com'], ['Tencent Games', 'tencentgames.com'],
+	['Tencent Meeting', 'meeting.tencent.com', 'H'], ['Tencent Docs', 'docs.qq.com', 'H'],
+	['Tencent Video', 'puui.qpic.cn', 'H'], ['QQ Browser', 'qqbrowser.com'],
+	/* --- Huawei / Honor */
+	['Huawei', 'huaweicloud.com'], ['Huawei', 'hwclouds.com'], ['Huawei', 'myhuaweicloud.com'],
+	['Huawei', 'huaweistatic.com'], ['Huawei', 'huaweipay.com'], ['Huawei', 'vmall.com'],
+	['Huawei', 'harmonyos.com'], ['Huawei', 'hmscore.cn'],
+	/* --- Xiaomi */
+	['Xiaomi', 'mi-img.com'], ['Xiaomi', 'miui.net'], ['Xiaomi', 'mipay.com'],
+	['Xiaomi', 'xiaomiyoupin.com'], ['Xiaomi', 'duokan.com'],
+	/* --- ByteDance */
+	['ByteDance', 'bytednsdoc.com'], ['ByteDance', 'byteoversea.com'],
+	['ByteDance', 'ibytedtos.com'], ['ByteDance', 'bytedance.net'],
+	['Douyin', 'douyincdn.com'], ['TikTok', 'tiktok.com'], ['TikTok', 'muscdn.com'],
+	['TikTok', 'byteintlapi.com'], ['TikTok', 'ttwstatic.com'],
+	['Toutiao', 'toutiaoimg.com'],
+	/* --- Meta (barely present upstream), Amazon, Netflix */
+	['Meta', 'facebook.com'], ['Meta', 'fbcdn.net'], ['Meta', 'fb.com'], ['Meta', 'fbsbx.com'],
+	['Meta', 'facebook.net'], ['Meta', 'mcdn.net'], ['Instagram', 'instagram.com'],
+	['Instagram', 'cdninstagram.com'], ['WhatsApp', 'whatsapp.com'], ['WhatsApp', 'whatsapp.net'],
+	['Messenger', 'messenger.com'], ['Meta', 'threads.net'], ['Meta', 'oculus.com'],
+	['Amazon', 'amazon.com'], ['Amazon', 'amazonaws.com'], ['Amazon', 'media-amazon.com'],
+	['Amazon', 'ssl-images-amazon.com'], ['Amazon', 'amazon-adsystem.com'],
+	['Amazon', 'images-amazon.com'], ['AWS', 'awsstatic.com'], ['AWS', 'a2z.com'],
+	['Prime Video', 'primevideo.com'], ['Prime Video', 'aiv-cdn.net'],
+	['Prime Video', 'aiv-delivery.net'], ['Twitch', 'twitch.tv'], ['Twitch', 'ttvnw.net'],
+	['Twitch', 'jtvnw.net'],
+	['Netflix', 'netflix.com'], ['Netflix', 'nflxvideo.net'], ['Netflix', 'nflximg.net'],
+	['Netflix', 'nflxext.com'], ['Netflix', 'nflxso.net'], ['Netflix', 'fast.com'],
+	/* --- Microsoft and the large CDNs / services that show up in every capture */
+	['Microsoft', 'microsoft.com'], ['Microsoft', 'live.com'],
+	['Microsoft', 'hotmail.com'], ['Microsoft', 'msn.com'], ['Microsoft', 'office.com'],
+	['Microsoft', 'microsoftonline.com'], ['Microsoft', 'msftauth.net'], ['Microsoft', 'msedge.net'],
+	['Microsoft', 'msecnd.net'], ['Microsoft', 'azureedge.net'],
+	['Microsoft', 'windowsupdate.com'], ['Microsoft', 'msftconnecttest.com'],
+	['Microsoft', 'msftncsi.com'], ['Microsoft', 'visualstudio.com'],
+	['Microsoft', 'bing.com'],
+	['Akamai', 'akamai.net'], ['Akamai', 'akamaiedge.net'], ['Akamai', 'akamaized.net'],
+	['Akamai', 'akamaihd.net'], ['Cloudflare', 'cloudflare.com'],
+	['Cloudflare', 'cloudflare-dns.com'], ['Fastly', 'fastly.net'], ['Fastly', 'fastlylb.net'],
+	['GitHub', 'github.com'], ['GitHub', 'githubusercontent.com'], ['GitHub', 'githubassets.com'],
+	['GitHub', 'ghcr.io'], ['Spotify', 'spotify.com'], ['Spotify', 'scdn.co'],
+	['Spotify', 'spotifycdn.com'], ['Steam', 'steampowered.com'], ['Steam', 'steamstatic.com'],
+	['Steam', 'steamcontent.com'], ['Epic Games', 'epicgames.com'], ['Epic Games', 'unrealengine.com'],
+	['Discord', 'discord.com'], ['Discord', 'discordapp.com'], ['Discord', 'discord.gg'],
+	['Telegram', 'telegram.org'], ['Telegram', 't.me'], ['Telegram', 'tdesktop.com'],
+	['Zoom', 'zoom.us'], ['Zoom', 'zoom.com'], ['Slack', 'slack.com'], ['Slack', 'slack-edge.com'],
+	['OpenAI', 'openai.com'], ['OpenAI', 'oaistatic.com'],
+	['OpenAI', 'oaiusercontent.com'], ['Anthropic', 'anthropic.com'],
+	['Adobe', 'adobe.com'], ['Adobe', 'adobedtm.com'], ['Adobe', 'adobe.io'],
+	['Dropbox', 'dropbox.com'], ['Dropbox', 'dropboxstatic.com'],
+	['Reddit', 'reddit.com'], ['Reddit', 'redd.it'], ['Reddit', 'redditstatic.com'],
+	['LinkedIn', 'linkedin.com'], ['LinkedIn', 'licdn.com'], ['Pinterest', 'pinterest.com'],
+	['Pinterest', 'pinimg.com'], ['Wikipedia', 'wikipedia.org'], ['Wikipedia', 'wikimedia.org'],
+	['Vercel', 'vercel.app'], ['Netlify', 'netlify.app'],
 	['Bartender', 'macbartender.com'], ['Alfred', 'alfredapp.com'], ['Sketch', 'sketch.com'],
 	['Pixelmator', 'pixelmator.com'], ['Panic', 'panic.com'], ['Omni Group', 'omnigroup.com'],
 	['Parallels', 'parallels.com'], ['VMware', 'vmware.com'], ['Reeder', 'reederapp.com'],
 	/* --- Global: platforms and services */
 	['Google', 'google.com'], ['Google', 'googleapis.com'], ['Google', 'gstatic.com'],
-	['Google', 'googleusercontent.com'], ['Google', 'googlevideo.com'], ['Google', 'ggpht.com'],
+	['Google', 'googleusercontent.com'], ['Google', 'ggpht.com'],
 	['Google', 'withgoogle.com'], ['Google', 'goo.gl'], ['Gmail', 'gmail.com'],
 	['Google Play', 'play.google.com', 'H'], ['Android', 'android.com'],
 	['Microsoft', 'microsoft.com'], ['Microsoft', 'msftconnecttest.com'], ['Microsoft', 'windows.com'],
 	['Microsoft', 'windowsupdate.com'], ['Microsoft', 'live.com'], ['Microsoft', 'msn.com'],
 	['Microsoft', 'bing.com'], ['Microsoft', 'office.com'], ['Microsoft', 'office.net'],
 	['Microsoft 365', 'office365.com'], ['OneDrive', 'onedrive.com'], ['OneDrive', 'sharepoint.com'],
+	/* Copilot 是微软的 Copilot；Microsoft 365 Copilot 是另一个产品，另占一行。
+	 * 域名不与上面那行重合，免得又变成两个名字抢同一批域名。 */
+	['Microsoft 365 Copilot', 'm365.cloud.microsoft', 'H'],
+	['Microsoft 365 Copilot', 'm365copilot.com'],
 	['Outlook', 'outlook.com'], ['Microsoft Azure', 'azure.com'], ['Microsoft Azure', 'azurewebsites.net'],
 	['Microsoft Azure', 'windows.net'], ['Microsoft Teams', 'teams.microsoft.com', 'H'],
 	['LinkedIn', 'linkedin.com'], ['LinkedIn', 'licdn.com'], ['Skype', 'skype.com'],
-	['Facebook', 'facebook.com'], ['Facebook', 'fbcdn.net'], ['Facebook', 'fb.com'],
-	['Facebook', 'fbsbx.com'], ['Instagram', 'instagram.com'], ['Instagram', 'cdninstagram.com'],
+	['Instagram', 'instagram.com'], ['Instagram', 'cdninstagram.com'],
 	['WhatsApp', 'whatsapp.com'], ['WhatsApp', 'whatsapp.net'], ['Messenger', 'messenger.com'],
 	['X (Twitter)', 'twitter.com'], ['X (Twitter)', 'x.com'], ['X (Twitter)', 'twimg.com'],
 	['X (Twitter)', 't.co'], ['Reddit', 'reddit.com'], ['Reddit', 'redd.it'],
@@ -290,7 +501,7 @@ const CURATED = [
 	['Netflix', 'netflix.com'], ['Netflix', 'nflxvideo.net'], ['Netflix', 'nflximg.net'],
 	['Netflix', 'nflxext.com'], ['Netflix', 'nflxso.net'], ['Netflix', 'fast.com'],
 	['YouTube', 'youtube.com'], ['YouTube', 'ytimg.com'], ['YouTube', 'youtu.be'],
-	['YouTube', 'googlevideo.com', 'H'],
+	['YouTube', 'googlevideo.com'],
 	['Amazon', 'amazon.com'], ['Amazon', 'amazonaws.com'], ['Amazon', 'media-amazon.com'],
 	['Amazon', 'ssl-images-amazon.com'], ['Amazon', 'a2z.org'], ['AWS', 'aws.amazon.com', 'H'],
 	['Prime Video', 'primevideo.com'], ['Prime Video', 'aiv-cdn.net'],
@@ -328,12 +539,29 @@ const CURATED = [
 	['Riot Games', 'riotgames.com'], ['Riot Games', 'leagueoflegends.com'], ['Riot Games', 'riotcdn.net'],
 	['Blizzard', 'blizzard.com'], ['Battle.net', 'battle.net'], ['Call of Duty', 'callofduty.com'],
 	['EA', 'ea.com'], ['EA', 'origin.com'], ['Ubisoft', 'ubisoft.com'], ['Ubisoft', 'ubi.com'],
-	['GOG', 'gog.com'], ['Xbox', 'xbox.com'], ['Xbox', 'xboxlive.com'],
+	['GOG', 'gog.com'], ['Xbox', 'xbox.com'],
 	['PlayStation', 'playstation.com'], ['PlayStation', 'playstation.net'],
 	['Nintendo', 'nintendo.com'], ['Nintendo', 'nintendo.net'], ['Roblox', 'roblox.com'],
+	/* Games, and the storefront and network hosts a console lives on.  The icon
+	 * sets carry these brands; the domain lists never named them, so the traffic
+	 * showed as a bare domain with a letter avatar. */
+	['Fortnite', 'fortnite.com'], ['Valorant', 'playvalorant.com'], ['Valorant', 'valorant.com'],
+	['League of Legends', 'leagueoflegends.co.kr'], ['League of Legends', 'lolstatic.com'],
+	['Grok', 'grok.com'], ['Grok', 'x.ai'], ['Starlink', 'starlink.com'],
+	['Sony', 'sony.com'], ['Sony', 'sony.net'], ['Sony', 'sonyentertainmentnetwork.com'],
+	['PS Store', 'store.playstation.com', 'H'], ['PS Store', 'psn.com'],
+	['PlayStation Network', 'playstationnetwork.com'],
+	['Xbox Live', 'xboxlive.com'], ['Nintendo Switch', 'nintendo-europe.com'],
 	['Roblox', 'rbxcdn.com'], ['Minecraft', 'minecraft.net'], ['Mojang', 'mojang.com'],
 	['HoYoverse', 'hoyoverse.com'], ['HoYoverse', 'mihoyo.com'], ['HoYoverse', 'hoyolab.com'],
 	['Genshin Impact', 'genshinimpact.com'], ['Garena', 'garena.com'], ['Garena', 'garenanow.com'],
+	/* Product-specific official hosts; shared publisher/CDN domains keep the
+	 * publisher identity because those hosts cannot identify a single game. */
+	['Honkai Star Rail', 'hsr.hoyoverse.com', 'H'],
+	['Zenless Zone Zero', 'zenless.hoyoverse.com', 'H'],
+	['Honkai Impact 3rd', 'honkaiimpact3.hoyoverse.com', 'H'],
+	['Wuthering Waves', 'mc.kurogames.com', 'H'],
+	['Wuthering Waves', 'wutheringwaves.kurogames.com', 'H'],
 	['Supercell', 'supercell.com'], ['King', 'king.com'], ['Zynga', 'zynga.com'],
 	['TapTap', 'taptap.com'], ['TapTap', 'taptap.io'], ['APKPure', 'apkpure.com'],
 	['APKMirror', 'apkmirror.com'], ['F-Droid', 'f-droid.org'], ['Aptoide', 'aptoide.com'],
@@ -599,11 +827,118 @@ function iconSlug(name) {
 	return slug(String(name).replace(/\+/g, ' plus ').replace(/&/g, ' and '));
 }
 
+/** Names whose upstream icon is filed under a slug no spelling of the name can
+ *  reach.  Tried before every derived candidate, so an entry here also beats a
+ *  fuzzy near-miss and saves the search pass an API call.
+ *
+ *  The search pass cannot cover these by itself: it gives up unless the
+ *  normalised query is at least three characters long, so a numeric brand like
+ *  58.com (query "58") is structurally out of its reach - which is why those
+ *  names sat at the top of the missing list with hundreds of domains each.
+ *
+ *  Keep this short and hand-checked.  An entry that does not exist upstream is
+ *  harmless - the name keeps its letter avatar, which is the honest answer - but
+ *  a wrong one puts the wrong logo on a row, which is worse than no logo. */
+const BRAND_ALIAS = {
+	/* Every target below was checked against the sets this generator actually
+	 * queries - dashboard-icons, simple-icons, selfhst/icons and the iconify
+	 * collections - with tools/_probe-slugs.js, so each one exists and can be
+	 * fetched.  A target that was checked and found absent is NOT recorded here:
+	 * a dead alias is a comment that lies, and the name keeps its letter avatar,
+	 * which is the honest answer.  simple-icons has withdrawn a number of
+	 * consumer brands outright (Bloomberg, Tencent, Sohu, Durex, Bridgestone,
+	 * UCloud, Qiniu, 360 were all checked and none is carried by any set now). */
+	'Ctrip': 'tripdotcom',       /* the company renamed itself Trip.com */
+	'XieCheng': 'tripdotcom',    /* the same company under its Chinese name */
+	'Douyin': 'tiktok',          /* the same application under its Chinese name */
+	'theScore': 'thescore',
+	'Bestbuy': 'bestbuy',
+	'Wildberries': 'wildberries',
+	'Huaweicloud': 'huawei',
+	'Kingsoft': 'wpsoffice',     /* Kingsoft is the company behind WPS Office */
+	'Mailru': 'maildotru',
+	'IFlytek': 'iflytek-input',
+	'Reuters': 'reuters',
+	'ChinaTelecom': 'china-telecom',
+	'ICBC': 'icbc',
+	'HuluUSA': 'hulu',
+	'Kuaishou': 'kuaishou',
+	'Genshin Impact': 'genshin-impact',
+	'League of Legends': 'leagueoflegends',
+	'Valorant': 'valorant',
+	'Starlink': 'starlink',
+	'Grok': 'grok',
+	'PlayStation': 'playstation',
+};
+
+/** Domains that are shared infrastructure, never a brand's own property.
+ *  An upstream list may carry one of these as a DOMAIN-SUFFIX rule for a
+ *  single service, but binding the whole domain is wrong: hinet.net is
+ *  HiNet/Chunghwa Telecom's ISP domain, and this catalogue attributes 41 of
+ *  its hosts to seven different owners (HamiVideo, LiTV, Hinet Eca, Bahamut,
+ *  PChome, KKTV, KKBOX).  Inheriting it made every unrecognised *.hinet.net
+ *  host read as Bahamut - the same defect as filing digicert.com under
+ *  Bahamut, and the reason a shared host must stay independent.
+ *
+ *  Only domains whose whole-domain rule would mis-attribute traffic belong
+ *  here, and only upstream rules are filtered: a curated rule is a human
+ *  decision.  The specific rules that carry the real traffic - Bahamut's
+ *  gamer-cds.cdn.hinet.net, HamiVideo's hamivideo.hinet.net - are unaffected. */
+const SHARED_INFRA_SUFFIX = new Set([
+	'hinet.net',
+]);
+
+const isSharedInfra = k => SHARED_INFRA_SUFFIX.has(k) ||
+	[...SHARED_INFRA_SUFFIX].some(d => k.endsWith('.' + d));
+
+/** Public suffixes worth dropping when a row is named after a bare domain.
+ *  Only the ones that actually appear in this catalogue's traffic; the list is
+ *  not a suffix database and does not need to be. */
+const TLDS = new Set([
+	'com', 'net', 'org', 'cn', 'io', 'co', 'tv', 'me', 'info', 'biz', 'ru', 'de',
+	'fr', 'uk', 'jp', 'kr', 'in', 'br', 'au', 'ca', 'xyz', 'app', 'dev', 'cloud',
+	'site', 'online', 'top', 'cc', 'gg', 'to', 'us', 'eu', 'asia', 'mobi', 'name',
+	'pro', 'shop', 'store', 'tech', 'live', 'news', 'media', 'group', 'club',
+	'wang', 'xin', 'ltd', 'org.cn', 'com.cn', 'net.cn', 'co.uk', 'com.au',
+]);
+
 function iconCandidates(name, sourceSlug) {
 	const out = [];
 	const push = v => { if (v && v.length > 1 && !out.includes(v)) out.push(v); };
 	const s = iconSlug(name);
+	/* an explicit alias beats anything derived from the name */
+	const alias = BRAND_ALIAS[name];
+	if (alias) push(alias);
+	/* The display name is derived from an upstream slug by NAME_FIX, and that
+	 * round trip is not the identity: the icon for "AT&T" is filed upstream as
+	 * atandt while the name slugs to at-and-t, and "NTP Service" came from
+	 * ntpservice while the name slugs to ntp-service.  The slug the name was
+	 * built from is therefore a candidate in its own right - for the glyph names
+	 * it is exactly the glyph key, which is how a row like STUN Servers gets the
+	 * glyph that was already in the directory. */
+	/* The name's own slug comes FIRST.  It is the faithful spelling, and an
+	 * upstream set that files the brand under it is the one we want; the
+	 * NAME_FIX key is the fallback for names whose slug does not exist upstream
+	 * (the icon for "AT&T" is filed as atandt, not at-and-t), so putting it
+	 * second costs nothing there and gains a colour mark elsewhere.  Asking for
+	 * the key first cost exactly that: applemusic exists in simple-icons while
+	 * dashboard-icons carries apple-music, so Apple Music was drawn from the
+	 * monochrome set and the faithful candidate was never tried at all. */
 	push(s);
+	for (const [key, disp] of Object.entries(NAME_FIX))
+		if (disp === name) { push(key); break; }
+	/* A row the classifier could not name is drawn as the destination it saw,
+	 * which is a bare registrable name such as ctrip-it.com.  Its slug is
+	 * ctrip-it-com, so no upstream set ever matches and the row keeps a letter
+	 * avatar for good.  Dropping the public suffix, and then the leading label,
+	 * gives the brand underneath a chance: ctrip-it-com -> ctrip-it -> ctrip. */
+	const labels = s.split('-').filter(Boolean);
+	if (labels.length > 1 && TLDS.has(labels[labels.length - 1])) {
+		const bare = labels.slice(0, -1);
+		push(bare.join('-'));
+		push(bare.join(''));
+		if (bare.length > 1) push(bare[0]);
+	}
 	push(s.replace(/-/g, ''));
 	if (sourceSlug) {
 		push(slug(sourceSlug));
@@ -617,38 +952,63 @@ function iconCandidates(name, sourceSlug) {
 	return out;
 }
 
-/** Upstream often spells a brand differently than we do: "Sina" is sinaweibo,
- *  "NetEase" is neteasecloudmusic, "Disney+" is disney-plus.  Rather than
- *  curating hundreds of aliases, allow a prefix or substring match - prefix
- *  first, then shortest, and never for very short names where the match would
- *  be meaningless. */
+/** Only spelling punctuation may differ. Prefix/substring matching confused
+ * BlueDriver with Blued and Stoat with STO Express; ownership needs an alias. */
 function fuzzyIconNames(indexes, cand,   ) {
+	const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 	const hits = [];
-	if (cand.length >= 3) {
-		indexes.forEach(({ set, rank }) => {
-			for (const n of set) if (n.startsWith(cand)) hits.push({ n, rank, exact: 1 });
-		});
-	}
-	if (cand.length >= 4 && hits.length === 0) {
-		indexes.forEach(({ set, rank }) => {
-			for (const n of set) if (n.includes(cand)) hits.push({ n, rank, exact: 0 });
-		});
-	}
-	hits.sort((a, b) => b.exact - a.exact || a.n.length - b.n.length || a.rank - b.rank);
-	return hits.slice(0, 4).map(h => h.n);
+	for (const {set} of indexes) for (const name of set)
+		if (norm(name) === norm(cand)) hits.push(name);
+	return [...new Set(hits)].slice(0, 4);
 }
 
 async function buildIcons(appNames, glyphNames) {
 	ensureDir(ICON_DIR);
-	for (const f of fs.readdirSync(ICON_DIR)) {
-		if (f.endsWith('.svg')) fs.unlinkSync(path.join(ICON_DIR, f));
+	/* Icons kept in the repository rather than fetched.  They exist precisely for
+	 * brands no upstream icon set carries - JD is the example that started this -
+	 * and the file name is the application's slug(), the same key the page looks
+	 * the icon up by, so dropping one in is all that is needed. */
+	const LOCAL_DIR = path.join(ROOT, 'tools', 'icons-local');
+	const localNames = new Set(fs.existsSync(LOCAL_DIR)
+		? fs.readdirSync(LOCAL_DIR).filter(f => f.endsWith('.svg'))
+		: []);
+	/* Some pinned icons do have a real upstream - the Chinese bank marks come
+	 * from an MIT-licensed set - and a pinned file is otherwise recorded as
+	 * "shipped in this repository", which would drop that attribution the next
+	 * time this script runs.  An optional sidecar carries the true source. */
+	const localSource = new Map();
+	const localSidecar = path.join(LOCAL_DIR, 'SOURCES.tsv');
+	if (fs.existsSync(localSidecar)) {
+		for (const line of fs.readFileSync(localSidecar, 'utf8').split('\n')) {
+			if (!line || line.startsWith('#')) continue;
+			const [file, , set, upstream] = line.split('\t');
+			if (file && set) localSource.set(file, { set, upstream, row: line });
+		}
 	}
 
-	const [dashTree, simpleTree, selfhstTree, iconifyLogos] = await Promise.all([
+	/* The directory is deliberately NOT cleared before fetching.  Clearing it made
+	 * the hit rate depend on the weather: a single rate-limited or timed-out
+	 * request deleted an icon that had been good for months, and the run reported
+	 * success anyway.  Files are now overwritten in place and only a file the
+	 * current catalogue cannot name is removed, at the end.  The previous
+	 * manifest is read first so that a file which survives because this run could
+	 * not re-fetch it keeps the provenance that was recorded for it. */
+	const prevRows = new Map();
+	const prevManifest = MANIFEST;
+	if (fs.existsSync(prevManifest)) {
+		for (const line of fs.readFileSync(prevManifest, 'utf8').split('\n')) {
+			if (!line || line.startsWith('#')) continue;
+			const file = line.split('\t')[0];
+			if (file) prevRows.set(file, line);
+		}
+	}
+	for (const f of localNames) fs.copyFileSync(path.join(LOCAL_DIR, f), path.join(ICON_DIR, f));
+	if (localNames.size) log(`  本地图标: ${[...localNames].join(', ')}`);
+
+	const [dashTree, simpleTree, selfhstTree] = await Promise.all([
 		ghTree(DASHBOARD_TREE, 'dashboard-tree.json'),
 		ghTree(SIMPLE_TREE, 'simple-tree.json'),
 		ghTree(SELFHST_TREE, 'selfhst-tree.json').catch(() => ({ tree: [] })),
-		httpText(ICONIFY_LOGOS, { tries: 3 }).then(JSON.parse).catch(() => null),
 	]);
 	const dashboard = new Set(dashTree.tree.filter(e => /^svg\/[^/]+\.svg$/.test(e.path))
 		.map(e => e.path.slice(4, -4)));
@@ -656,17 +1016,35 @@ async function buildIcons(appNames, glyphNames) {
 		.map(e => e.path.slice(6, -4)));
 	const selfhst = new Set(selfhstTree.tree.filter(e => /^svg\/[^/]+\.svg$/.test(e.path))
 		.map(e => e.path.slice(4, -4)));
-	/* The Iconify "logos" collection is gilbarbara/logos: ~1.9k brand marks with
-	 * far better coverage of consumer brands than simple-icons, which has
-	 * withdrawn a number of them. */
-	const logos = new Set();
-	if (iconifyLogos) {
-		for (const n of (iconifyLogos.uncategorized || [])) logos.add(n);
-		for (const arr of Object.values(iconifyLogos.categories || {})) for (const n of arr) logos.add(n);
-		for (const n of Object.keys(iconifyLogos.aliases || {})) logos.add(n);
+	/* Several Iconify collections carry brand and application marks.  `logos` is
+	 * gilbarbara/logos (~1.9k brand marks); the rest close the gap that
+	 * simple-icons left when it withdrew a number of consumer brands.
+	 * `arcticons` matters most here: it is a very large set of Android *app*
+	 * icons, which is exactly what an app-level view is naming.
+	 *
+	 * These are fetched ONE AT A TIME.  Fetching them four at a time earned a 429
+	 * for every single collection, and because the failure was swallowed into an
+	 * empty index the run carried on looking successful while arcticons - the
+	 * 15k-icon set that matches application names best - was not consulted at
+	 * all.  That is the quietest possible way to lose hundreds of icons, so a
+	 * collection that still cannot be read now fails the run instead. */
+	const iconify = new Map();
+	const iconifyMissing = [];
+	for (const p of ICONIFY_PREFIXES) {
+		const idx = await iconifyCollection(p);
+		if (!idx) { iconifyMissing.push(p); continue; }
+		const s = iconifyNames(idx);
+		if (s.size) iconify.set(p, s);
 	}
+	if (iconifyMissing.length)
+		log(`  警告: Iconify 集合本次未参与匹配（读取失败且无缓存）: ${iconifyMissing.join(', ')}`);
+	if (!iconify.size)
+		throw new Error('no Iconify collection could be read, not even from cache - ' +
+			'refusing to build a set that ignores every one of them');
+	const logos = iconify.get('logos') || new Set();
 	log(`  图标索引: dashboard-icons ${dashboard.size}，simple-icons ${simple.size}，` +
-		`selfhst ${selfhst.size}，iconify-logos ${logos.size}`);
+		`selfhst ${selfhst.size}，` +
+		[...iconify].map(([p, s]) => `iconify:${p} ${s.size}`).join('，'));
 
 	const cache = new Map();
 	async function tryFetch(url, { mono = false } = {}) {
@@ -682,50 +1060,252 @@ async function buildIcons(appNames, glyphNames) {
 	}
 	/* Ordered by how good the result looks in the list: full-colour brand marks
 	 * first, monochrome last (an <img> cannot inherit the page colour, so those
-	 * are pinned to the muted grey the page uses). */
+	 * are pinned to the muted grey the page uses).
+	 *
+	 * Returns the icon and the set that supplied it.  Which set won is not
+	 * trivia: the licence differs per set, and the package redistributes these
+	 * files, so it is recorded for the SOURCES.tsv manifest rather than thrown
+	 * away the moment the bytes arrive. */
+	/* The set indexes are built from the GitHub trees, which are current, but the
+	 * bytes come from CDNs, which are not necessarily: jsdelivr serves a
+	 * repository at the commit it last cached, so an icon that the index lists can
+	 * 404 there and the name silently stays a letter avatar.  Disney+ and
+	 * Paramount+ were exactly that - present in both the index and the naming
+	 * rules, yet missing on disk.  Each CDN attempt therefore falls back to the
+	 * repository itself, which is the same revision the index was read from. */
+	/* A set carrying a name is a promise that its bytes exist.  When they do not
+	 * arrive, the pipeline used to fall through to the next, lower-quality set
+	 * without a word: Apple Music is in dashboard-icons, asking for it by hand
+	 * returns it, and it still shipped as a monochrome mark because a bulk run of
+	 * thousands of requests got rate limited for a moment.  One more attempt
+	 * after a pause is affordable here and only here - it is made only for a name
+	 * a set is known to have, so a genuine miss costs nothing extra. */
+	async function tryFetchKnown(url, opts) {
+		const body = await tryFetch(url, opts);
+		if (body) return body;
+		await sleep(2000);
+		return tryFetch(url, opts);
+	}
+
+	/* The set that should answer for a name, in preference order.  Comparing it
+	 * with the set that did answer turns a silent degradation into a recorded
+	 * one: the manifest names the set that was skipped, instead of the result
+	 * looking like the only set that ever had the name. */
+	function expectedSource(name) {
+		if (dashboard.has(name)) return 'dashboard-icons';
+		if (logos.has(name)) return 'iconify:logos';
+		/* simple-icons is both an Iconify collection and a CDN set, and they are
+		 * the same artwork: reporting one as a degradation of the other would be
+		 * a false alarm on every icon the CDN served (vivo was the first). */
+		if (simple.has(name)) return 'simple-icons';
+		for (const [p, s] of iconify)
+			if (ICONIFY_COLOUR.includes(p) && p !== 'simple-icons' && s.has(name)) return 'iconify:' + p;
+		if (selfhst.has(name)) return 'selfhst/icons';
+		for (const [p, s] of iconify)
+			if (ICONIFY_LINE.includes(p) && s.has(name)) return 'iconify:' + p;
+		return '';
+	}
+
 	async function fetchBrand(name) {
 		if (cache.has(name)) return cache.get(name);
-		let svg = null;
-		if (dashboard.has(name))
-			svg = await tryFetch(`https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/${name}.svg`);
-		if (!svg && logos.has(name))
+		let svg = null, src = '';
+		if (dashboard.has(name)) {
+			svg = await tryFetchKnown(`https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/${name}.svg`)
+				|| await tryFetchKnown(`https://raw.githubusercontent.com/homarr-labs/dashboard-icons/main/svg/${name}.svg`);
+			if (svg) src = 'dashboard-icons';
+		}
+		if (!svg && logos.has(name)) {
 			svg = await tryFetch(`https://api.iconify.design/logos/${name}.svg`);
-		if (!svg && selfhst.has(name))
-			svg = await tryFetch(`https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${name}.svg`);
-		if (!svg && simple.has(name))
-			svg = await tryFetch(`https://cdn.simpleicons.org/${name}`);
-		if (!svg && simple.has(name))
-			svg = await tryFetch(`https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${name}.svg`, { mono: true });
-		cache.set(name, svg);
-		return svg;
+			if (svg) src = 'iconify:logos';
+		}
+		/* colour collections only: the line-art sets are tried at the very end,
+		 * after selfhst and simple-icons, because an outline is the wrong answer
+		 * for a brand mark */
+		for (const [p, s] of iconify) {
+			if (svg) break;
+			if (p === 'logos' || !ICONIFY_COLOUR.includes(p) || !s.has(name)) continue;
+			svg = await tryFetch(`https://api.iconify.design/${p}/${name}.svg`);
+			if (svg) src = 'iconify:' + p;
+		}
+		if (!svg && selfhst.has(name)) {
+			svg = await tryFetchKnown(`https://cdn.jsdelivr.net/gh/selfhst/icons/svg/${name}.svg`)
+				|| await tryFetchKnown(`https://raw.githubusercontent.com/selfhst/icons/main/svg/${name}.svg`);
+			if (svg) src = 'selfhst/icons';
+		}
+		if (!svg && simple.has(name)) {
+			svg = await tryFetchKnown(`https://cdn.simpleicons.org/${name}`)
+				|| await tryFetchKnown(`https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/${name}.svg`, { mono: true })
+				|| await tryFetchKnown(`https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/${name}.svg`, { mono: true });
+			if (svg) src = 'simple-icons';
+		}
+		/* Line art, last of all.  arcticons carries a great many application
+		 * names and almost nothing else does, so it is genuinely useful - but its
+		 * icons are thin outlines, and for Apple Music, Youku, iQIYI, Pinduoduo,
+		 * Xianyu and Migu it was supplying one while a proper mark existed
+		 * elsewhere.  It is a fallback, not a preference. */
+		for (const [p, s] of iconify) {
+			if (svg) break;
+			if (p === 'logos' || !ICONIFY_LINE.includes(p) || !s.has(name)) continue;
+			svg = await tryFetch(`https://api.iconify.design/${p}/${name}.svg`);
+			if (svg) src = 'iconify:' + p;
+		}
+		const out = { svg, src };
+		cache.set(name, out);
+		return out;
 	}
 
 	const saved = [], missed = [];
 	let limitHit = false;
-	const indexes = [
+	/* Pass one: the four broad sets, at the original concurrency.  This is what
+	 * produced the icons before, so it runs untouched and keeps that result. */
+	const baseIndexes = [
 		{ set: dashboard, rank: 0 }, { set: logos, rank: 1 },
 		{ set: selfhst, rank: 2 }, { set: simple, rank: 3 },
 	];
-	await pool(appNames, async entry => {
-		if (opt.limitIcons && saved.length >= opt.limitIcons) { limitHit = true; return; }
+	/* Pass two adds the app-icon collections, ranked after the brand sets so a
+	 * colour brand mark is still preferred when both have the name. */
+	const wideIndexes = baseIndexes.slice();
+	let extraRank = 4;
+	for (const [p, s] of iconify) {
+		if (p === 'logos' || p === 'simple-icons') continue;
+		wideIndexes.push({ set: s, rank: extraRank++ });
+	}
+
+	async function tryEntry(entry, indexes, pause) {
+		if (opt.limitIcons && saved.length >= opt.limitIcons) { limitHit = true; return true; }
+		/* the page looks the file up by its own slug(), which drops the symbols,
+		 * so the name on disk must follow that - not iconSlug() */
+		const file = slug(entry.name) + '.svg';
+		if (!file) return true;
+		/* an icon shipped in the repository is already the answer */
+		if (localNames.has(file)) {
+			const side = localSource.get(file);
+			saved.push(side
+				? { name: entry.name, file, from: side.upstream, src: side.set }
+				: { name: entry.name, file, from: 'local', src: 'local' });
+			return true;
+		}
 		let tried = iconCandidates(entry.name, entry.sourceSlug);
 		/* If nothing matched exactly, let the upstream spelling win. */
 		const fuzzy = [];
 		for (const cand of tried) for (const n of fuzzyIconNames(indexes, cand)) fuzzy.push(n);
 		tried = tried.concat(fuzzy);
 		for (const cand of tried) {
-			const svg = await fetchBrand(cand);
-			if (!svg) continue;
-			/* the page looks the file up by its own slug(), which drops the
-			 * symbols, so the name on disk must follow that - not iconSlug() */
-			const file = slug(entry.name) + '.svg';
-			if (!file) break;
-			fs.writeFileSync(path.join(ICON_DIR, file), svg.trim().replace(/\r/g, ''), 'utf8');
-			saved.push({ name: entry.name, file, from: cand });
-			return;
+			const got = await fetchBrand(cand);
+			if (!got.svg) {
+				/* the second pass paces itself: it is the pass that can trip the
+				 * API's rate limit, and it only runs on what pass one missed */
+				if (pause) await sleep(pause);
+				continue;
+			}
+			fs.writeFileSync(path.join(ICON_DIR, file), got.svg.trim().replace(/\r/g, ''), 'utf8');
+			saved.push({ name: entry.name, file, from: cand, src: got.src });
+			return true;
 		}
-		missed.push(entry.name);
-	}, 10);
+		/* Nothing matched.  A miss that should have been a hit - the name is in the
+		 * catalogue and an upstream set does carry the icon - is otherwise
+		 * indistinguishable from a name no set carries, which is how Genshin
+		 * Impact went unexplained: a catalogue name, an arcticons icon for it, and
+		 * no file on disk.  Set EXPLAIN_ICONS=1 to have every miss name the sets
+		 * that hold one of its candidates. */
+		if (process.env.EXPLAIN_ICONS) {
+			const near = [];
+			for (const cand of tried) {
+				if (dashboard.has(cand)) near.push('dashboard-icons:' + cand);
+				if (logos.has(cand)) near.push('iconify:logos:' + cand);
+				for (const [p, s] of iconify)
+					if (p !== 'logos' && s.has(cand)) near.push('iconify:' + p + ':' + cand);
+				if (selfhst.has(cand)) near.push('selfhst/icons:' + cand);
+				if (simple.has(cand)) near.push('simple-icons:' + cand);
+			}
+			log(`  miss "${entry.name}" tried [${tried.join(', ')}] ` +
+				(near.length ? `upstream has: ${near.join(', ')}` : 'upstream has none of these'));
+		}
+		return false;
+	}
+
+	await pool(appNames, async entry => {
+		if (await tryEntry(entry, baseIndexes, 0)) return;
+		missed.push(entry);
+	}, 6);
+
+	/* Second pass: only the ones pass one could not resolve, over the wider name
+	 * index, slowly.  It keeps the entries, not their names, because the third
+	 * pass needs `sourceSlug` to build its candidates - rebuilding this as names
+	 * is what made that pass write every result to slug(undefined). */
+	log(`  第一轮: 命中 ${saved.length}，未命中 ${missed.length} -> 第二轮（含 arcticons/cib/token，低并发）`);
+	const firstPassMissed = missed.length;
+	const afterWide = [];
+	await pool(missed, async entry => {
+		if (await tryEntry(entry, wideIndexes, 90)) return;
+		afterWide.push(entry);
+	}, 2);
+	missed.length = 0;
+	for (const e of afterWide) missed.push(e);
+	log(`  第二轮: 补上 ${firstPassMissed - missed.length} 个，仍未命中 ${missed.length} 个`);
+
+	/* Third pass: ask the search index instead of requiring a candidate to match
+	 * an existing name exactly.  The two passes above can only find an icon whose
+	 * name is already derivable from the application name, and that is exactly
+	 * what left ~1050 of them without a mark - the collections do hold many of
+	 * those apps (arcticons alone names thousands) but the name is not reachable
+	 * by slugging.  Search is a different index, so it runs last and slowly.
+	 *
+	 * A hit is only accepted when the icon's own name matches the query.  Without
+	 * that check a search for a short name returns whatever is popular, which
+	 * would silently put the wrong logo on a row - worse than a letter avatar. */
+	const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+	async function searchIcon(query) {
+		const want = norm(query);
+		/* Two characters are enough.  The acceptance test below requires the
+		 * icon's own name to normalise to exactly this string - or, for longer
+		 * queries, to contain it - so a short query cannot return something
+		 * unrelated.  The three-character floor is what made numeric brands
+		 * unreachable: "58.com" searches for "58" and was refused before the
+		 * request was even made, which is why 58.com, 360 and 17173 sat at the
+		 * top of the missing list with hundreds of domains each. */
+		if (want.length < 2) return null;
+		try {
+			const txt = await httpText('https://api.iconify.design/search?limit=12&query=' +
+				encodeURIComponent(query), { tries: 2 });
+			const j = JSON.parse(txt);
+			if (!j || !Array.isArray(j.icons)) return null;
+			for (const full of j.icons) {
+				const cut = String(full).indexOf(':');
+				if (cut < 1) continue;
+				const prefix = String(full).slice(0, cut);
+				const name = String(full).slice(cut + 1);
+				const got = norm(name);
+				if (got === want)
+					return { prefix, name };
+			}
+		} catch (e) { /* a failed search is just a miss */ }
+		return null;
+	}
+
+	const searchMissed = [];
+	let searched = 0;
+	await pool(missed.slice(), async entry => {
+		/* the first word is the brand in almost every name here ("NetEase Cloud
+		 * Music" -> netease, "Xiaohongshu" -> xiaohongshu), and short queries are
+		 * what a prefix-based search index answers well */
+		let q = slug(entry.name).split('-')[0];
+		if (q.length < 3) q = slug(entry.name);
+		const hit = await searchIcon(q);
+		await sleep(120);
+		if (!hit) { searchMissed.push(entry.name); return; }
+		const svg = await tryFetch(`https://api.iconify.design/${hit.prefix}/${hit.name}.svg`);
+		if (!svg) { searchMissed.push(entry.name); return; }
+		const file = slug(entry.name) + '.svg';
+		if (!file) return;
+		fs.writeFileSync(path.join(ICON_DIR, file), svg.trim().replace(/\r/g, ''), 'utf8');
+		saved.push({ name: entry.name, file, from: hit.prefix + ':' + hit.name,
+			src: 'iconify:' + hit.prefix });
+		searched++;
+	}, 2);
+	missed.length = 0;
+	for (const n of searchMissed) missed.push(n);
+	log(`  第三轮(search): 补上 ${searched} 个，仍未命中 ${missed.length} 个`);
 
 	const glyphSaved = [], glyphMissed = [];
 	for (const [key, lucide] of Object.entries(GLYPHS)) {
@@ -743,6 +1323,186 @@ async function buildIcons(appNames, glyphNames) {
 			glyphMissed.push(key);
 		}
 	}
+
+	/* Some application names in the catalogue are not brands at all: the
+	 * classifier names a row "STUN Servers" or "NTP Service" when the traffic is
+	 * that protocol, and a brand logo would be the wrong answer for those rows.
+	 * Their glyph already exists under the category key, but the page looks an
+	 * icon up by the application's own slug, so the glyph is published under that
+	 * slug too.  STUN Servers carries more domains than any other name in the
+	 * catalogue - 350 of them - and it was showing a letter avatar while its
+	 * glyph sat in the directory beside it. */
+	const NAME_TO_GLYPH = {
+		'STUN Servers': 'stun',
+		'NTP Service': 'ntp',
+	};
+	let glyphAliased = 0;
+	for (const [appName, key] of Object.entries(NAME_TO_GLYPH)) {
+		const from = path.join(ICON_DIR, key + '.svg');
+		const sl = slug(appName);
+		if (!sl || !fs.existsSync(from)) continue;
+		fs.copyFileSync(from, path.join(ICON_DIR, sl + '.svg'));
+		saved.push({ name: appName, file: sl + '.svg', from: key, src: 'lucide-static' });
+		glyphAliased++;
+	}
+	if (glyphAliased) log(`  类别名沿用线稿: ${glyphAliased} 个`);
+
+	/* ---- provenance manifest ---------------------------------------------
+	 * The package redistributes every one of these files and they come from six
+	 * different projects whose licences are not the same, so "icons belong to
+	 * their owners" in the README cannot answer "under what terms is this file
+	 * here".  The generator knows the answer per icon while it is fetching, and
+	 * forgets it the moment it exits - so it writes it down.
+	 *
+	 * The licence is filled in only where the upstream project states one
+	 * plainly.  Everywhere else the row says so and gives the URL to check
+	 * instead of guessing: a wrong licence in a manifest is worse than an
+	 * honest "check upstream". */
+	const SET_INFO = {
+		'dashboard-icons': ['see upstream LICENSE',
+			'https://github.com/homarr-labs/dashboard-icons/blob/main/LICENSE'],
+		'selfhst/icons': ['see upstream LICENSE',
+			'https://github.com/selfhst/icons/blob/main/LICENSE'],
+		'simple-icons': ['CC0-1.0 (trademarks: see DISCLAIMER.md)',
+			'https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md'],
+		'lucide-static': ['ISC', 'https://github.com/lucide-icons/lucide/blob/main/LICENSE'],
+		'local': ['shipped in this repository (marks of their owners)',
+			'tools/icons-local in the luci-app-traffic source tree'],
+		'bank-logos': ['MIT (trademarks remain with the banks)',
+			'https://github.com/icongo/bank-logos'],
+		/* Pinned icons whose bytes came from somewhere that is not an icon set.
+		 * Without an entry here the sidecar still records the upstream, but the
+		 * licence column falls back to the iconify wording and calls a public
+		 * domain Commons file part of a collection it has nothing to do with. */
+		'wikimedia-commons': ['see the licence on the file page (public domain for CCTVNewLogo)',
+			'https://commons.wikimedia.org/'],
+		'seeklogo': ['seeklogo: reference use only, not an open licence (trademark of the owner)',
+			'https://seeklogo.com/'],
+		'svglogo': ['MIT', 'https://github.com/HeyHuazi/SVGLOGO'],
+	};
+	/* The iconify sets each declare their own licence, and the declaration is not
+	 * in the per-collection JSON the glyphs come from - that file carries only
+	 * prefix, icons, aliases and dimensions.  It is in the collections index the
+	 * same repository publishes (collections.json), which gives every prefix a
+	 * licence title, an SPDX id and a URL.  Every set referenced above was read
+	 * from there, so the licence is recorded rather than left as "check the
+	 * collection": the difference is not cosmetic - cbi is CC BY-NC-SA 4.0
+	 * (non-commercial) while cib is CC0-1.0, and arcticons is share-alike, and a
+	 * redistribution manifest that does not say so is not honest about it.
+	 * Values are the SPDX ids, which is the form the non-iconify rows already
+	 * use.  A prefix that is not listed here still falls back to the collection
+	 * URL instead of guessing. */
+	const ICONIFY_LICENCES = {
+		academicons: ['OFL-1.1', 'https://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=OFL'],
+		arcticons: ['CC-BY-SA-4.0', 'https://creativecommons.org/licenses/by-sa/4.0/'],
+		cbi: ['CC-BY-NC-SA-4.0', 'https://github.com/elax46/custom-brand-icons/blob/main/LICENSE'],
+		cib: ['CC0-1.0', 'https://creativecommons.org/publicdomain/zero/1.0/'],
+		'circle-flags': ['MIT', 'https://github.com/HatScripts/circle-flags/blob/gh-pages/LICENSE'],
+		codicon: ['CC-BY-4.0', 'https://github.com/microsoft/vscode-codicons/blob/main/LICENSE'],
+		devicon: ['MIT', 'https://github.com/devicons/devicon/blob/master/LICENSE'],
+		'dinkie-icons': ['MIT', 'https://github.com/atelier-anchor/dinkie-icons/blob/main/LICENSE'],
+		gg: ['MIT', 'https://github.com/astrit/css.gg/blob/master/LICENSE'],
+		gis: ['CC-BY-4.0', 'https://github.com/Viglino/font-gis/blob/main/LICENSE-CC-BY.md'],
+		hugeicons: ['MIT', 'https://icon-sets.iconify.design/hugeicons/'],
+		iconmind: ['MIT', 'https://github.com/Iconmind/iconmind/blob/main/LICENSE'],
+		logos: ['CC0-1.0', 'https://raw.githubusercontent.com/gilbarbara/logos/master/LICENSE.txt'],
+		'material-icon-theme': ['MIT', 'https://github.com/material-extensions/vscode-material-icon-theme/blob/main/LICENSE'],
+		'material-symbols': ['Apache-2.0', 'https://github.com/google/material-design-icons/blob/master/LICENSE'],
+		mdi: ['Apache-2.0', 'https://github.com/Templarian/MaterialDesign/blob/master/LICENSE'],
+		mingcute: ['Apache-2.0', 'https://github.com/Richard9394/MingCute/blob/main/LICENSE'],
+		picon: ['OFL-1.1', 'https://github.com/yne/picon/blob/master/OFL.txt'],
+		ri: ['Apache-2.0', 'https://github.com/cyberalien/RemixIcon/blob/master/License'],
+		/* the same project as the plain `simple-icons` rows below, so it carries
+		 * the same trademark caveat rather than a second wording for one licence */
+		'simple-icons': ['CC0-1.0 (trademarks: see DISCLAIMER.md)',
+			'https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md'],
+		tabler: ['MIT', 'https://github.com/tabler/tabler-icons/blob/master/LICENSE'],
+		thesvg: ['MIT', 'https://github.com/glincker/thesvg/blob/main/LICENSE'],
+		'thesvg-color': ['MIT', 'https://github.com/glincker/thesvg/blob/main/LICENSE'],
+		token: ['MIT', 'https://github.com/0xa3k5/web3icons/blob/main/LICENCE'],
+	};
+	function setInfo(src) {
+		if (!src) return ['unknown', ''];
+		if (SET_INFO[src]) return SET_INFO[src];
+		const prefix = String(src).replace(/^iconify:/, '');
+		if (ICONIFY_LICENCES[prefix]) return ICONIFY_LICENCES[prefix];
+		return ['see the collection licence', `https://icon-sets.iconify.design/${prefix}/`];
+	}
+	const rows = ['# Generated by tools/build-catalog.js - do not edit by hand.',
+		'# file\tapplication\tsource set\tupstream slug\tlicence\tsource URL\tdegraded'];
+	/* A row whose source set is not the set that should have answered is a
+	 * degraded icon: the name is real and a better mark exists, but the bytes did
+	 * not arrive.  Naming the skipped set here is what makes that visible - the
+	 * icon still looks like a normal result otherwise, which is how Apple Music
+	 * was drawn as a monochrome mark for weeks without anyone noticing. */
+	const upstream = new Set(['dashboard-icons', 'iconify:logos', 'selfhst/icons', 'simple-icons',
+		...ICONIFY_PREFIXES.map(p => 'iconify:' + p)]);
+	for (const e of saved) {
+		const pinned = localSource.get(e.file);
+		if (pinned && pinned.row.split('\t').length >= 7) {
+			const cols = pinned.row.split('\t');
+			cols[1] = e.name;
+			rows.push(cols.join('\t'));
+			continue;
+		}
+		const [lic, url] = setInfo(e.src);
+		let note = '';
+		if (e.src && upstream.has(e.src)) {
+			const want = expectedSource(e.name);
+			if (want && want !== e.src) note = 'degraded: ' + want + ' has it';
+		}
+		rows.push([e.file, e.name, e.src || 'unknown', e.from, lic, url, note].join('\t'));
+	}
+	for (const key of glyphSaved)
+		rows.push([key + '.svg', key, 'lucide-static', GLYPHS[key], ...SET_INFO['lucide-static'], ''].join('\t'));
+
+	/* Files this run did not produce but that the catalogue can still name keep
+	 * their place: a fetch may fail for reasons that have nothing to do with the
+	 * icon, and deleting the file would turn a transient outage into a permanently
+	 * missing logo.  Only a file no name maps to - a leftover from an older
+	 * catalogue - is removed. */
+	const produced = new Set([
+		...saved.map(e => e.file),
+		...glyphSaved.map(k => k + '.svg'),
+		...localNames,
+	]);
+	/* buildIcons is handed {name, sourceSlug} entries, not bare names.  Reading
+	 * them as names produced a set holding one junk entry ("object-object.svg"),
+	 * so the first version of this clean deleted 56 icons the catalogue still
+	 * names - Reuters, Youku, iQIYI, Starlink, UCloud and others.  Accept both
+	 * shapes so the check cannot go blind again. */
+	const knownFiles = new Set([
+		...appNames.map(e => slug(typeof e === 'string' ? e : e.name) + '.svg'),
+		...Object.keys(GLYPHS).map(k => k + '.svg'),
+		...Object.values(NAME_TO_GLYPH).map(k => k + '.svg'),
+	]);
+	let carried = 0, dropped = 0;
+	for (const f of fs.readdirSync(ICON_DIR)) {
+		if (!f.endsWith('.svg') || produced.has(f)) continue;
+		/* A file the previous manifest already recorded is kept even when this run
+		 * could not fetch it again: the manifest is the record of what legitimately
+		 * ships, so without this a flaky request silently deletes a logo and the
+		 * hit rate moves with the weather.  Only a file that nothing has ever
+		 * recorded is removed. */
+		if (knownFiles.has(f) || prevRows.has(f)) {
+			carried++;
+			/* A carried row is the previous manifest's line, which may predate the
+			 * degraded column; padded so the table stays rectangular.  A ragged
+			 * TSV is not fatal but it is exactly the kind of "close enough"
+			 * that makes a later column-shift bug invisible. */
+			const carriedRow = prevRows.get(f);
+			rows.push(carriedRow
+				? (carriedRow.split('\t').length < 7 ? carriedRow + '\t' : carriedRow)
+				: [f, '', 'unknown', '', 'carried over; provenance not recorded', '', ''].join('\t'));
+			continue;
+		}
+		fs.unlinkSync(path.join(ICON_DIR, f));
+		dropped++;
+	}
+	if (carried || dropped) log(`  保留未重新抓取: ${carried} 个，清理无用: ${dropped} 个`);
+
+	fs.writeFileSync(MANIFEST, rows.join('\n') + '\n', 'utf8');
+	log(`  来源清单: SOURCES.tsv（${rows.length - 2} 条）`);
 
 	const bytes = fs.readdirSync(ICON_DIR).filter(f => f.endsWith('.svg'))
 		.reduce((sum, f) => sum + fs.statSync(path.join(ICON_DIR, f)).size, 0);
@@ -801,6 +1561,7 @@ async function main() {
 	 * nowhere else).  A more specific exact-host rule still wins at lookup
 	 * time, so claiming here does not flatten Adobe's activation hosts. */
 	let curated = 0;
+	let droppedShared = 0;
 	for (const [name, key, kind] of CURATED) {
 		const k = key.toLowerCase();
 		if (!validKey(k)) { log(`  ! 跳过无效的 curated 键: ${key}`); continue; }
@@ -808,11 +1569,15 @@ async function main() {
 		else if (claim(appSuffix, k, name, 'curated', 'curated')) curated++;
 	}
 	log(`  curated 优先层: ${curated} 个键`);
+	log(`  共享基础设施整域规则已丢弃: ${droppedShared} 个键`);
 
 	for (const [dir, set] of bm7Entries) {
 		const name = prettyName(dir);
 		for (const k of set.host) claim(appHost, k, name, dir, 'bm7');
-		for (const k of set.suffix) claim(appSuffix, k, name, dir, 'bm7');
+		for (const k of set.suffix) {
+			if (isSharedInfra(k)) { droppedShared++; continue; }
+			claim(appSuffix, k, name, dir, 'bm7');
+		}
 	}
 
 	const dlcEntries = dlc.files
@@ -822,7 +1587,10 @@ async function main() {
 	for (const [file, set] of dlcEntries) {
 		const name = prettyName(file);
 		for (const k of set.host) claim(appHost, k, name, file, 'dlc');
-		for (const k of set.suffix) claim(appSuffix, k, name, file, 'dlc');
+		for (const k of set.suffix) {
+			if (isSharedInfra(k)) { droppedShared++; continue; }
+			claim(appSuffix, k, name, file, 'dlc');
+		}
 	}
 
 	/* Two upstreams often carry the same brand spelled differently ("AcFun" in

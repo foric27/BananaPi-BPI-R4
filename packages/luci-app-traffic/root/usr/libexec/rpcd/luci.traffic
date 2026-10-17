@@ -31,7 +31,7 @@ empty_summary() {
 	# because no counters can be running before the first round; version is
 	# empty because this script does not know which build is installed.
 	printf '{"collected_at":0,"interval":0,"hour":"","flows":0,"dnsmap_lines":0,"pending":0,"rounds":0,'
-	printf '"version":"","acct":0,'
+	printf '"version":"","acct":0,"offload":0,'
 	printf '"querylog":"","apps":[],"clients":[],'
 	printf '"totals":{"down":0,"up":0,"other":0,"router":0,"client_count":0,'
 	printf '"exact":0,"any":0,"bucket":0,"residual":0}}\n'
@@ -77,14 +77,21 @@ resolve_now() {
 get_hourly() {
 	local hours="$1" f list sel
 	case "$hours" in ''|*[!0-9]*) hours=24 ;; esac
+	[ "$hours" -gt 0 ] || hours=24
 	f="$(datadir)/hourly.tsv"
 	if [ ! -s "$f" ]; then
-		printf '{"hours":[]}\n'
-		return
+		# No archive yet: a fresh install, or the first hour after a reflash.
+		# The collector has been publishing the hour in progress the whole time,
+		# so hand the awk an empty history instead of answering with nothing -
+		# this early return is what kept the default view blank even once the
+		# page knew how to ask for the hour in progress.
+		f=/dev/null
 	fi
 	list=$(awk -F'\t' '{ if (!seen[$1]++) print $1 }' "$f" | sort | tail -n "$hours")
 	sel=$(printf '%s ' $list)
-	awk -F'\t' -v sel="$sel" '
+	awk -F'\t' -v sel="$sel" -v limit="$hours" -v cur="$STATE_DIR/cur.apps" \
+		-v curc="$STATE_DIR/cur.clients" -v curr="$STATE_DIR/cur.router" \
+		-v curi="$STATE_DIR/cur.iface" -v curh="$STATE_DIR/cur.hour" '
 		# Names come from the generated catalogue, so a quote is the only thing
 		# that could break the JSON; the & form is what makes gsub put a real
 		# backslash in front of the match instead of eating it.
@@ -92,6 +99,43 @@ get_hourly() {
 		BEGIN {
 			n = split(sel, w, " ")
 			for (i = 1; i <= n; i++) { order[i] = w[i]; keep[w[i]] = 1 }
+			# The hour in progress, as the collector publishes it: the difference
+			# between the live counters and what is already archived, so a range
+			# covers the current hour without counting anything twice.
+			#   cur.apps    <name> <down> <up>
+			#   cur.clients <ip> <bytes>
+			#   cur.router  one number     cur.hour  the hour it belongs to
+			#   cur.iface   <down> <up>    the same hour in the WAN counters
+			if ((getline l < curh) > 0) { sub(/\r?\n$/, "", l); curhour = l }
+			close(curh)
+			# The device counters are a two-line file and the two lines are read
+			# with the same handle, so both have to be numbers before the field
+			# is published at all: a half-read pair would put a real down beside
+			# an up of zero, which reads as a direction that carried nothing.
+			if ((getline l < curi) > 0) {
+				sub(/\r?\n$/, "", l)
+				cd1 = l
+				if ((getline l < curi) > 0) {
+					sub(/\r?\n$/, "", l)
+					if (cd1 ~ /^[0-9]+$/ && l ~ /^[0-9]+$/) { cifd = cd1 + 0; cifu = l + 0; cifok = 1 }
+				}
+			}
+			close(curi)
+			while ((getline l < cur) > 0) {
+				split(l, f, "\t")
+				if (f[1] == "") continue
+				can[++nca] = f[1]; cad[f[1]] = f[2] + 0; cau[f[1]] = f[3] + 0
+				if (f[4] != "") { caw[f[1]] = f[4]; cwb[f[1]] = f[5] + 0; cwc[f[1]] = f[6] + 0 }
+			}
+			close(cur)
+			while ((getline l < curc) > 0) {
+				split(l, f, "\t")
+				if (f[1] == "") continue
+				ccn[++ncc] = f[1]; ccb[f[1]] = f[2] + 0
+			}
+			close(curc)
+			if ((getline l < curr) > 0) { sub(/\r?\n$/, "", l); crt = l + 0 }
+			close(curr)
 		}
 		!($1 in keep) { next }
 		$2 == "app" {
@@ -106,12 +150,31 @@ get_hourly() {
 			cb[k] += $4 + 0
 			next
 		}
+		$2 == "apptop" {
+			# <hour> apptop <app> <client> <bytes> <clients>
+			k = $1 SUBSEP $3
+			at[k] = $4; atb[k] = $5 + 0; atc[k] = $6 + 0
+			next
+		}
 		$2 == "router" { rv[$1] += $4 + 0; next }
+		# The WAN interface total for that hour, written once per hour by
+		# roll_hour as <hour> wan - <down> <up>.  It is a total rather than an
+		# application, so it is collected separately and never reaches the app
+		# or client lists - and it is summed rather than overwritten, because a
+		# legacy archive that already holds more than one such row for an hour
+		# must not have all but the last of them dropped.
+		$2 == "wan" { wd[$1] += $4 + 0; wu[$1] += $5 + 0; next }
 		END {
 			printf "{\"hours\":["
-			for (i = 1; i <= n; i++) {
+			cnt = 0
+			# The in-progress hour is one of the requested hours.  If the
+			# archive already supplied `limit` buckets, drop its oldest one;
+			# otherwise a 24-hour selection quietly includes 25 buckets.
+			hascur = curhour != "" && (nca > 0 || ncc > 0 || crt > 0 || (cifok && cifd + cifu > 0))
+			first = hascur && n >= limit ? 2 : 1
+			for (i = first; i <= n; i++) {
 				h = order[i]
-				if (i > 1) printf ","
+				if (cnt++) printf ","
 				printf "{\"hour\":\"%s\",\"apps\":[", esc(h)
 				na = split(names_a[h], nm, "\n")
 				f1 = 1
@@ -120,7 +183,11 @@ get_hourly() {
 					k = h SUBSEP nm[j]
 					if (!f1) printf ","
 					f1 = 0
-					printf "{\"name\":\"%s\",\"down\":%d,\"up\":%d}", esc(nm[j]), ad[k], au[k]
+					printf "{\"name\":\"%s\",\"down\":%d,\"up\":%d", esc(nm[j]), ad[k], au[k]
+					# the busiest client of that hour and how many clients moved it,
+					# when the archive has them (rows written after 0.1.38 do)
+					if (k in at) printf ",\"top\":\"%s\",\"top_bytes\":%d,\"clients\":%d", esc(at[k]), atb[k], atc[k]
+					printf "}"
 				}
 				printf "],\"clients\":["
 				ncl = split(names_c[h], cn, "\n")
@@ -132,7 +199,44 @@ get_hourly() {
 					f2 = 0
 					printf "{\"ip\":\"%s\",\"bytes\":%d}", esc(cn[j]), cb[k]
 				}
-				printf "],\"router\":%d}", rv[h] + 0
+				printf "],\"router\":%d", rv[h] + 0
+				# The device total for this hour of the range.  Only emitted when
+				# the archive actually holds a row for it: a range the archive
+				# predates carries no such row, and the absence of the field is
+				# what makes the page fall back to the attributed bytes and say
+				# 已归属 instead of presenting a part of the hour as its total.
+				if (h in wd) printf ",\"iface\":{\"down\":%d,\"up\":%d}", wd[h], wu[h]
+				printf "}"
+			}
+			# The hour in progress, so a range never comes back empty merely
+			# because the clock has not crossed the hour yet.  It is appended
+			# even when the archive already holds that label: roll_hour writes
+			# its row under the hour the roll ran in, so a row with this label
+			# can still be the previous hour bytes, and dropping the published
+			# hour in that case would lose the current one.
+			if (hascur) {
+				if (cnt++) printf ","
+				printf "{\"hour\":\"%s\",\"apps\":[", esc(curhour)
+				for (i = 1; i <= nca; i++) {
+					k = can[i]
+					if (i > 1) printf ","
+					printf "{\"name\":\"%s\",\"down\":%d,\"up\":%d", esc(k), cad[k], cau[k]
+					if (k in caw) printf ",\"top\":\"%s\",\"top_bytes\":%d,\"clients\":%d", esc(caw[k]), cwb[k], cwc[k]
+					printf "}"
+				}
+				printf "],\"clients\":["
+				for (i = 1; i <= ncc; i++) {
+					k = ccn[i]
+					if (i > 1) printf ","
+					printf "{\"ip\":\"%s\",\"bytes\":%d}", esc(k), ccb[k]
+				}
+				printf "],\"router\":%d", crt
+				# and the same hour in the device counters, when the collector
+				# measured them; without this the current hour would be the one
+				# bucket a range could never total from the interface, and the
+				# range would fall back for as long as the hour was running.
+				if (cifok) printf ",\"iface\":{\"down\":%d,\"up\":%d}", cifd, cifu
+				printf "}"
 			}
 			printf "]}\n"
 		}
@@ -176,10 +280,41 @@ get_series() {
 			max=$((3600 / iv)); [ "$max" -lt 10 ] && max=10 ;;
 	esac
 
+	[ -f "$STATE_DIR/peaks.tsv" ] || : > "$STATE_DIR/peaks.tsv"
 	printf '{"range":"%s","interval":%s,"points":[' "$range" "$iv"
-	awk -F'\t' 'NF >= 3 && $1 != "" && $1 ~ /^[0-9]+$/ { print }' "$f" 2>/dev/null \
-		| tail -n "$max" \
-		| awk -F'\t' 'BEGIN { n = 0 } { if (n++) printf ","; printf "[%s,%s,%s]", $1, $2 + 0, $3 + 0 }'
+	# Each point carries the one second peak of its minute beside the round
+	# average.  The chart draws the average and quotes the peak, so a 991 Mbps
+	# test that lasted a second is no longer published as the highest round
+	# average, which read 12.9 MiB/s.  A point with no one second sample keeps
+	# zeroes, and the page says so rather than presenting an average as a peak.
+	#
+	# peaks.tsv is matched by FILENAME rather than NR==FNR: with an empty or
+	# missing first file awk starts the second at NR==FNR==1 and every series
+	# row would be swallowed as a peak row.
+	awk -F'\t' -v iv="$iv" -v max="$max" -v pf="$STATE_DIR/peaks.tsv" '
+		FILENAME == pf {
+			if (NF >= 4 && $1 ~ /^[0-9]+$/) {
+				b = $1 + 0
+				if ($2 + 0 > pk[b]) pk[b] = $2 + 0
+				if ($3 + 0 > pu[b]) pu[b] = $3 + 0
+				pn[b] += $4 + 0
+			}
+			next
+		}
+		NF >= 3 && $1 ~ /^[0-9]+$/ { line[++n] = $0 }
+		END {
+			start = n - max + 1
+			if (start < 1) start = 1
+			c = 0
+			for (i = start; i <= n; i++) {
+				split(line[i], f, "\t")
+				# the peak buckets are minutes, so a ten second point resolves
+				# to the minute that contains it
+				b = int((f[1] + 0) / 60) * 60
+				if (c++) printf ","
+				printf "[%s,%s,%s,%s,%s,%s]", f[1], f[2] + 0, f[3] + 0, pk[b] + 0, pu[b] + 0, pn[b] + 0
+			}
+		}' "$STATE_DIR/peaks.tsv" "$f" 2>/dev/null
 	printf ']}\n'
 }
 
@@ -196,6 +331,12 @@ reset_stats() {
 	# actually start from zero; keeping the absolute baseline would instead
 	# count every counter again from where it stands.
 	rm -f "$STATE_DIR/acct.tsv" "$STATE_DIR/acct.abs" "$STATE_DIR/acct.hosts"
+	# The interface counters are what the published total is, so a reset has to
+	# start them over as well.  The baseline is dropped rather than zeroed: the
+	# next round then takes a fresh baseline instead of measuring a delta against
+	# a reading from before the reset.
+	rm -f "$STATE_DIR/wan.abs" "$STATE_DIR/wan.delta"
+	printf '0\n0\n' > "$STATE_DIR/wan.tsv"
 	printf '0\n0\n0\n' > "$STATE_DIR/stat.tsv"
 	# the sharp tier belongs to the session, the coarse one to the history
 	: > "$STATE_DIR/series10.tsv"
@@ -209,10 +350,28 @@ reset_stats() {
 	json_dump
 }
 
+# The page's realtime meter.  The collector rewrites live.json every second, but
+# only while someone is watching - and rpcd is what tells it that someone is:
+# the timestamp written here is read by live.sh, which exits after two stat()
+# calls when it is stale.  That is the whole reason a router with no page open
+# pays nothing for a one-second meter.  The file is a few dozen bytes, so this
+# stays a cat rather than a re-derivation.
+get_live() {
+	printf '%s\n' "$(date +%s 2>/dev/null || echo 0)" > "$STATE_DIR/live.watch.new" 2>/dev/null &&
+		mv -f "$STATE_DIR/live.watch.new" "$STATE_DIR/live.watch"
+	if [ -s "$STATE_DIR/live.json" ]; then
+		cat "$STATE_DIR/live.json"
+	else
+		# no sample yet: the page falls back to the interval rate and says so
+		printf '{"ready":0,"bps_down":0,"bps_up":0,"source":""}\n'
+	fi
+}
+
 case "$1" in
 	list)
 		json_init
 		json_add_object "getSummary"; json_close_object
+		json_add_object "getLive"; json_close_object
 		json_add_object "getHourly"
 		json_add_string "hours" "integer"
 		json_close_object
@@ -240,6 +399,7 @@ case "$1" in
 		# like a healthy object.
 		case "$2" in
 			getSummary) get_summary ;;
+			getLive)    get_live ;;
 			getHourly)  get_hourly "$arg_hours" ;;
 			getConfig)  get_config ;;
 			getSeries)  get_series "$arg_range" ;;

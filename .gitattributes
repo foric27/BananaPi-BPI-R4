@@ -1,2 +1,17 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Files executed on the router or by the build must keep LF endings.
+*.sh          text eol=lf
+*.patch       text eol=lf
+*.po          text eol=lf
+*.pot         text eol=lf
+*.yml         text eol=lf
+*.yaml        text eol=lf
+*.json        text eol=lf
+*.js          text eol=lf
+*.lua         text eol=lf
+*.md          text eol=lf
+*.mk          text eol=lf
+Makefile      text eol=lf
+*.svg         text eol=lf

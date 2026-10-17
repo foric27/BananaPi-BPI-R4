@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
-set -e
+set -euo pipefail
 #
 # customize.sh -- кастомизация чистой OpenWrt (openwrt-25.12) фидом
 #                mediatek/mtk-openwrt-feeds (25.12 / kernel 6.12)
@@ -12,7 +12,7 @@ set -e
 #   4) очередь патчей (MTK base/feeds/вариант + наши) и ОДИН проход применения
 #   5) адаптации backports, hostapd-снапшот
 #   6) community/локальные пакеты, фиксы базового дерева
-#   7) гейты (WiFi-стек, 8GB, MAC)
+#   7) фиксы базового дерева и гейты (WiFi-стек, 8GB U-Boot/ATF, MAC, kernel pins)
 #
 # Значения kernel-символов живут в config/defconfig, объявления — в
 # config/Config-kernel.in (патч 1030).
@@ -26,6 +26,9 @@ if [ ! -f rules.mk ] || [ ! -x scripts/feeds ]; then
     echo "[CUSTOM] Запуск только из корня дерева openwrt/ (текущий cwd: $PWD)" >&2
     exit 1
 fi
+
+# Без него относительные пути к patches/ и src/ молча превращаются в /src/...
+: "${GITHUB_WORKSPACE:?[CUSTOM] GITHUB_WORKSPACE не задан (запускайте через build.sh или CI)}"
 
 MTK_FEED="${GITHUB_WORKSPACE}/src/mtk-openwrt-feeds"
 MTK_VER="25.12"
@@ -73,13 +76,6 @@ run_retry() {
 # ---------------------------------------------------------------------------
 PATCH_QUEUE=()
 
-queue_file() {
-    if [ -f "$1" ]; then
-        PATCH_QUEUE+=("$1|$2")
-    fi
-    return 0
-}
-
 queue_dir() {
     local f
     [ -d "$1" ] || return 0
@@ -102,7 +98,7 @@ echo "[CUSTOM] feeds install -a"
 # ============================================================
 # 2. Файлы MTK (target/linux/mediatek, package/mtk, scripts, tools, generic)
 # ============================================================
-cp -af "$MTK_FEED/$MTK_VER/files/"* .
+cp -a "$MTK_FEED/$MTK_VER/files/." .
 echo "[CUSTOM] MTK files скопированы"
 
 # Слой logan_common (общий для Logan-платформ): драйвер ядра mtk_hnat
@@ -110,7 +106,7 @@ echo "[CUSTOM] MTK files скопированы"
 # Без него kmod-mediatek_hnat собирается пустым, и turboacc не находит HNAT.
 LOGAN_FILES="$MTK_FEED/autobuild/unified/global/logan_common/$MTK_VER/files"
 if [ -d "$LOGAN_FILES" ]; then
-    cp -af "$LOGAN_FILES/"* .
+    cp -a "$LOGAN_FILES/." .
     echo "[CUSTOM] logan_common скопирован (HNAT-драйвер + kernel-патчи)"
 else
     echo "[CUSTOM] ВНИМАНИЕ: слой logan_common не найден: $LOGAN_FILES" >&2
@@ -120,7 +116,7 @@ fi
 # патчится на них, поэтому копируем.
 if [ -d "$MTK_FEED/tools" ]; then
     mkdir -p tools
-    cp -af "$MTK_FEED/tools/"* tools/
+    cp -a "$MTK_FEED/tools/." tools/
     echo "[CUSTOM] MTK host-тулы скопированы"
 fi
 
@@ -138,7 +134,7 @@ if [ -f "$MAC_DIR/remove_list.txt" ]; then
         [ -n "$_rm" ] && rm -rf "$_rm"
     done < "$MAC_DIR/remove_list.txt"
 fi
-[ -d "$MAC_DIR/files" ] && cp -af "$MAC_DIR/files/"* .
+[ -d "$MAC_DIR/files" ] && cp -a "$MAC_DIR/files/." .
 
 # ============================================================
 # 4. Очередь патчей (порядок важен: MTK base -> feeds -> вариант -> наши)
@@ -208,6 +204,10 @@ if [ -f "$_hs_mk" ]; then
     _hs_date="$(grep -m1 '^PKG_SOURCE_DATE:=' "$_hs_mk" | cut -d= -f2 | tr '-' '.')"
     _hs_sha="$(grep -m1 '^PKG_SOURCE_VERSION:=' "$_hs_mk" | cut -d= -f2)"
     _hs_ver="${_hs_date}~$(printf '%s' "$_hs_sha" | cut -c1-8)"
+    if [ -z "$_hs_date" ] || [ -z "$_hs_sha" ]; then
+        echo "[CUSTOM] hostapd: не удалось прочитать PKG_SOURCE_DATE/PKG_SOURCE_VERSION" >&2
+        exit 1
+    fi
     mkdir -p dl
     if [ ! -s "dl/hostapd-${_hs_ver}.tar.zst" ]; then
         echo "[CUSTOM] hostapd: префетч снапшота ${_hs_ver} из git.w1.fi"
@@ -239,11 +239,29 @@ if [ -f "$_hs_mk" ]; then
         mv .hs-fetch "hostapd-${_hs_ver}"
         _ZSTD="$(command -v zstd || true)"
         [ -n "$_ZSTD" ] || _ZSTD="$GITHUB_WORKSPACE/src/openwrt/staging_dir/host/bin/zstd"
-        tar --numeric-owner --owner=0 --group=0 --sort=name -c "hostapd-${_hs_ver}" | \
-            "$_ZSTD" -T0 -19 -c > "dl/hostapd-${_hs_ver}.tar.zst"
+        _hs_tar="dl/hostapd-${_hs_ver}.tar.zst"
+        _hs_tmp="${_hs_tar}.tmp"
+        # pipefail обязателен: иначе сбой tar в конвейере ниже не виден,
+        # и в dl/ остаётся обрезанный архив, который всплывёт при распаковке.
+        if ! tar --numeric-owner --owner=0 --group=0 --sort=name -c "hostapd-${_hs_ver}" | \
+                "$_ZSTD" -T0 -19 -c > "$_hs_tmp"; then
+            rm -rf "hostapd-${_hs_ver}" "$_hs_tmp"
+            echo "[CUSTOM] hostapd: не удалось упаковать снапшот" >&2
+            exit 1
+        fi
+        if [ ! -s "$_hs_tmp" ] || ! "$_ZSTD" -t "$_hs_tmp"; then
+            rm -rf "hostapd-${_hs_ver}" "$_hs_tmp"
+            echo "[CUSTOM] hostapd: архив не прошёл проверку zstd -t" >&2
+            exit 1
+        fi
+        mv -f "$_hs_tmp" "$_hs_tar"
         rm -rf "hostapd-${_hs_ver}"
     fi
     sed -i 's/^PKG_MIRROR_HASH:=.*/PKG_MIRROR_HASH:=skip/' "$_hs_mk"
+    grep -q '^PKG_MIRROR_HASH:=skip' "$_hs_mk" || {
+        echo "[CUSTOM] hostapd: PKG_MIRROR_HASH не удалось перевести в skip" >&2
+        exit 1
+    }
     echo "[CUSTOM] hostapd: снапшот MTK готов, PKG_MIRROR_HASH=skip"
 fi
 
@@ -307,7 +325,7 @@ for _dup in luci-app-modemband luci-theme-argon luci-app-argon-config; do
 done
 
 # ============================================================
-# 7. Фиксы базового дерева
+# 7. Фиксы базового дерева и гейты
 # ============================================================
 
 # GCC 14 + musl fortify для mbedtls
@@ -330,4 +348,52 @@ if [ -f "$_DTS184" ]; then
     rm -f "$_DTS184"
     echo "[CUSTOM] BPI-R4: удалён устаревший DTS-патч 184 (дубли портов)"
 fi
+
+# ============================================================
+# 8. Гейты: WiFi-стек, 8GB U-Boot/ATF, MAC, объявления kernel-символов
+# ============================================================
+# README обещает, что неприменение любого из слоёв роняет сборку. Проверки
+# ниже — это и есть обещание: молчаливая деградация (пустой набор патчей,
+# отсутствующий comb-4bg) должна падать здесь, а не на устройстве.
+_gate_fail=0
+gate_fail() {
+    echo "[CUSTOM] ГЕЙТ: $*" >&2
+    _gate_fail=1
+}
+
+gate_patch_count() {
+    local dir="$1" min="$2" n
+    n=$(find "$dir" -name '*.patch' 2>/dev/null | wc -l)
+    [ "$n" -ge "$min" ] || gate_fail "ожидалось >= $min патчей в $dir, найдено $n"
+}
+
+# WiFi: вариант MTK разложен, его патчи и наши backports-адаптации на месте
+gate_patch_count package/kernel/mt76/patches 50
+gate_patch_count package/kernel/mac80211/patches 50
+gate_patch_count package/network/services/hostapd/patches 50
+[ -f package/kernel/mac80211/patches/subsys/9998-backports-drop-qrtr-mhi.patch ] || \
+    gate_fail "не установлен 9998-backports-drop-qrtr-mhi.patch"
+[ -f package/kernel/mac80211/patches/subsys/9999-backports-sockaddr-unsized-revert.patch ] || \
+    gate_fail "не установлен 9999-backports-sockaddr-unsized-revert.patch"
+
+# 8GB: сборки comb-4bg в TF-A/U-Boot (патчи 1011/1012)
+grep -q 'comb-4bg' package/boot/arm-trusted-firmware-mediatek/Makefile 2>/dev/null || \
+    gate_fail "в TF-A Makefile нет сборок comb-4bg (патч 1011 не применён)"
+grep -q 'comb-4bg' package/boot/uboot-mediatek/Makefile 2>/dev/null || \
+    gate_fail "в U-Boot Makefile нет зависимостей comb-4bg (патч 1012 не применён)"
+
+# MAC: стабильные адреса для SD/eMMC (патч 1035)
+grep -q 'macaddr_generate_from_mmc_cid' \
+    target/linux/mediatek/filogic/base-files/etc/board.d/02_network 2>/dev/null || \
+    gate_fail "02_network не содержит MAC-фикса для SD/eMMC (патч 1035 не применён)"
+
+# kernel pins: объявления символов, без которых make defconfig их выбросит (патч 1030)
+grep -q 'config KERNEL_NF_CONNTRACK' config/Config-kernel.in 2>/dev/null || \
+    gate_fail "config/Config-kernel.in не содержит пинов (патч 1030 не применён)"
+
+if [ "$_gate_fail" -ne 0 ]; then
+    echo "[CUSTOM] Гейты не пройдены — сборка остановлена" >&2
+    exit 1
+fi
+echo "[CUSTOM] гейты пройдены: WiFi-стек, 8GB, MAC, kernel pins"
 

@@ -5,11 +5,13 @@
 
 * **База:** [`openwrt/openwrt`](https://github.com/openwrt/openwrt), ветка `openwrt-25.12` (HEAD)
 * **SDK:** [`mediatek/mtk-openwrt-feeds`](https://github.com/mediatek/mtk-openwrt-feeds), ветка `main` (HEAD)
+* **Пин ревизии:** `OPENWRT_REF` / `MTK_FEED_REF` (ветка, тег или 40-hex SHA);
+  точные коммиты попадают в `output/source-versions.txt`
 * **Ядро:** Linux 6.12 (6.12.108 на момент последней сборки)
-* **WiFi:** стек MTK SoftMAC из `mtk-openwrt-feeds@main` — `mt76` (116 патчей MTK) +
-  `mac80211` (backports 6.18.7) + `hostapd` (снапшот 2026.02.19, 265 патчей) +
+* **WiFi:** стек MTK SoftMAC из `mtk-openwrt-feeds@main` — `mt76` (124 патча MTK) +
+  `mac80211` (backports 6.18.7) + `hostapd` (снапшот 2026.02.19, 273 патча) +
   `wifi-scripts`/`iw`/`ucode`. Берётся из `autobuild/unified/filogic/mac80211/25.12`;
-  обязательность применения проверяется гейтом в `customize.sh` (иначе сборка падает)
+  применение проверяется гейтом в `customize.sh` (иначе сборка падает)
 * **Поддержка:** BPI-R4 / BPI-R4 (NIC BE14), MTK-HNAT, 8GB RAM, MTK U-Boot/ATF
 
 ---
@@ -25,6 +27,11 @@
 #   --no-menuconfig     не запускать интерактивный menuconfig
 #   --jobs N            число потоков компиляции (по умолчанию nproc)
 #   --refresh-go-cache  очистить кеш Go-модулей перед сборкой
+
+# Пин ревизий (ветка/тег/полный 40-hex SHA); без них сборка следует за ветками
+OPENWRT_REF=55457403542a747a9427ca4c047d9a63c0dccc84 \
+MTK_FEED_REF=794f99d5bc56ee11154b710753c38ea5c83ff088 \
+  ./build.sh --no-menuconfig
 ```
 
 Результат — в `output/` (см. раздел «Артефакты»).
@@ -42,7 +49,7 @@
 | `patches/25.12/` | Патчи и адаптации |
 | `src/` | Внешние деревья `openwrt/` и `mtk-openwrt-feeds/` (клон `build.sh`, gitignore) |
 | `output/` | Готовые образы и пакеты |
-| `.github/workflows/bpi-r4-openwrt-build.yml` | CI-сборка (расписание + ручной запуск) |
+| `.github/workflows/bpi-r4-openwrt-build.yml` | CI: проверки на push/PR, сборка по расписанию и вручную |
 | `LICENSE` | GNU General Public License v2.0 |
 
 ---
@@ -57,10 +64,39 @@
    - подключают MTK-фид, `feeds update/install`
    - копируют `25.12/files/*` и host-тулы фида (`fdt-patch-dm-verify`, `crc32sum`, `ar-tool`)
    - применяют патчи MTK: **88** (`patches-base`) + **6** (`patches-feeds`)
-   - применяют вариант mac80211: **116** патчей `mt76`, **142** патча `mac80211`, **265** патчей `hostapd`, файлы `wifi-scripts`/`iw`/`ucode`
+   - применяют вариант mac80211: **124** патча `mt76`, **142** патча `mac80211`, **273** патча `hostapd`, файлы `wifi-scripts`/`iw`/`ucode`
    - применяют наши адаптации и фиксы (см. ниже)
    - копируют локальные и сторонние LuCI-приложения
+   - проходят гейты: WiFi-стек, 8GB U-Boot/ATF, MAC, объявления kernel-символов
 4. Загружают исходники, собирают с гейтами обязательных пакетов/артефактов
+
+---
+
+## Проверки и тесты
+
+Быстрые проверки не требуют сборки и запускаются в CI отдельным job'ом
+`checks` (push/PR, а также перед каждой сборкой по расписанию):
+
+```bash
+bash -n build.sh scripts/customize.sh
+find packages -type f \( -name '*.sh' -o -path '*/root/etc/init.d/*' \
+  -o -path '*/root/etc/uci-defaults/*' -o -path '*/root/usr/libexec/*' \) \
+  ! -name '*.lua' ! -name '*.js' ! -name 'luci.turboacc' -exec bash -n {} \;
+
+cd packages/luci-app-traffic
+for t in collector rpcd live peak rollhour fetch-icons; do
+  bash "tools/${t}-selftest.sh"
+done
+for t in catalog-selftest check-icons icon-expansion-selftest icon-resolution-selftest \
+         page-render-selftest guard-mutation-test; do
+  node "tools/${t}.js"
+done
+```
+
+Наборы `luci-app-traffic` — offline: conntrack, querylog и nft подменяются
+фикстурами, сеть и роутер не нужны. `collector-selftest.sh` герметичен:
+пути `/proc/net/dev`, `/proc/net/route`, `/proc/net/route6` и бинарь nft
+подставляются через переменные окружения.
 
 ---
 
@@ -117,6 +153,10 @@
 | `*-emmc-preloader-8g.bin` / `*-snand-preloader-8g.bin` | BL2 для 8GB RAM |
 | `*-emmc-bl31-uboot.fip` / `*-snand-bl31-uboot.fip` | FIT с BL31 + U-Boot |
 | `*-emmc-gpt.bin` | Таблица разделов GPT для eMMC |
+| `sha256sums` | Контрольные суммы образов |
+| `config.buildinfo` / `feeds.buildinfo` / `version.buildinfo` | Что именно собрано и из каких ревизий |
+| `source-versions.txt` | Точные коммиты OpenWrt и mtk-openwrt-feeds (`build.sh`) |
+| `packages/` | Пакеты образа + arch-независимые пакеты из `bin/packages` |
 
 Загрузочные образы (SD) содержат U-Boot, BL2 и установочный раздел —
 с их помощью прошиваются SPI-NAND/eMMC. `initramfs-recovery` шьётся отдельно
@@ -139,8 +179,6 @@
 | `luci-app-turboacc-mtk` | Сетевое ускорение MediaTek (HNAT) | [MedyMa](https://github.com/MedyMa/luci-app) |
 | `luci-app-traffic` (+ ru) | Статистика трафика по приложениям | [MedyMa](https://github.com/MedyMa/luci-app) |
 | `modemband` | Утилита управления полосами модема | [Cezary Jackiewicz](https://eko.one.pl) |
-| `openwrt-caddy` | Веб-сервер Caddy 2.x | [caddyserver/caddy](https://github.com/caddyserver/caddy) |
-| `luci-app-caddy` | LuCI-интерфейс для Caddy | [kiddin9/op-packages](https://github.com/kiddin9/op-packages) |
 
 ## Сторонние LuCI-приложения
 
@@ -162,11 +200,20 @@
 
 Workflow [`.github/workflows/bpi-r4-openwrt-build.yml`](.github/workflows/bpi-r4-openwrt-build.yml):
 
-* запуск по расписанию (ежедневно, 01:00 МСК) и вручную (**Actions → bpi-r4-openwrt → Run workflow**)
+* job `checks` (push/PR и перед каждой сборкой): `bash -n`, shellcheck
+  (advisory) и все offline-наборы `luci-app-traffic`; падение гейтит сборку
+* сборка по расписанию (ежедневно, 01:00 МСК) и вручную
+  (**Actions → bpi-r4-openwrt → Run workflow**); push/PR сборку не запускают
+* те же гейты, что и в `build.sh`: `REQUIRED_IN_CONFIG`, наличие `*.img.gz`/`*.itb`
+  и 8GB-артефактов (`sdcard_8g.img.gz`, `preloader-8g.bin`)
+* в релиз попадают образы, `sha256sums`, `profiles.json`, `*.buildinfo` и
+  `source-versions.txt`; `upload-artifact` падает, если файлов нет
 * кеши toolchain (`klever1988/cachewrtbuild`) и ccache, очистка старых кешей/запусков
 * публикация артефактов и релиза, хранение 3 последних релизов
 * `RELEASES_TOKEN` не требуется — используется встроенный `GITHUB_TOKEN`
-  (права `contents: write`, `actions: write`)
+  (права `contents: write`, `actions: write` только у job'а сборки)
+* пин ревизий — repository variables `OPENWRT_REF` / `MTK_FEED_REF`
+  (ветка, тег или 40-hex SHA); точные коммиты попадают в тело релиза
 
 Используемые Actions: [actions/checkout](https://github.com/actions/checkout),
 [actions/upload-artifact](https://github.com/actions/upload-artifact),
@@ -193,8 +240,7 @@ Workflow [`.github/workflows/bpi-r4-openwrt-build.yml`](.github/workflows/bpi-r4
 | Патчи 8GB RAM | [Frank Wunderlich](https://github.com/frank-w), ImmortalWrt/OpenWrt PR [#21437](https://github.com/openwrt/openwrt/pull/21437) | GPL-2.0 |
 | Предыдущая база (историческая) | [chasey-dev/immortalwrt-mt798x-rebase](https://github.com/chasey-dev/immortalwrt-mt798x-rebase) | GPL-2.0 |
 | Форк-источник проекта | [MedyMa/BananaPi-BPI-R4](https://github.com/MedyMa/BananaPi-BPI-R4) | GPL-2.0 |
-| Локальные LuCI-пакеты | [MedyMa/luci-app](https://github.com/MedyMa/luci-app), [kiddin9/op-packages](https://github.com/kiddin9/op-packages) | см. репозитории |
-| Caddy | [caddyserver/caddy](https://github.com/caddyserver/caddy) | Apache-2.0 |
+| Локальные LuCI-пакеты | [MedyMa/luci-app](https://github.com/MedyMa/luci-app) | см. репозитории |
 | modemband | Cezary Jackiewicz ([eko.one.pl](https://eko.one.pl)) | MIT |
 | Тема Argon | [jerrykuku](https://github.com/jerrykuku) | GPL-3.0 |
 | gSpotx2f-приложения | [gSpotx2f](https://github.com/gSpotx2f) | GPL-2.0 |

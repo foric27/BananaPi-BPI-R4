@@ -42,10 +42,6 @@ msgid "Bias Current"
 msgstr "Ток смещения"
 
 #: htdocs/luci-static/resources/view/status/include/15_sfp.js
-msgid "Available Interfaces"
-msgstr "Доступные интерфейсы"
-
-#: htdocs/luci-static/resources/view/status/include/15_sfp.js
 msgid "SFP Interfaces"
 msgstr "Интерфейсы SFP"
 
@@ -68,3 +64,11 @@ msgstr "Имя"
 #: htdocs/luci-static/resources/view/status/include/15_sfp.js
 msgid "Value"
 msgstr "Значение"
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "RX Power"
+msgstr "Мощность приёма (RX)"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "TX Power"
+msgstr "Мощность передачи (TX)"
+

@@ -1,216 +1,286 @@
 msgid ""
 msgstr ""
-"Language: ru\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Project-Id-Version: luci-app-fan"
+"PO-Revision-Date: 2026-10-03 00:00+0000"
+"MIME-Version: 1.0"
+"Content-Type: text/plain; charset=UTF-8"
+"Content-Transfer-Encoding: 8bit"
+"Language: ru
+"
 
-msgid "Enabled"
-msgstr "Включено"
-
-msgid "Disabled"
-msgstr "Выключено"
-
-msgid "Cooling active"
-msgstr "Охлаждение активно"
-
-msgid "Modulating"
-msgstr "Регулировка скорости"
-
-msgid "Standby"
-msgstr "Ожидание"
-
-msgid "Unavailable"
-msgstr "Недоступно"
-
-msgid "Sensor unavailable"
-msgstr "Датчик недоступен"
-
-msgid "to start"
-msgstr "до запуска"
-
-msgid "Full-speed ceiling reached"
-msgstr "Достигнут предел полной скорости"
-
-msgid "Save & Apply below to persist changes."
-msgstr "Нажмите «Сохранить и применить» ниже, чтобы сохранить изменения."
-
-msgid "Enable the service and Save & Apply to start the fan daemon."
-msgstr "Включите службу и нажмите «Сохранить и применить» для запуска демона вентилятора."
-
-msgid "Loaded into the form"
-msgstr "Загружено в форму"
-
-msgid "Not available"
-msgstr "Недоступно"
-
-msgid "This device needs a readable CPU thermal zone and a writable pwm-fan hwmon interface for the full temperature-driven control loop."
-msgstr "Для этого устройства необходим доступный для чтения тепловой датчик CPU и доступный для записи интерфейс pwm-fan hwmon для полного температурного управления."
-
-msgid "Turbo and Manual modes require a writable pwm-fan hwmon interface on the target board."
-msgstr "Режимы «Турбо» и «Ручной» требуют доступного для записи интерфейса pwm-fan hwmon на целевой плате."
-
-msgid "Waiting for telemetry..."
-msgstr "Ожидание телеметрии..."
-
-msgid "Monitoring state"
-msgstr "Состояние мониторинга"
-
-msgid "Current device"
-msgstr "Текущее устройство"
-
-msgid "BPI-R4 tuned layout with live CPU temperature, PWM duty, and fan speed feedback across smart, manual and turbo modes."
-msgstr "Оптимизировано для BPI-R4: отображение температуры CPU, скважности PWM и обратной связи скорости вентилятора в режимах «Интеллектуальный», «Ручной» и «Турбо»."
-
-msgid "Live OpenWrt cooling dashboard with a configurable smart temperature window, plus manual and turbo profiles on pwm-fan capable hardware."
-msgstr "Панель охлаждения OpenWrt в реальном времени с настраиваемой интеллектуальной температурной зоной, а также режимами «Ручной» и «Турбо» на оборудовании с pwm-fan."
-
-msgid "Turbo"
-msgstr "Турбо"
-
-msgid "Smart"
-msgstr "Интеллектуальный"
-
-msgid "Manual"
-msgstr "Ручной"
-
-msgid "Turbo mode locks the fan at the configured full-speed RPM ceiling after Save & Apply."
-msgstr "Режим «Турбо» фиксирует вентилятор на настроенном пределе полной скорости после «Сохранить и применить»."
-
-msgid "Smart mode linearly ramps from the stop temperature to the configured full-speed RPM ceiling."
-msgstr "Режим «Интеллектуальный» плавно регулирует скорость от температуры остановки до настроенного предела полной скорости."
-
-msgid "Manual mode applies the selected duty target after Save & Apply and reports the available fan speed feedback."
-msgstr "Режим «Ручной» применяет выбранную целевую скважность после «Сохранить и применить» и отображает обратную связь по скорости вентилятора."
-
-msgid "Mode target"
-msgstr "Целевой режим"
-
-msgid "Current fan duty"
-msgstr "Текущая скважность вентилятора"
-
-msgid "(estimated)"
-msgstr "(оценка)"
-
+#: htdocs/luci-static/resources/view/fan.js
 msgid "(actual)"
-msgstr "(факт)"
+msgstr "(факт.)"
 
-msgid "PWM speed feedback"
-msgstr "Обратная связь скорости PWM"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "(estimated)"
+msgstr "(расчёт)"
 
-msgid "Hardware speed feedback"
-msgstr "Обратная связь аппаратной скорости"
-
-msgid "Speed feedback unavailable"
-msgstr "Обратная связь скорости недоступна"
-
-msgid "Speed feedback"
-msgstr "Обратная связь скорости"
-
-msgid "Fan stop below"
-msgstr "Остановка вентилятора ниже"
-
-msgid "Full speed above"
-msgstr "Полная скорость выше"
-
-msgid "The fan is linearly modulating between the stop floor and the full-speed ceiling."
-msgstr "Вентилятор плавно регулирует скорость между нижним порогом остановки и пределом полной скорости."
-
-msgid "Backend control uses the kernel thermal reading directly, so the smart curve tracks temperature changes at 0.1 C granularity."
-msgstr "Управление используется напрямую через показания термодатчика ядра, поэтому интеллектуальная кривая отслеживает изменения температуры с точностью до 0,1 °C."
-
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Adaptive Fan Profile"
 msgstr "Адаптивный профиль вентилятора"
 
-msgid "Live Cooling Dashboard"
-msgstr "Панель охлаждения в реальном времени"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "BPI-R4 tuned layout with live CPU temperature, PWM duty, and fan speed feedback across smart, manual and turbo modes."
+msgstr "Интерфейс под BPI-R4: температура CPU, скважность PWM и обратная связь по оборотам в умном, ручном и турбо-режимах."
 
+#: htdocs/luci-static/resources/view/fan.js
 msgid "CPU temperature"
 msgstr "Температура CPU"
 
-msgid "Fan speed"
-msgstr "Скорость вентилятора"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Configure Smart, Turbo and Manual fan profiles for pwm-fan capable boards such as the BPI-R4. The live panel reads CPU temperature, PWM duty, and fan speed feedback over ubus."
+msgstr "Настройка профилей «умный», «турбо» и ручного для плат с pwm-fan, например BPI-R4. Панель читает температуру CPU, скважность PWM и обороты через ubus."
 
-msgid "Current PWM duty"
-msgstr "Текущая скважность PWM"
-
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Control mode"
 msgstr "Режим управления"
 
-msgid "Smart curve"
-msgstr "Интеллектуальная кривая"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Cooling active"
+msgstr "Охлаждение активно"
 
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current PWM duty"
+msgstr "Текущая скважность PWM"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current config"
+msgstr "Текущая конфигурация"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current device"
+msgstr "Текущее устройство"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current fan duty"
+msgstr "Текущая скважность вентилятора"
+
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Current temperature"
 msgstr "Текущая температура"
 
-msgid "Operating profiles"
-msgstr "Режимы работы"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Disabled"
+msgstr "Выключен"
 
-msgid "Use these shortcuts to load Turbo, Smart or Manual targets into the form below before Save & Apply."
-msgstr "Используйте эти кнопки для загрузки целей «Турбо», «Интеллектуальный» или «Ручной» в форму ниже перед нажатием «Сохранить и применить»."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Display and estimation ceiling for fan speed. Set values such as 2500, 3000 or 3500 to match your hardware."
+msgstr "Потолок оборотов для отображения и расчёта. Задайте 2500, 3000 или 3500 под ваше устройство."
 
-msgid "Turbo mode"
-msgstr "Режим «Турбо»"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Duty target in percent for Manual mode. 0 turns the fan off, 100 drives the maximum PWM value, which maps to the configured RPM ceiling in the display."
+msgstr "Целевая скважность в процентах для ручного режима. 0 — вентилятор выключен, 100 — максимум PWM, что соответствует заданному потолку оборотов."
 
-msgid "Smart mode"
-msgstr "Режим «Интеллектуальный»"
-
-msgid "Manual mode"
-msgstr "Режим «Ручной»"
-
-msgid "Runtime insight"
-msgstr "Совет по работе"
-
-msgid "Current config"
-msgstr "Текущие настройки"
-
-msgid "Enabled in UCI"
-msgstr "Состояние UCI"
-
-msgid "Manual target"
-msgstr "Ручная цель"
-
-msgid "Runtime fan speed"
-msgstr "Текущая скорость вентилятора"
-
-msgid "Fan Control"
-msgstr "Управление вентилятором"
-
-msgid "Configure Smart, Turbo and Manual fan profiles for pwm-fan capable boards such as the BPI-R4. The live panel reads CPU temperature, PWM duty, and fan speed feedback over ubus."
-msgstr "Настройка режимов «Интеллектуальный», «Турбо» и «Ручной» для плат с pwm-fan, таких как BPI-R4. Панель отображает температуру CPU, скважность PWM и обратную связь скорости вентилятора через ubus."
-
-msgid "Profile Settings"
-msgstr "Основные настройки"
-
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Enable fan service"
 msgstr "Включить службу вентилятора"
 
-msgid "Start the fan daemon on Save & Apply. Smart mode uses the configured temperature window, Turbo holds the configured RPM ceiling, and Manual applies the slider target on pwm-fan capable boards."
-msgstr "Запуск демона вентилятора при нажатии «Сохранить и применить». Режим «Интеллектуальный» использует настроенную температурную зону, «Турбо» фиксирует предел оборотов, а «Ручной» применяет цель ползунка на платах с pwm-fan."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Enable the service and Save & Apply to start the fan daemon."
+msgstr "Включите службу и нажмите «Сохранить и применить», чтобы запустить демон."
 
-msgid "Smart mode follows the configured stop and full-speed temperatures. Turbo and Manual require pwm-fan hwmon support on the target board."
-msgstr "Режим «Интеллектуальный» регулирует скорость по настроенным температурам остановки и полной скорости. Режимы «Турбо» и «Ручной» требуют поддержки pwm-fan hwmon на целевой плате."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Enabled"
+msgstr "Включен"
 
-msgid "Temperature in C below which the smart profile stops the fan. You can customize when the fan starts to stay off."
-msgstr "Температура в °C, ниже которой вентилятор останавливается в интеллектуальном режиме. Можно настроить порог отключения."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Enabled in UCI"
+msgstr "Включен в UCI"
 
-msgid "Temperature in C at which smart mode reaches the configured RPM ceiling."
-msgstr "Температура в °C, при которой интеллектуальный режим достигает настроенного предела оборотов."
+#: root/usr/share/luci/menu.d/luci-app-fan.json
+msgid "Fan Control"
+msgstr "Управление вентилятором"
 
-msgid "Maximum fan RPM"
-msgstr "Максимальные обороты вентилятора"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Fan daemon loop interval in seconds. The default 5-second cadence is usually enough for the configurable smart curve and reduces unnecessary PWM writes."
+msgstr "Интервал цикла демона в секундах. По умолчанию 5 с — обычно достаточно для настраиваемой кривой и сокращает лишние записи PWM."
 
-msgid "Display and estimation ceiling for fan speed. Set values such as 2500, 3000 or 3500 to match your hardware."
-msgstr "Предел отображения и оценки скорости вентилятора. Установите значение 2500, 3000 или 3500 в соответствии с вашим оборудованием."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Fan speed"
+msgstr "Обороты вентилятора"
 
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Fan stop below"
+msgstr "Остановка ниже"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Full speed above"
+msgstr "Полная скорость выше"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Full-speed ceiling reached"
+msgstr "Достигнут потолок скорости"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Hardware speed feedback"
+msgstr "Аппаратная обратная связь"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Live Cooling Dashboard"
+msgstr "Панель охлаждения"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Live OpenWrt cooling dashboard with a configurable smart temperature window, plus manual and turbo profiles on pwm-fan capable hardware."
+msgstr "Панель охлаждения OpenWrt: настраиваемое «умное» температурное окно, ручной и турбо-режимы на платах с pwm-fan."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Loaded into the form"
+msgstr "Загружено в форму"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual"
+msgstr "Ручной"
+
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Manual PWM target"
-msgstr "Ручная цель PWM"
+msgstr "Целевая скважность PWM"
 
-msgid "Duty target in percent for Manual mode. 0 turns the fan off, 100 drives the maximum PWM value, which maps to the configured RPM ceiling in the display."
-msgstr "Целевая скважина в процентах для ручного режима. 0 — вентилятор выключен, 100 — максимальное значение PWM, соответствующее настроенному пределу оборотов."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual mode"
+msgstr "Ручной режим"
 
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual mode applies the selected duty target after Save & Apply and reports the available fan speed feedback."
+msgstr "Ручной режим применяет заданную скважность после «Сохранить и применить» и показывает обратную связь по оборотам, если она доступна."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual target"
+msgstr "Ручная цель"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Maximum fan RPM"
+msgstr "Максимум оборотов"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Mode target"
+msgstr "Цель режима"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Modulating"
+msgstr "Плавная регулировка"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Monitoring state"
+msgstr "Состояние мониторинга"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Not available"
+msgstr "Недоступно"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Operating profiles"
+msgstr "Профили работы"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "PWM speed feedback"
+msgstr "Обратная связь PWM"
+
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Polling interval"
 msgstr "Интервал опроса"
 
-msgid "Fan daemon loop interval in seconds. The default 5-second cadence is usually enough for the configurable smart curve and reduces unnecessary PWM writes."
-msgstr "Интервал цикла демона вентилятора в секундах. Значение по умолчанию (5 секунд) обычно достаточно для интеллектуальной кривой и уменьшает лишние записи PWM."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Profile Settings"
+msgstr "Настройки профиля"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Profile settings"
+msgstr "Настройки профиля"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Runtime fan speed"
+msgstr "Текущие обороты"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Save & Apply below to persist changes."
+msgstr "Нажмите «Сохранить и применить», чтобы сохранить изменения."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Sensor unavailable"
+msgstr "Датчик недоступен"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Smart"
+msgstr "Умный"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Smart curve"
+msgstr "Умная кривая"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Smart mode"
+msgstr "Умный режим"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Smart mode follows the configured stop and full-speed temperatures. Turbo and Manual require pwm-fan hwmon support on the target board."
+msgstr "Умный режим следует настроенным порогам остановки и полной скорости. Турбо и ручной требуют поддержки pwm-fan hwmon на плате."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Speed feedback"
+msgstr "Обратная связь"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Speed feedback unavailable"
+msgstr "Обратная связь недоступна"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Standby"
+msgstr "Ожидание"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Start the fan daemon on Save & Apply. Smart mode uses the configured temperature window, Turbo holds the configured RPM ceiling, and Manual applies the slider target on pwm-fan capable boards."
+msgstr "Запуск демона по «Сохранить и применить». Умный режим использует настроенное температурное окно, турбо держит заданный потолок оборотов, ручной применяет ползунок на платах с pwm-fan."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Temperature in C at which smart mode reaches the configured RPM ceiling."
+msgstr "Температура (°C), при которой умный режим выходит на заданный потолок оборотов."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Temperature in C below which the smart profile stops the fan. You can customize when the fan starts to stay off."
+msgstr "Температура (°C), ниже которой умный профиль останавливает вентилятор. Порог настраивается."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "The fan is linearly modulating between the stop floor and the full-speed ceiling."
+msgstr "Вентилятор плавно регулируется между порогом остановки и потолком полной скорости."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "This device needs a readable CPU thermal zone and a writable pwm-fan hwmon interface for the full temperature-driven control loop."
+msgstr "Для полного температурного управления нужны читаемая thermal-зона CPU и доступный на запись интерфейс pwm-fan hwmon."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Turbo"
+msgstr "Турбо"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Turbo and Manual modes require a writable pwm-fan hwmon interface on the target board."
+msgstr "Турбо и ручной режимы требуют доступного на запись pwm-fan hwmon на плате."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Turbo mode"
+msgstr "Турбо-режим"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Turbo mode locks the fan at the configured full-speed RPM ceiling after Save & Apply."
+msgstr "Турбо-режим фиксирует вентилятор на заданном потолке оборотов после «Сохранить и применить»."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Unavailable"
+msgstr "Недоступно"
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Use these shortcuts to load Turbo, Smart or Manual targets into the form below before Save & Apply."
+msgstr "Кнопки подставляют цели турбо, умного или ручного режима в форму ниже — затем «Сохранить и применить»."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Waiting for telemetry..."
+msgstr "Ожидание телеметрии..."
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "to start"
+msgstr "до запуска"
+
+#: root/usr/share/luci/menu.d/luci-app-fan.json
+msgid "Fan Control"
+msgstr "Управление вентилятором"
+

@@ -1,0 +1,252 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-traffic"
+"PO-Revision-Date: 2026-10-03 00:00+0000"
+"MIME-Version: 1.0"
+"Content-Type: text/plain; charset=UTF-8"
+"Content-Transfer-Encoding: 8bit"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Accounted share"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "All traffic"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Application"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Apps and sites"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Attributed"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Browser clients"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Bucket"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Categorised"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Client count"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Client totals"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Collector has not produced a snapshot yet"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Collector version"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Counter error"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Counter total"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Current hour"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Devices"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Domain identified"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Flows"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Host names"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Interval"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Last 12 hours"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Last 24 hours"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Last 7 days"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Last hour"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "No samples yet"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "No traffic recorded yet."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Other"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Peak (1 s)"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Peak (interval avg)"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Peak clients/hour"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Received"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Router and tunnel"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Running"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Running, no traffic measured yet"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Sent"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Show domains"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Since start"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Snapshot is stale"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "State"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Throughput"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Top client (this session)"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Total traffic"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Traffic breakdown"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Unattributed"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Waiting to resolve"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "avg down"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "by any client DNS"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "by client DNS"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "conntrack"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "every packet counted at the LAN interface, proxied traffic included"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "maximum number of clients seen in any single hour of this range"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "nft counters"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "number of clients seen for this application in the current session"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "of all traffic"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "share of the traffic the router carried that the app and client accounting could name"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "the busiest client of each application is recorded for the current run, while the byte columns can cover the selected range"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "the busiest client of the selected range, from the archived client rows"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "the busiest client overall, for the current run"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "total"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "up"
+msgstr ""
+
+#: root/usr/share/luci/menu.d/luci-app-traffic.json
+msgid "Traffic Analysis"
+msgstr ""
+

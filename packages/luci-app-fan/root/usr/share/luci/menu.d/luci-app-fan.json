@@ -1,6 +1,6 @@
 {
 	"admin/status/luci-fan": {
-		"title": "Управление вентилятором",
+		"title": "Fan Control",
 		"order": 60,
 		"action": {
 			"type": "view",

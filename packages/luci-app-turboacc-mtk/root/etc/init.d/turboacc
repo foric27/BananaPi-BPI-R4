@@ -41,6 +41,27 @@ disable_hnat_runtime() {
 	[ -w "$hnat_path/hnat_setting" ] && echo "8 0" >"$hnat_path/hnat_setting" 2>/dev/null
 }
 
+# Does an HQoS service own the HNAT hook right now?  mtk-hqos (global.enabled)
+# and mtkhqos_util (its service enables HNAT by default) both program the QDMA
+# queues and then turn the HNAT hook on: the shaping they apply only takes
+# effect while the hook is enabled.  Switching the hook off underneath them
+# leaves the QoS configuration in place but not accelerating, which is silent.
+#
+# uci -q get rather than config_load/config_get: config_get reads whichever
+# config was loaded last, and the caller has turboacc loaded at this point.
+hqos_drives_hnat() {
+	local v
+
+	v=$(uci -q get mtk-hqos.global.enabled 2>/dev/null)
+	case "$v" in 1|on|true|yes|enabled) return 0 ;; esac
+
+	if ls /etc/rc.d/S*mtkhqos >/dev/null 2>&1; then
+		return 0
+	fi
+
+	return 1
+}
+
 wait_hnat_debugfs() {
 	local hnat_path="${1:-/sys/kernel/debug/hnat}"
 	local i
@@ -118,8 +139,13 @@ stop_service() {
 
 	ensure_debugfs
 
-	# disable HNAT hook if still accessible
-	disable_hnat_runtime "$hnat_path"
+	# disable HNAT hook if still accessible, unless an HQoS service is the one
+	# driving it - see hqos_drives_hnat()
+	if hqos_drives_hnat; then
+		logger -t turboacc "HQoS owns the HNAT hook; leaving hook_toggle alone on stop"
+	else
+		disable_hnat_runtime "$hnat_path"
+	fi
 
 	# restore fullcone to a safe default
 	if [ -w "/proc/sys/net/netfilter/nf_conntrack_nat_mode" ]; then
@@ -155,7 +181,8 @@ start_service() {
 	# ---------- debugfs (required for HNAT knobs) ----------
 	ensure_debugfs
 
-	if [ "$fastpath" != "mediatek_hnat" ] && hnat_module_loaded && [ -w "$hnat_path/hook_toggle" ]; then
+	if [ "$fastpath" != "mediatek_hnat" ] && hnat_module_loaded && [ -w "$hnat_path/hook_toggle" ] &&
+		! hqos_drives_hnat; then
 		disable_hnat_runtime "$hnat_path"
 	fi
 

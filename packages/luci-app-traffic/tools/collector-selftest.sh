@@ -32,7 +32,28 @@
 set -u
 
 SELF="$(cd "$(dirname "$0")" && pwd)"
-COLLECTOR="$(cd "$SELF/.." && pwd)/root/usr/share/traffic/collector.sh"
+
+# Windows ships same-named tools that do not accept the same arguments -
+# sort.exe and timeout.exe among them - and on this machine
+# /c/WINDOWS/system32 precedes everything else in PATH, so collector.sh's
+# `acct_hosts | sort -u` failed with "-uThe system cannot find the file
+# specified." and the host list came back empty: no per-client nft rules, no
+# counters, an empty clients.tsv.  MSYS does provide coreutils sort, so the
+# MSYS directories go first and the POSIX behaviour this suite assumes is
+# restored.  `timeout` cannot be fixed this way - MSYS ships none - which is
+# why the nft phase supplies its own shim.
+PATH="/usr/bin:/bin:$PATH"
+export PATH
+# COLLECTOR_SRC points every phase at another revision of the collector: an
+# assertion that cannot be made to fail on the code it was written against
+# proves nothing, and the only honest way to check that is to run it there.
+COLLECTOR="${COLLECTOR_SRC:-$(cd "$SELF/.." && pwd)/root/usr/share/traffic/collector.sh}"
+# The collector's live-counter schema, read from the collector rather than written
+# out here.  A phase that seeds a counter file has to also seed a matching version,
+# or init_state() treats the state as older and drops exactly what was seeded -
+# which is how the WAN baseline phase first failed.  Deriving it means the next
+# bump cannot silently break these phases.
+SCHEMA=$(sed -n 's/^STATE_VERSION=//p' "$COLLECTOR")
 [ -f "$COLLECTOR" ] || { echo "collector.sh not found next to $SELF" >&2; exit 1; }
 
 echo "=== sh -n ==="
@@ -41,13 +62,34 @@ echo "=== sh -n ==="
 # shell, and sh -n reports a syntax error far from the real cause.  It has been
 # written three times in this file's history, so it gets its own check that
 # names the offending line.
+#
+# The check tracks whether an odd number of quotes has been opened, rather than
+# entering an "inawk" state and leaving it again.  The state version carried an
+# exit rule that required the closing quote to be followed by a space after at
+# most four spaces of indent, so every TAB-indented closer and every eight-space
+# closer in this file missed it.  inawk was therefore set by the first awk
+# invocation and never cleared, and from there on it reported every ordinary
+# shell comment that happened to contain an apostrophe - the day's, session's,
+# hour's, page's.  That made the file fail its lint, and this suite exits on
+# that failure, so it never reached a single functional assertion.  Which is how
+# a joined-up line in record_sample shipped and crash-looped the collector
+# without any test noticing.
+#
+# A line that starts with # while no quoted region is open is a shell comment:
+# the shell does not look inside it for quotes at all, so it can neither open
+# nor close an awk program and an apostrophe in it is harmless.
 apostrophes=$(awk '
-    /awk[[:space:]].*-v |awk -F.*\x27$/ { inawk = 1 }
-    inawk && /^[[:space:]]*#/ {
+    BEGIN { q = 0 }
+    {
+        if (q % 2 == 0 && $0 ~ /^[[:space:]]*#/) next
         line = $0
-        if (gsub(/\x27/, "\x27", line) > 0) { printf "  line %d: %s\n", NR, $0; hits++ }
+        n = gsub(/\x27/, "\x27", line)
+        if (q % 2 == 1 && $0 ~ /^[[:space:]]*#/ && n > 0) {
+            printf "  line %d: %s\n", NR, $0
+            hits++
+        }
+        q += n
     }
-    inawk && /^(    )?.\x27 / { inawk = 0 }
     END { exit (hits > 0 ? 1 : 0) }
 ' "$COLLECTOR")
 if [ -n "$apostrophes" ]; then
@@ -69,6 +111,15 @@ echo "collector syntax OK"
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
 mkdir -p "$T/bin"
+
+# Default "no interface" fixtures for every phase that does not exercise the
+# WAN counters.  Without them the collector read the host's real
+# /proc/net/dev and /proc/net/route, so the series assertions in 16/17b/18b
+# measured the developer's own traffic.  Phases that need a WAN device pass
+# their own TRAFFIC_PROC_NET_* and override these.
+: > "$T/netdev-none"
+: > "$T/route-none"
+: > "$T/route6-none"
 
 # stub lua: swallow the querylog lines and emit fixed (client, domain, ip) rows.
 # The last row resolves for a different client, which is what makes a flow fall
@@ -152,7 +203,12 @@ rounds_at() { sed -n 's/.*"rounds":\([0-9]*\).*/\1/p' "$1" 2>/dev/null; }
 
 collect() {
     local st="$1" da="$2" ct="$3" ql="$4" cap="$5"; shift 5
-    local before pid i at
+    local before pid i at pgid=""
+    local -a proc_env=(
+        TRAFFIC_PROC_NET_DEV="$T/netdev-none"
+        TRAFFIC_PROC_NET_ROUTE="$T/route-none"
+        TRAFFIC_PROC_NET_ROUTE6="$T/route6-none"
+    )
     # Empty means "no snapshot yet", which is round 0, not "a round finished":
     # the collector publishes a snapshot at startup with rounds=0, so waiting for
     # the value to merely differ would return before the first round has run.
@@ -166,12 +222,25 @@ collect() {
     # collector had not run - so that run was killed before doing any work.  That
     # is what made phases 15 to 19 fail intermittently for so long.  The bound on
     # the wait below is what timeout used to provide.
-    env "$@" UCI=/bin/true LUA="$T/bin/lua" CT="$ct" TRAFFIC_QUERYLOG="$ql" \
-      TRAFFIC_LAN4=192.168.2. TRAFFIC_INTERVAL=2 TRAFFIC_DATADIR="$da" \
-      TRAFFIC_APPMAP="$T/apps.tsv" TRAFFIC_CATEGORIES="$T/categories.tsv" \
-      STATE_DIR="$st" SELF_DIR="$(cd "$SELF/../root/usr/share/traffic" && pwd)" \
-      sh "$COLLECTOR" >/dev/null 2>&1 &
-    pid=$!
+    #
+    # The process runs in its own session (setsid): killing only the shell left
+    # the `acct_read | awk >> acct.new` pipeline alive, and its late write landed
+    # in the next phase's accounting file.  That is exactly how 23j used to see
+    # the previous round's download counter added a second time.
+    local -a cmd=(env "${proc_env[@]}" "$@"
+        UCI=/bin/true LUA="$T/bin/lua" CT="$ct" TRAFFIC_QUERYLOG="$ql"
+        TRAFFIC_LAN4=192.168.2. TRAFFIC_INTERVAL=2 TRAFFIC_DATADIR="$da"
+        TRAFFIC_APPMAP="$T/apps.tsv" TRAFFIC_CATEGORIES="$T/categories.tsv"
+        STATE_DIR="$st" SELF_DIR="$(cd "$SELF/../root/usr/share/traffic" && pwd)"
+        sh "$COLLECTOR")
+    if command -v setsid >/dev/null 2>&1; then
+        setsid "${cmd[@]}" >/dev/null 2>&1 &
+        pid=$!
+        pgid=$pid
+    else
+        "${cmd[@]}" >/dev/null 2>&1 &
+        pid=$!
+    fi
 
     i=0
     while [ "$i" -lt $((cap * 5)) ]; do
@@ -182,17 +251,33 @@ collect() {
         i=$((i + 1))
     done
 
-    # Stop it for real before the next phase touches the same state: signal it,
-    # wait for it to go, and then pause briefly, because a command it had already
-    # started (the resolver appends to the name map) outlives the shell and would
-    # otherwise still be writing while the next phase reads.
-    kill "$pid" 2>/dev/null
+    # Stop it for real before the next phase touches the same state: signal the
+    # whole session, wait for it to go, and then pause briefly, because a command
+    # it had already started (the resolver appends to the name map) outlives the
+    # shell and would otherwise still be writing while the next phase reads.
+    # Only signal a negative PID when setsid really made the collector a session
+    # leader; otherwise a negative kill could target the wrong group.
+    _group_ok=0
+    if [ -n "$pgid" ] && [ "$(ps -o sid= -p "$pid" 2>/dev/null | tr -d ' ')" = "$pid" ]; then
+        _group_ok=1
+    fi
+    if [ "$_group_ok" = 1 ]; then
+        kill -- -"$pgid" 2>/dev/null
+    else
+        kill "$pid" 2>/dev/null
+        command -v pgrep >/dev/null 2>&1 && pgrep -P "$pid" 2>/dev/null | xargs kill 2>/dev/null || true
+    fi
     i=0
     while kill -0 "$pid" 2>/dev/null && [ "$i" -lt 60 ]; do
         sleep 0.1
         i=$((i + 1))
     done
-    kill -9 "$pid" 2>/dev/null
+    if [ "$_group_ok" = 1 ]; then
+        kill -9 -- -"$pgid" 2>/dev/null
+    else
+        kill -9 "$pid" 2>/dev/null
+        command -v pgrep >/dev/null 2>&1 && pgrep -P "$pid" 2>/dev/null | xargs kill -9 2>/dev/null || true
+    fi
     wait "$pid" 2>/dev/null
     sleep 0.3
     return 0
@@ -319,11 +404,20 @@ echo "=== 按需解析（页面打开时不等节流窗口）==="
 printf '%s\n' "$(date +%s)" > "$T/state/nmtime"
 printf '192.168.2.138\tnewhost.meituan.com\t10.20.30.40\n' >> "$T/state/dnsmap.tsv"
 printf '1\n' > "$T/state/pending"
-run_collector 30
+# The throttle window has to outlast the run or this phase cannot mean anything.
+# CFG_RESOLVE defaults to 30 and run_collector was asked for 30 seconds, so the
+# window expired while the collector was still running and the name resolved -
+# the assertion expected the opposite and had presumably been red since the day
+# it was written.  Widening the window to an hour makes the run sit well inside
+# it, so "the throttle held the name back" is a statement about the throttle and
+# not about how long this phase happened to take.
+run_collector 30 TRAFFIC_RESOLVE=3600
 chk "19 节流生效：新主机名暂不解析"        ""                  "$(nm 'newhost.meituan.com')"
 chk "19a 待解析数量会上报"                 "1"                 "$(sed -n '1p' "$T/state/pending")"
 : > "$T/state/resolve.now"
-run_collector 30
+# resolve.now has to beat the throttle, so it is checked against the same wide
+# window that just held the name back
+run_collector 30 TRAFFIC_RESOLVE=3600
 chk "19b resolveNow 让页面立刻拿到名称"    "app Meituan"       "$(nm 'newhost.meituan.com')"
 chk "19c 标记被消费后清除"                 "no"                "$( [ -f "$T/state/resolve.now" ] && echo yes || echo no )"
 chk "19d 解析完成后待解析归零"             "0"                 "$(sed -n '1p' "$T/state/pending")"
@@ -368,7 +462,7 @@ printf '999\n' > "$T/state3/version"
 run_collector_at 30 "$T/state3" "$T/data3" "$T/ct" "$T/ql"
 c3() { awk -F'\t' -v ip="$1" '$1==ip {print $2}' "$T/state3/clients.tsv"; }
 chk "21 旧版本的存量客户端行被清除"         ""                  "$(c3 '192.168.2.1')"
-chk "21a 新版本号已写入"                    "1"                 "$(sed -n '1p' "$T/state3/version")"
+chk "21a 新版本号已写入"                    "$SCHEMA"                 "$(sed -n '1p' "$T/state3/version")"
 chk "21b 计数器是从新数据重建的"            "72600"             "$(c3 '192.168.2.138')"
 # second run: the schema now matches, so the totals must survive it untouched
 run_collector_at 30 "$T/state3" "$T/data3" "$T/ct" "$T/ql"
@@ -444,6 +538,27 @@ esac
 exit 0
 EOF
 chmod +x "$T/fakebin/nft"
+# Windows ships a `timeout` that waits for a key rather than running a
+# command, and on this machine /c/WINDOWS/system32 comes first in PATH, so
+# `command -v timeout` resolved to it.  collector.sh's nft_run() then ran
+# `timeout 5 nft ...`, nft never executed, and the whole counter layer
+# degraded silently: "acct":0 and no rules.pre.  BusyBox and coreutils both
+# provide timeout, so this is a property of the test machine, not of the
+# package - the suite supplies the POSIX contract it assumed.  It enforces a
+# real bound rather than exec'ing blindly, so a wedged command still ends.
+cat > "$T/fakebin/timeout" <<'EOF'
+#!/bin/sh
+set -u
+secs="$1"; shift
+"$@" &
+cmd=$!
+( sleep "$secs"; kill -9 "$cmd" 2>/dev/null ) &
+killer=$!
+wait "$cmd"; rc=$?
+kill "$killer" 2>/dev/null
+exit "$rc"
+EOF
+chmod +x "$T/fakebin/timeout"
 # one live host, one more live host, and a stale arp entry that is not a client
 cat > "$T/arp5" <<'EOF'
 IP address       HW type     Flags       HW address            Mask     Device
@@ -472,9 +587,51 @@ chk "23f 快照报告计数层已启用"              "1"                 "$(gre
 # unsubstituted placeholder, and that it is present at all is what matters: the
 # page shows it so an installed fix can be told from one that is not running.
 chk "23f2 快照报告采集器版本"               "dev"               "$(grep -o '"version":"[^"]*"' "$T/state5/summary.json" | cut -d'"' -f4)"
+# client_bytes is the page's per-client denominator.  It is produced by its
+# own awk over clients.tsv (column 2), separate from the top-clients array,
+# so it is asserted against a sum this test computes itself: a change of
+# file or of column in that awk now fails here instead of passing quietly.
+# The reader must be totf: "accounted" carries only the nft counters' down/up,
+# so asking acctf for client_bytes returns an empty string on every snapshot
+# and the mismatch would read as a product bug rather than a lookup mistake.
+totf() { grep -o '"totals":{[^}]*}' "$1" | sed -n "s/.*\"$2\":\([0-9]*\).*/\1/p"; }
+chk "23f3 client_bytes 等于客户端字节之和"  "$(awk -F'\t' '{s+=$2} END{print s+0}' "$T/state5/clients.tsv")" \
+                                            "$(totf "$T/state5/summary.json" client_bytes)"
+# 23f3 can only tell column 2 from column 3 if the fixture makes them
+# differ.  Without this guard, a fixture whose columns happen to be equal
+# would let a wrong-column awk pass - the vacuous case to avoid.
+chk "23f4 夹具可辨别列 2 与列 3"            "different" \
+    "$( [ "$(awk -F'\t' '{s+=$2} END{print s+0}' "$T/state5/clients.tsv")" != "$(awk -F'\t' '{s+=$3} END{print s+0}' "$T/state5/clients.tsv")" ] && echo different || echo same )"
 acctf() { grep -o '"accounted":{[^}]*}' "$1" | sed -n "s/.*\"$2\":\([0-9]*\).*/\1/p"; }
 chk "23g 快照报告计数器总量（下行）"        "10000"             "$(acctf "$T/state5/summary.json" down)"
 chk "23g2 快照报告计数器总量（上行）"       "1000"              "$(acctf "$T/state5/summary.json" up)"
+# Large byte counters must survive every TSV and JSON serialization step.
+# A 32-bit awk printf %d clamps them to 2147483647 on the router.
+mkdir -p "$T/large"
+: > "$T/large/flow.state"
+: > "$T/large/dnsmap.tsv"
+printf 'Large App\t1000000000\t3000000000\nOther\t0\t0\n' > "$T/large/totals.tsv"
+printf '192.168.2.50\t4000000000\n192.168.2.51\t1000000000\n' > "$T/large/clients.tsv"
+printf 'Large App\t192.168.2.50\t3000000000\n' > "$T/large/ac.tsv"
+printf '0\t0\t0\t0\n' > "$T/large/stat.tsv"
+printf '0\n0\n' > "$T/large/wan.tsv"
+sed '$d' "$COLLECTOR" > "$T/collector-functions.sh"
+(
+    . "$T/collector-functions.sh"
+    STATE_DIR="$T/large"
+    WAN_IF=
+    ACCT_ON=0
+    CFG_TOP_APPS=10
+    CFG_TOP_CLIENTS=10
+    TRAFFIC_LEASES=/nonexistent
+    write_summary
+)
+chk "23g3 大流量应用下行不截断" "3000000000" "$(grep -o '"name":"Large App","down":[0-9]*' "$T/large/summary.json" | cut -d: -f3)"
+chk "23g4 大流量应用上行不截断" "1000000000" "$(grep -o '"name":"Large App"[^}]*"up":[0-9]*' "$T/large/summary.json" | sed -n 's/.*"up":\([0-9]*\).*/\1/p')"
+chk "23g5 大流量应用主客户端不截断" "3000000000" "$(grep -o '"name":"Large App"[^}]*"top_bytes":[0-9]*' "$T/large/summary.json" | sed -n 's/.*"top_bytes":\([0-9]*\).*/\1/p')"
+chk "23g6 大流量客户端不截断" "4000000000" "$(grep -o '"ip":"192.168.2.50"[^}]*"bytes":[0-9]*' "$T/large/summary.json" | sed -n 's/.*"bytes":\([0-9]*\).*/\1/p')"
+chk "23g7 汇总下行不截断" "3000000000" "$(totf "$T/large/summary.json" down)"
+chk "23g8 客户端总和不截断" "5000000000" "$(totf "$T/large/summary.json" client_bytes)"
 # second round: only the increase is added, not the absolute counter again
 printf '192.168.2.50 3000\n192.168.2.51 0\n' > "$T/nft5/counters.pre"
 printf '192.168.2.50 25000\n192.168.2.51 0\n' > "$T/nft5/counters.post"
@@ -508,8 +665,11 @@ run_collector_at 30 "$T/state5" "$T/data5" "$T/ct2" /nonexistent \
 chk "23i 防火墙重载后计数规则自愈"          "3"                 "$(grep -c 'saddr' "$T/nft5/rules.pre" 2>/dev/null)"
 chk "23j 计数器归零后按新绝对值计增量"      "35500"             "$(awk -F'\t' '$1=="192.168.2.50"{print $2}' "$T/state5/acct.tsv")"
 chk "23k 累计值在之前各轮基础上继续"        "13200"             "$(awk -F'\t' '$1=="192.168.2.50"{print $3}' "$T/state5/acct.tsv")"
-# without nft the client totals fall back to conntrack, and the snapshot says so
-run_collector_at 30 "$T/state6" "$T/data6" "$T/ct" "$T/ql" TRAFFIC_SELF="192.168.2.1"
+# without nft the client totals fall back to conntrack, and the snapshot says so.
+# NFT=/nonexistent makes this independent of the host: on a developer machine
+# with nftables installed, `command -v nft` succeeded, the table setup failed for
+# lack of root, and the reason became "the counter table could not be set up".
+run_collector_at 30 "$T/state6" "$T/data6" "$T/ct" "$T/ql" TRAFFIC_SELF="192.168.2.1" NFT=/nonexistent
 chk "23l 无 nft 时降级并如实上报"           "0"                 "$(grep -o '"acct":[0-9]*' "$T/state6/summary.json" | cut -d: -f2)"
 chk "23m 降级原因写入快照"                  "nft is not installed" "$(grep -o '"acct_error":"[^"]*"' "$T/state6/summary.json" | cut -d'"' -f4)"
 chk "23n 降级时客户端总量仍由 conntrack 给出" "72600"           "$(awk -F'\t' '$1=="192.168.2.138"{print $2}' "$T/state6/clients.tsv")"
@@ -544,7 +704,7 @@ mkdir -p "$T/state8" "$T/data8"
   TRAFFIC_INTERVAL=30 TRAFFIC_DATADIR="$T/data8" TRAFFIC_APPMAP="$T/apps.tsv" \
   TRAFFIC_CATEGORIES="$T/categories.tsv" STATE_DIR="$T/state8" \
   SELF_DIR="$(cd "$SELF/../root/usr/share/traffic" && pwd)" \
-  timeout 8 sh "$COLLECTOR" >/dev/null 2>&1 ) &
+  sh "$COLLECTOR" >/dev/null 2>&1 ) &
 stpid=$!
 i=0
 while [ "$i" -lt 40 ]; do
@@ -601,10 +761,25 @@ echo "=== 整点滚动：hourly.tsv 与 series1h.tsv ==="
 # epoch a sample is stamped with) still goes to the real clock.
 REALDATE=$(command -v date)
 mkdir -p "$T/bin" "$T/state9" "$T/data9"
-printf '1\n' > "$T/state9/version"       # matching schema, so what is seeded stays
+printf '%s\n' "$SCHEMA" > "$T/state9/version"   # matching schema, so what is seeded stays
 printf 'YouTube\t1000\t5000\n' > "$T/state9/totals.tsv"   # name, up, down
 printf '192.168.2.99\t6000\n'  > "$T/state9/clients.tsv"
 printf '777\n'                 > "$T/state9/router.tsv"
+# The device counters for this phase, and the device itself.  roll_hour now
+# archives the WAN counters as its own kind of row, so this phase has to have a
+# device: without one iface_account writes nothing and the archived device row
+# would be missing for a reason that has nothing to do with the code under test.
+# The counters never move, so every round contributes a delta of zero and the
+# one hour this phase archives carries exactly the seeded session total.
+printf '4000\n900\n'           > "$T/state9/wan.tsv"
+cat > "$T/netdev9" <<'EOF'
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo:    1000       10    0    0    0     0          0         0     1000       10    0    0    0     0       0          0
+  eth2: 5000000     4000    0    0    0     0          0         0   800000     3000    0    0    0     0       0          0
+EOF
+printf 'Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT\n' > "$T/route9"
+printf 'eth2\t00000000\t0102A8C1\t0003\t0\t0\t0\t00000000\t0\t0\t0\n' >> "$T/route9"
 printf 'h0\n' > "$T/fakehour"
 cat > "$T/bin/date" <<EOF
 #!/bin/sh
@@ -628,10 +803,15 @@ wait_rounds() {
     return 1
 }
 
-PATH="$T/bin:$PATH" UCI=/bin/true LUA="$T/bin/lua" CT="$T/ctempty" \
+# env, not a bare assignment prefix: this shell does not treat a quoted
+# "NAME=value" word as an assignment, so the prefix form only works unquoted -
+# and the device paths have to be quoted because they are built from $T.
+env PATH="$T/bin:$PATH" UCI=/bin/true LUA="$T/bin/lua" CT="$T/ctempty" \
   TRAFFIC_QUERYLOG=/nonexistent TRAFFIC_LAN4=192.168.2. TRAFFIC_INTERVAL=2 \
   TRAFFIC_DATADIR="$T/data9" TRAFFIC_APPMAP="$T/apps.tsv" \
   TRAFFIC_CATEGORIES="$T/categories.tsv" STATE_DIR="$T/state9" \
+  "TRAFFIC_PROC_NET_DEV=$T/netdev9" "TRAFFIC_PROC_NET_ROUTE=$T/route9" \
+  TRAFFIC_PROC_NET_ROUTE6=/nonexistent \
   SELF_DIR="$(cd "$SELF/../root/usr/share/traffic" && pwd)" \
   sh "$COLLECTOR" >/dev/null 2>&1 &
 hpid=$!
@@ -657,7 +837,24 @@ chk "26 整点应用行下/上未错位"              "5000/1000" "$(awk -F'\t' 
 chk "26a 整点客户端行记字节数"              "6000/0"    "$(awk -F'\t' '$2=="client" { printf "%s/%s", $4, $5 }' "$h9")"
 chk "26b 整点隧道行记路由器自身流量"        "777"       "$(awk -F'\t' '$2=="router" { printf "%s", $4 }' "$h9")"
 chk "26c 整点只归档一次"                    "1"         "$(awk -F'\t' '$2=="router"' "$h9" | wc -l | tr -d ' ')"
-chk "26d 归档行数 = 三类各一行"             "3"         "$(grep -c . "$h9")"
+chk "26d 归档行数 = 四类各一行"             "4"         "$(grep -c . "$h9")"
+# The device counters of the hour, as a fourth kind of row.  The archive's app
+# rows are the attribution, which under flow offloading is a small fraction of
+# what the box carried - so a range view totals from this row instead, and it has
+# to be the seed and not the attribution.  Seeded asymmetrically again, and the
+# app row above is 5000/1000, so a row that had been filled from the attribution
+# would fail this even if the columns were right.
+chk "26d1 整点网卡行记设备字节"             "4000/900"  "$(awk -F'\t' '$2=="wan" { printf "%s/%s", $4, $5 }' "$h9")"
+chk "26d2 网卡行带 wan 类型与占位名"        "wan/-"     "$(awk -F'\t' '$2=="wan" { printf "%s/%s", $2, $3 }' "$h9")"
+chk "26d3 网卡行归到被滚动的小时"           "1"         "$(awk -F'\t' '$1=="h1" && $2=="wan"' "$h9" | wc -l | tr -d ' ')"
+# The row is a total and not an application.  A writer that emitted it as an app
+# row instead would put a "-" entry in the application table of every range view.
+chk "26d4 网卡行不冒充应用行"               "0"         "$(awk -F'\t' '$2=="app" && $3=="-"' "$h9" | wc -l | tr -d ' ')"
+chk "26d5 网卡会话累计未被归档清空"         "4000/900"  "$(sed -n '1p' "$T/state9/wan.tsv")/$(sed -n '2p' "$T/state9/wan.tsv")"
+# The device baseline the next delta is measured against.  It is advanced by the
+# roll, and it is what makes the second roll below archiving nothing rather than
+# the same bytes twice.
+chk "26d6 整点推进了网卡快照"               "4000/900"  "$(sed -n '1p' "$T/state9/arch/wan.snap")/$(sed -n '2p' "$T/state9/arch/wan.snap")"
 # The week tier is one point per hour, and its down column carries the router
 # total as well, because the box's own traffic belongs to the hour too.
 chk "26e series1h 下行含路由器流量"         "5777"      "$(cut -f2 "$T/data9/series1h.tsv" | head -n 1)"
@@ -667,9 +864,179 @@ chk "26h series1h 无流量的小时为 0"         "0/0"       "$(sed -n '2p' "$
 # The second roll had nothing new to archive, and the live counters it measured
 # against are still there: zeroing them here is what used to make the page lose
 # the session's traffic at the top of every hour.
-chk "26i 第二次滚动不重复归档"              "3"         "$(grep -c . "$h9")"
+chk "26i 第二次滚动不重复归档"              "4"         "$(grep -c . "$h9")"
+# The device row has to obey the same rule as the router row: the second roll
+# archived nothing, so the hour it ran in must not gain a copy of the bytes the
+# first roll already recorded.  This is the assertion the snapshot exists for.
+chk "26i1 第二次滚动不重复归档网卡行"       "1"         "$(awk -F'\t' '$2=="wan"' "$h9" | wc -l | tr -d ' ')"
+chk "26i2 第二次滚动的小时没有网卡行"       "0"         "$(awk -F'\t' '$1=="h2" && $2=="wan"' "$h9" | wc -l | tr -d ' ')"
+chk "26i3 第二次滚动后快照仍是原值"         "4000/900"  "$(sed -n '1p' "$T/state9/arch/wan.snap")/$(sed -n '2p' "$T/state9/arch/wan.snap")"
 chk "26j 整点不再清空应用累计"              "5000"      "$(awk -F'\t' '$1=="YouTube"{print $3}' "$T/state9/totals.tsv")"
 chk "26k 整点不再清空路由器累计"            "777"       "$(sed -n '1p' "$T/state9/router.tsv")"
+# The hour in progress, in device counters, for the backend to publish on the
+# bucket it appends.  After the roll the session total and the snapshot are the
+# same, so the current hour starts at zero rather than repeating the archived
+# hour; a collector that published the session cumulative here instead would
+# double every hour of every range once the hour turned over.
+chk "26l 进行中的小时发布网卡增量"          "0/0"       "$(sed -n '1p' "$T/state9/cur.iface")/$(sed -n '2p' "$T/state9/cur.iface")"
+chk "26m 网卡增量取自快照之差而非会话累计"  "no" \
+    "$([ "$(sed -n '1p' "$T/state9/cur.iface")" = "4000" ] && echo yes || echo no)"
+
+
+echo
+echo "=== WAN 接口计数器：权威总量与曲线 ==="
+# Under flow offloading the attribution layer only sees a fraction of what the
+# box carried - measured on the router, conntrack recorded 147 MiB while the WAN
+# device carried 2579 MiB, 5.7% - so the totals, the series and the peak are
+# taken from the WAN device's own counters instead.  Both the routing table that
+# names the device and /proc/net/dev itself are overridable, which is what lets
+# this run without a router.  eth2 carries rx=5000000, tx=800000.
+#
+# Every phase here is deterministic on purpose: the fake device counters never
+# change, so a round contributes either the seeded difference or nothing at all,
+# and the assertions hold however many rounds the collector manages to finish
+# before it is stopped.
+mkdir -p "$T/state10" "$T/data10" "$T/state11" "$T/data11" \
+         "$T/state12" "$T/data12" "$T/state13" "$T/data13"
+cat > "$T/netdev" <<'EOF'
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+    lo:    1000       10    0    0    0     0          0         0     1000       10    0    0    0     0       0          0
+  eth2: 5000000     4000    0    0    0     0          0         0   800000     3000    0    0    0     0       0          0
+EOF
+: > "$T/netdev-noif"
+printf 'Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\t\tMTU\tWindow\tIRTT\n' > "$T/route"
+printf 'eth2\t00000000\t0102A8C1\t0003\t0\t0\t0\t00000000\t0\t0\t0\n' >> "$T/route"
+NETW="TRAFFIC_PROC_NET_DEV=$T/netdev"
+RTW="TRAFFIC_PROC_NET_ROUTE=$T/route"
+NO6="TRAFFIC_PROC_NET_ROUTE6=/nonexistent"
+
+# No explicit device setting: the default route is what names it, so this covers
+# the /proc/net/route parse as well.
+run_collector_at 30 "$T/state10" "$T/data10" "$T/ct2" /nonexistent "$NETW" "$RTW" "$NO6"
+chk "27  默认路由识别出 WAN 设备"            "eth2" \
+    "$(sed -n 's/.*"iface":{"dev":"\([^"]*\)".*/\1/p' "$T/state10/summary.json")"
+# The device has counted 5000000 bytes since it came up.  None of that is this
+# session's traffic, and a first round that added it would publish a total the
+# box never carried in the session being shown.
+chk "27a 首次读取只做基线不累加"             "0/0" \
+    "$(sed -n 's/.*"iface":{[^}]*"down":\([0-9]*\),"up":\([0-9]*\).*/\1\/\2/p' "$T/state10/summary.json")"
+chk "27b 首次读取不写负值"                   "0" "$(grep -c -- '-' "$T/state10/wan.tsv")"
+
+# The curve is the whole point of this fix: it has to be the traffic the box
+# carried, because that is what a speed test looks like on the chart.  Its own
+# device file is used so the bump below cannot disturb the phases around it, and
+# the conntrack file for this phase is empty - so the attributed sample for a
+# round is zero, and a series point that is not zero can only have come from the
+# interface counters.  The device counters are bumped between two rounds, which
+# makes the size of that point exactly the bump: the pass before the first round
+# absorbs the starting values as its baseline, and round two is the only round
+# that sees the change.
+cat > "$T/netdev11" <<'EOF'
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+  eth2: 5000000     4000    0    0    0     0          0         0   800000     3000    0    0    0     0       0          0
+EOF
+: > "$T/ctempty11"
+env UCI=/bin/true LUA="$T/bin/lua" CT="$T/ctempty11" \
+  TRAFFIC_QUERYLOG=/nonexistent TRAFFIC_LAN4=192.168.2. TRAFFIC_INTERVAL=2 \
+  TRAFFIC_DATADIR="$T/data11" TRAFFIC_APPMAP="$T/apps.tsv" \
+  TRAFFIC_CATEGORIES="$T/categories.tsv" STATE_DIR="$T/state11" \
+  SELF_DIR="$(cd "$SELF/../root/usr/share/traffic" && pwd)" \
+  "TRAFFIC_PROC_NET_DEV=$T/netdev11" "TRAFFIC_PROC_NET_ROUTE=$T/route" \
+  TRAFFIC_PROC_NET_ROUTE6=/nonexistent \
+  sh "$COLLECTOR" >/dev/null 2>&1 &
+i11=$!
+wait_rounds "$T/state11" 1
+cat > "$T/netdev11" <<'EOF'
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+  eth2: 5005000     4100    0    0    0     0          0         0   801000     3000    0    0    0     0       0          0
+EOF
+wait_rounds "$T/state11" 2
+kill "$i11" 2>/dev/null
+wait "$i11" 2>/dev/null
+sleep 0.3
+chk "27c 会话总量取自接口计数器的增量"       "5000/1000" \
+    "$(sed -n '1p' "$T/state11/wan.tsv")/$(sed -n '2p' "$T/state11/wan.tsv")"
+chk "27d 快照总量取自接口计数器"             "5000/1000" \
+    "$(sed -n 's/.*"iface":{[^}]*"down":\([0-9]*\),"up":\([0-9]*\).*/\1\/\2/p' "$T/state11/summary.json")"
+chk "27e 曲线点取自接口增量而非归属值"       "5000/1000" \
+    "$(sed -n '2p' "$T/state11/series10.tsv" | cut -f2,3 | tr '\t' '/')"
+
+# A counter that went backwards means the device was re-created.  Its new reading
+# is traffic nothing has accounted for yet; what this guards against is arithmetic
+# on unsigned values, which turns a negative difference into an enormous total.
+# The version file has to match, or init_state() drops the seeded baseline as
+# stale state and the phase would silently test the first-reading path instead.
+printf '%s\n' "$SCHEMA" > "$T/state12/version"
+printf '9999999\n9999999\n' > "$T/state12/wan.abs"
+run_collector_at 30 "$T/state12" "$T/data12" "$T/ct2" /nonexistent "$NETW" "$RTW" "$NO6"
+chk "27f 计数回退后按新读数计"               "$(printf '5000000/800000')" \
+    "$(sed -n '1p' "$T/state12/wan.tsv")/$(sed -n '2p' "$T/state12/wan.tsv")"
+chk "27g 计数回退后没有负值"                 "0" "$(grep -c -- '-' "$T/state12/wan.tsv")"
+
+# No device to measure: the key is not published at all, which is what the page
+# reads as "fall back to the attributed numbers" rather than "the total is zero".
+run_collector_at 30 "$T/state13" "$T/data13" "$T/ct2" /nonexistent \
+    "TRAFFIC_PROC_NET_DEV=$T/netdev-noif" "TRAFFIC_WAN_IF=eth2" \
+    "TRAFFIC_PROC_NET_ROUTE=/nonexistent" "$NO6"
+chk "27h 设备不存在时不发布 iface"           "0" "$(grep -c '"iface"' "$T/state13/summary.json")"
+chk "27i 设备不存在时不写接口累计"           "no" \
+    "$([ -f "$T/state13/wan.tsv" ] && echo yes || echo no)"
+
+# Whether the firewall offloads is always published, because it is what decides
+# whether the attribution beside the total is a large share or a small one.
+chk "27j 快照发布卸载状态"                   "0" \
+    "$(sed -n 's/.*"offload":\([0-9]*\).*/\1/p' "$T/state10/summary.json")"
+
+# The protocol buckets are the attribution's last resort, not applications: at
+# about a third of the attributed traffic, listed among the applications they read
+# as if an app called "SSL/TLS" had been used.
+protoflag() {
+    awk -v w="$1" 'BEGIN { RS = "{" }
+        index($0, "\"name\":\"" w "\"") > 0 {
+            print (index($0, "\"proto\":1") > 0) ? 1 : 0; exit
+        }' "$2"
+}
+chk "27k 协议桶被打上 proto 标记"            "1" "$(protoflag 'SSL/TLS' "$T/state/summary.json")"
+chk "27l 真实应用没有 proto 标记"            "0" "$(protoflag 'NetEase Music' "$T/state/summary.json")"
+
+# A device that disappears mid-session.  The delta of the round it vanished in
+# must not sit on disk and be drawn again by every later round - with an empty
+# conntrack file the fallback sample is zero, so a repeated 5000 would mean the
+# stale delta was reused, and the session total would keep growing on a device
+# nobody can measure any more.
+cat > "$T/netdev14" <<'EOF'
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+  eth2: 5000000     4000    0    0    0     0          0         0   800000     3000    0    0    0     0       0          0
+EOF
+env UCI=/bin/true LUA="$T/bin/lua" CT="$T/ctempty11" \
+  TRAFFIC_QUERYLOG=/nonexistent TRAFFIC_LAN4=192.168.2. TRAFFIC_INTERVAL=2 \
+  TRAFFIC_DATADIR="$T/data14" TRAFFIC_APPMAP="$T/apps.tsv" \
+  TRAFFIC_CATEGORIES="$T/categories.tsv" STATE_DIR="$T/state14" \
+  SELF_DIR="$(cd "$SELF/../root/usr/share/traffic" && pwd)" \
+  "TRAFFIC_PROC_NET_DEV=$T/netdev14" "TRAFFIC_PROC_NET_ROUTE=$T/route" \
+  TRAFFIC_PROC_NET_ROUTE6=/nonexistent \
+  sh "$COLLECTOR" >/dev/null 2>&1 &
+i14=$!
+wait_rounds "$T/state14" 1
+cat > "$T/netdev14" <<'EOF'
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+  eth2: 5005000     4100    0    0    0     0          0         0   801000     3000    0    0    0     0       0          0
+EOF
+wait_rounds "$T/state14" 2
+: > "$T/netdev14"
+wait_rounds "$T/state14" 3
+kill "$i14" 2>/dev/null
+wait "$i14" 2>/dev/null
+sleep 0.3
+chk "27m 设备消失后不再复用上一轮增量"       "0/0" \
+    "$(sed -n '3p' "$T/state14/series10.tsv" | cut -f2,3 | tr '\t' '/')"
+chk "27n 设备消失后会话总量不再增长"         "5000/1000" \
+    "$(sed -n '1p' "$T/state14/wan.tsv")/$(sed -n '2p' "$T/state14/wan.tsv")"
 
 echo
 if [ "$fail" = 0 ]; then echo "=== 全部通过 ==="; else echo "=== 有失败 ==="; fi

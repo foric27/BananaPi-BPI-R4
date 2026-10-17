@@ -61,7 +61,12 @@ function isDarkTheme() {
 
 function applyThemeClass(node, darkClass) {
 	function syncThemeClass() {
-		node.classList.toggle(darkClass, isDarkTheme());
+		/* The canvas paints in the same two palettes and redraws on every frame,
+		 * so the answer is recorded here instead of being asked for sixty times
+		 * a second: isDarkTheme() reads a computed background colour, which is a
+		 * style resolution per call. */
+		applyThemeClass._dark = isDarkTheme();
+		node.classList.toggle(darkClass, applyThemeClass._dark);
 	}
 	var retries = [ 0, 80, 220, 480, 900 ];
 	var index;
@@ -140,138 +145,173 @@ var dashboardStyle = [
 	'  --lf-duration-slow: 350ms;',
 	'  display: grid; gap: 18px;',
 
-	/* ── Light Shell ── */
-	'  --lf-shell-bg: linear-gradient(135deg, #294a7a 0%, #3d679f 48%, #7da4d8 100%);',
-	'  --lf-shell-shadow: 0 20px 40px rgba(25, 50, 87, 0.16);',
-	'  --lf-frost-bg: rgba(255, 255, 255, 0.12);',
-	'  --lf-frost-border: rgba(255, 255, 255, 0.14);',
-	'  --lf-frost-soft: rgba(255, 255, 255, 0.10);',
-	'  --lf-deep-surface: rgba(11, 24, 45, 0.20);',
-	'  --lf-deep-surface-soft: rgba(11, 24, 45, 0.18);',
-	'  --lf-form-bg: linear-gradient(180deg, rgba(249, 252, 255, 0.98), rgba(240, 246, 255, 0.99));',
-	'  --lf-form-border: rgba(76, 108, 157, 0.12);',
-	'  --lf-form-title: #1a3556;',
-	'  --lf-field-border: rgba(76, 108, 157, 0.18);',
+	/* ── Light Surface ──
+	 * The shell is the material the traffic page's cards are made of, so the
+	 * two pages read as one design: rgba(255,255,255,.8) over a
+	 * blur(14px) saturate(150%) layer, one hairline border, one soft shadow.
+	 * It used to be a saturated blue gradient with two radial glows, which
+	 * left every colour below tuned for a dark surface - a #ffffff headline
+	 * that a light theme cannot read.  Nothing here is a fixed colour any
+	 * more: the dark block below restates only these tokens. */
+	'  --lf-shell-bg: rgba(255, 255, 255, 0.8);',
+	'  --lf-shell-border: rgba(255, 255, 255, 0.75);',
+	'  --lf-shell-shadow: 0 6px 22px rgba(31, 66, 102, 0.10);',
+	'  --lf-fg: var(--font-color, #20303d);',
+	'  --lf-dim: #68727c;',
+	'  --lf-accent: #0a84ff;',
+	'  --lf-frost-bg: rgba(140, 160, 180, 0.16);',
+	'  --lf-frost-border: rgba(128, 150, 175, 0.20);',
+	'  --lf-frost-soft: rgba(255, 255, 255, 0.60);',
+	'  --lf-deep-surface: rgba(140, 160, 180, 0.16);',
+	'  --lf-deep-surface-soft: rgba(140, 160, 180, 0.10);',
+	'  --lf-well: rgba(255, 255, 255, 0.72);',
+	'  --lf-well-hub: rgba(255, 255, 255, 0.92);',
+	'  --lf-track: rgba(128, 150, 175, 0.20);',
+	'  --lf-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.5);',
+	'  --lf-form-bg: rgba(255, 255, 255, 0.8);',
+	'  --lf-form-border: rgba(128, 150, 175, 0.20);',
+	'  --lf-form-title: var(--font-color, #20303d);',
+	'  --lf-field-border: rgba(128, 150, 175, 0.28);',
 	'  --lf-field-bg: var(--background-color-high, #fff);',
-	'  --lf-range-pill-bg: rgba(41, 74, 122, 0.08);',
-	'  --lf-range-pill-text: #1d3d67;',
-	'  --lf-preset-bg: rgba(17, 32, 54, 0.18);',
-	'  --lf-preset-border: rgba(255, 255, 255, 0.18);',
-	'  --lf-preset-hover: rgba(120, 169, 231, 0.18);',
-	'  --lf-preset-hover-border: rgba(120, 169, 231, 0.45);',
-	'  --lf-preset-active: rgba(120, 169, 231, 0.24);',
-	'  --lf-preset-active-border: rgba(120, 169, 231, 0.60);',
+	'  --lf-range-pill-bg: rgba(140, 160, 180, 0.16);',
+	'  --lf-range-pill-text: #20303d;',
+	'  --lf-preset-bg: rgba(140, 160, 180, 0.16);',
+	'  --lf-preset-border: rgba(128, 150, 175, 0.20);',
+	'  --lf-preset-hover: rgba(140, 160, 180, 0.26);',
+	'  --lf-preset-hover-border: rgba(10, 132, 255, 0.45);',
+	'  --lf-preset-active: rgba(10, 132, 255, 0.14);',
+	'  --lf-preset-active-border: rgba(10, 132, 255, 0.55);',
 	'}',
 
-	/* ── Dark Shell (Argon / theme-agnostic) ── */
+	/* ── Dark Surface (Argon / theme-agnostic) ── */
 	'.lf-page.lf-dark,',
 	'body.dark .lf-page, html.dark .lf-page,',
 	'body.mode-dark .lf-page, body.argon-dark .lf-page,',
 	'html[data-theme="dark"] .lf-page, body[data-theme="dark"] .lf-page,',
 	'html[data-theme="dark"] body .lf-page,',
 	'body[data-theme="dark"] .lf-page {',
-	'  --lf-shell-bg: linear-gradient(135deg, #0c1424 0%, #15253d 48%, #24456d 100%);',
-	'  --lf-shell-shadow: 0 24px 46px rgba(0, 0, 0, 0.32);',
+	'  --lf-shell-bg: rgba(44, 44, 46, 0.8);',
+	'  --lf-shell-border: var(--border-color-low, rgba(255, 255, 255, 0.08));',
+	'  --lf-shell-shadow: 0 6px 22px rgba(0, 0, 0, 0.35);',
+	'  --lf-fg: #e6edf3;',
+	'  --lf-dim: #aeb5bc;',
 	'  --lf-frost-bg: rgba(255, 255, 255, 0.08);',
-	'  --lf-frost-border: rgba(255, 255, 255, 0.10);',
-	'  --lf-frost-soft: rgba(255, 255, 255, 0.07);',
-	'  --lf-deep-surface: rgba(7, 14, 24, 0.38);',
-	'  --lf-deep-surface-soft: rgba(10, 18, 30, 0.32);',
-	'  --lf-form-bg: linear-gradient(180deg, rgba(18, 28, 44, 0.96), rgba(10, 17, 29, 0.98));',
-	'  --lf-form-border: rgba(124, 147, 186, 0.22);',
-	'  --lf-form-title: #eef5fd;',
-	'  --lf-field-border: rgba(124, 147, 186, 0.22);',
-	'  --lf-field-bg: rgba(8, 14, 24, 0.94);',
-	'  --lf-range-pill-bg: rgba(8, 14, 24, 0.86);',
+	'  --lf-frost-border: var(--border-color-low, rgba(255, 255, 255, 0.12));',
+	'  --lf-frost-soft: rgba(255, 255, 255, 0.06);',
+	'  --lf-deep-surface: rgba(255, 255, 255, 0.08);',
+	'  --lf-deep-surface-soft: rgba(255, 255, 255, 0.06);',
+	'  --lf-well: rgba(7, 20, 26, 0.38);',
+	'  --lf-well-hub: rgba(10, 27, 33, 0.92);',
+	'  --lf-track: rgba(255, 255, 255, 0.12);',
+	'  --lf-hairline: inset 0 1px 0 rgba(255, 255, 255, 0.05);',
+	'  --lf-form-bg: rgba(44, 44, 46, 0.8);',
+	'  --lf-form-border: var(--border-color-low, rgba(255, 255, 255, 0.12));',
+	'  --lf-form-title: #e6edf3;',
+	'  --lf-field-border: rgba(255, 255, 255, 0.14);',
+	'  --lf-field-bg: rgba(30, 30, 32, 0.94);',
+	'  --lf-range-pill-bg: rgba(255, 255, 255, 0.08);',
 	'  --lf-range-pill-text: #dce7f3;',
+	'  --lf-preset-bg: rgba(255, 255, 255, 0.08);',
+	'  --lf-preset-border: rgba(255, 255, 255, 0.12);',
+	'  --lf-preset-hover: rgba(255, 255, 255, 0.14);',
+	'  --lf-preset-hover-border: rgba(10, 132, 255, 0.50);',
+	'  --lf-preset-active: rgba(10, 132, 255, 0.22);',
+	'  --lf-preset-active-border: rgba(10, 132, 255, 0.60);',
 	'}',
 
 	/* ── Shell & Entrance ── */
-	'.lf-dashboard-shell { position: relative; overflow: hidden; border: 0; border-radius: 24px; box-shadow: var(--lf-shell-shadow); background: var(--lf-shell-bg); }',
+	'.lf-dashboard-shell { position: relative; overflow: hidden; border: 1px solid var(--lf-shell-border); border-radius: 24px; box-shadow: var(--lf-hairline), var(--lf-shell-shadow); background: var(--lf-shell-bg); backdrop-filter: blur(14px) saturate(150%); -webkit-backdrop-filter: blur(14px) saturate(150%); }',
 	'.lf-dashboard-shell.lf-entering { animation: lf-shell-enter 500ms var(--lf-ease-out) both; }',
 	'@keyframes lf-shell-enter { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }',
 
-	/* Decorative ambient glows — Apple-style soft radial gradients */
-	'.lf-dashboard-shell:before, .lf-dashboard-shell:after { content: ""; position: absolute; inset: auto; pointer-events: none; }',
-	'.lf-dashboard-shell:before { top: -60px; right: -80px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(176, 205, 255, 0.28) 0%, rgba(176, 205, 255, 0) 70%); }',
-	'.lf-dashboard-shell:after { left: -100px; bottom: -120px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(214, 229, 255, 0.22) 0%, rgba(214, 229, 255, 0) 72%); }',
+	/* No ambient glows.  The two radial gradients that used to sit here were
+	 * part of the blue-gradient shell, and the traffic page this now matches
+	 * has none: a light material with a coloured blob behind it reads as a
+	 * leftover, not as depth. */
 
-	'.lf-dashboard { position: relative; z-index: 1; padding: 28px; color: #eef6ef; }',
-	'.lf-hero { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr); gap: 24px; align-items: stretch; }',
-	'.lf-copy { min-width: 0; }',
+	'.lf-dashboard { position: relative; z-index: 1; padding: 18px 20px; color: var(--lf-fg); }',
+	'.lf-hero { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(280px, 1fr); gap: 18px; align-items: stretch; }',
+	'.lf-copy { min-width: 0; display: flex; flex-direction: column; }',
 
-	/* Eyebrow badge */
-	'.lf-eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--lf-frost-bg); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(16px) saturate(140%); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }',
+	/* Eyebrow badge — align-self keeps it as wide as its text: the copy column
+	 * is a flex column now, and a stretched inline-flex child fills the row. */
+	'.lf-eyebrow { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 4px 10px; border-radius: 999px; background: var(--lf-frost-bg); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(16px) saturate(140%); font-size: 11px; letter-spacing: 0.10em; text-transform: uppercase; }',
 
 	/* Headline — reset all LuCI overrides */
-	'.lf-headline { all: unset; display: block !important; width: auto !important; margin: 16px 0 10px !important; padding: 0 !important; min-height: 0 !important; background: transparent !important; background-color: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; font-size: 30px !important; font-weight: 700 !important; line-height: 1.15 !important; color: #ffffff !important; text-shadow: none !important; }',
+	'.lf-headline { all: unset; display: block !important; width: auto !important; margin: 12px 0 8px !important; padding: 0 !important; min-height: 0 !important; background: transparent !important; background-color: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; font-size: 25px !important; font-weight: 700 !important; line-height: 1.15 !important; letter-spacing: -0.02em !important; color: var(--lf-fg) !important; text-shadow: none !important; }',
 	'.lf-headline:before, .lf-headline:after { display: none; content: none; }',
-	'.lf-copy p { max-width: 52rem; margin: 0; font-size: 14px; line-height: 1.7; color: rgba(238, 246, 239, 0.88); }',
+	'.lf-copy p { max-width: 46rem; margin: 0; font-size: 13px; line-height: 1.6; color: var(--lf-dim); }',
 
-	'.lf-chip-row, .lf-metrics, .lf-grid, .lf-config-grid, .lf-ladder-scale { display: grid; gap: 14px; }',
-	'.lf-chip-row { grid-template-columns: repeat(auto-fit, minmax(140px, max-content)); margin-top: 18px; }',
-	'.lf-chip { display: inline-flex; align-items: center; justify-content: center; padding: 8px 14px; border-radius: 999px; background: var(--lf-frost-bg); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(12px); font-size: 12px; line-height: 1.4; color: #ffffff; }',
-	'.lf-chip-muted { background: var(--lf-deep-surface); color: rgba(238, 246, 239, 0.86); }',
+	'.lf-chip-row, .lf-metrics, .lf-grid, .lf-config-grid, .lf-ladder-scale { display: grid; gap: 10px; }',
+	'.lf-chip-row { grid-template-columns: repeat(auto-fit, minmax(120px, max-content)); margin-top: 12px; }',
+	'.lf-chip { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 999px; background: var(--lf-frost-bg); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(12px); font-size: 11.5px; line-height: 1.4; color: var(--lf-fg); }',
+	'.lf-chip-muted { background: var(--lf-deep-surface); color: var(--lf-dim); }',
 	'.lf-chip-alert { background: rgba(246, 135, 83, 0.2); border-color: rgba(246, 135, 83, 0.35); }',
 
 	/* Runtime state badge colors */
 	'.lf-runtime-badge[data-state="active"] { background: #ffcb72; border-color: #ffcb72; color: #2d1f04; }',
 	'.lf-runtime-badge[data-state="transition"] { background: #9adfb9; border-color: #9adfb9; color: #143325; }',
 	'.lf-runtime-badge[data-state="standby"] { background: #cbe7f0; border-color: #cbe7f0; color: #173843; }',
-	'.lf-runtime-badge[data-state="disabled"], .lf-runtime-badge[data-state="unsupported"] { background: rgba(255, 255, 255, 0.16); color: #ffffff; }',
+	'.lf-runtime-badge[data-state="disabled"], .lf-runtime-badge[data-state="unsupported"] { background: var(--lf-frost-bg); color: var(--lf-fg); }',
 
-	'.lf-visual { min-width: 0; display: grid; gap: 16px; align-content: start; justify-items: stretch; }',
+	'.lf-visual { min-width: 0; display: grid; gap: 10px; align-content: start; justify-items: stretch; }',
 
 	/* Fan orb — Apple-style glass surface with top-edge light catch */
-	'.lf-orb { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 280px; padding: 18px; overflow: hidden; border-radius: 26px; background: linear-gradient(180deg, var(--lf-deep-surface), var(--lf-frost-soft)) !important; border: 1px solid var(--lf-frost-border) !important; backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0,0,0,0.08) !important; }',
+	'.lf-orb { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 268px; padding: 4px; overflow: hidden; border-radius: 18px; background: var(--lf-well) !important; border: 1px solid var(--lf-frost-border) !important; backdrop-filter: blur(18px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 24px rgba(0,0,0,0.08) !important; }',
 	'.lf-orb canvas, #lf-fan-canvas { display: block !important; width: 260px !important; height: 260px !important; max-width: 100% !important; max-height: 260px !important; margin: 0 auto !important; background: transparent !important; background-color: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; outline: 0 !important; }',
 
 	'.lf-temp-readout { position: absolute; top: 50%; left: 50%; z-index: 1; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }',
-	'.lf-temp-number { font-size: 42px; line-height: 1; font-weight: 700; }',
-	'.lf-temp-unit { margin-top: 4px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(238, 246, 239, 0.72); }',
-	'.lf-temp-caption { margin-top: 8px; font-size: 12px; max-width: 92%; overflow-wrap: break-word; color: rgba(238, 246, 239, 0.82); }',
+	'.lf-temp-number { font-size: 32px; line-height: 1; font-weight: 700; font-variant-numeric: tabular-nums; }',
+	'.lf-temp-unit { margin-top: 2px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lf-dim); }',
+	'.lf-temp-caption { margin-top: 3px; font-size: 11px; color: var(--lf-dim); }',
 
 	/* Demand bar — smooth width transition with strong ease-in-out */
-	'.lf-demand { width: 100%; box-sizing: border-box; padding: 16px 18px 18px; border-radius: 18px; background: var(--lf-frost-soft); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(10px); }',
-	'.lf-demand-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; }',
-	'.lf-demand-row strong { font-size: 18px; }',
-	'.lf-demand-bar { margin-top: 10px; height: 12px; border-radius: 999px; background: rgba(5, 16, 19, 0.34); overflow: hidden; }',
+	'.lf-demand { width: 100%; box-sizing: border-box; padding: 10px 12px 12px; border-radius: 14px; background: var(--lf-frost-soft); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(10px); }',
+	'.lf-demand-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 12px; }',
+	'.lf-demand-row strong { font-size: 15px; font-variant-numeric: tabular-nums; }',
+	'.lf-demand-bar { margin-top: 7px; height: 8px; border-radius: 999px; background: var(--lf-track); overflow: hidden; }',
 	'#lf-demand-fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #7de2b8 0%, #f3d07b 55%, #f68753 100%);',
 	'  transition: width 350ms var(--lf-ease-in-out), background 350ms var(--lf-ease-in-out); }',
 
-	/* Metrics grid — translucency + blur */
-	'.lf-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 22px; }',
-	'.lf-metric, .lf-card, .lf-ladder-card { padding: 18px; border-radius: 20px; background: var(--lf-frost-bg); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(12px) saturate(140%); }',
-	'.lf-metric-label { font-size: 12px; line-height: 1.5; color: rgba(238, 246, 239, 0.76); }',
-	'.lf-metric-value { margin-top: 10px; font-size: 28px; line-height: 1.1; font-weight: 700; color: #ffffff;',
+	/* Metrics grid — translucency + blur.  It fills whatever height the orb
+	 * column has left over: the KPI tiles grow into the space instead of
+	 * leaving a hole between themselves and the chips above. */
+	'.lf-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; flex: 1 1 auto; align-content: stretch; }',
+	'.lf-metric, .lf-card, .lf-ladder-card { padding: 12px 14px; border-radius: 16px; background: var(--lf-frost-bg); border: 1px solid var(--lf-frost-border); backdrop-filter: blur(12px) saturate(140%); }',
+	/* The KPI tiles stretch to the orb column's height, so the label goes to the
+	 * top and the number to the bottom of the tile rather than both sitting in
+	 * the upper half of a tall box. */
+	'.lf-metric { display: flex; flex-direction: column; justify-content: space-between; }',
+	'.lf-metric-label { font-size: 11px; line-height: 1.4; color: var(--lf-dim); }',
+	'.lf-metric-value { margin-top: 4px; font-size: 22px; line-height: 1.1; font-weight: 700; color: var(--lf-fg); font-variant-numeric: tabular-nums;',
 	'  transition: color 200ms var(--lf-ease-out); }',
 
 	/* Ladder (smart curve visualisation) */
-	'.lf-ladder-card { margin-top: 22px; }',
+	'.lf-ladder-card { margin-top: 16px; }',
 	'.lf-ladder-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }',
-	'.lf-ladder-head h4, .lf-card h4 { margin: 0; font-size: 16px; color: #ffffff; }',
-	'.lf-source-pill { padding: 6px 10px; border-radius: 999px; background: var(--lf-deep-surface); font-size: 12px; color: rgba(238, 246, 239, 0.84); }',
-	'.lf-ladder-track { position: relative; height: 18px; margin-top: 18px; border-radius: 999px; background: linear-gradient(90deg, rgba(125, 226, 184, 0.45) 0%, rgba(250, 206, 118, 0.72) 55%, rgba(246, 135, 83, 0.95) 100%); overflow: hidden; }',
+	'.lf-ladder-head h4, .lf-card h4 { margin: 0; font-size: 15px; color: var(--lf-fg); }',
+	'.lf-source-pill { padding: 3px 8px; border-radius: 999px; background: var(--lf-deep-surface); font-size: 11px; color: var(--lf-dim); }',
+	'.lf-ladder-track { position: relative; height: 14px; margin-top: 12px; border-radius: 999px; background: linear-gradient(90deg, rgba(125, 226, 184, 0.45) 0%, rgba(250, 206, 118, 0.72) 55%, rgba(246, 135, 83, 0.95) 100%); overflow: hidden; }',
 	'.lf-ladder-track:before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(6, 18, 22, 0.25), rgba(255, 255, 255, 0.04)); }',
-	'.lf-marker { position: absolute; top: -5px; width: 2px; height: 28px; background: #ffffff; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16); transform: translateX(-50%);',
+	'.lf-marker { position: absolute; top: -4px; width: 2px; height: 22px; background: #ffffff; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16); transform: translateX(-50%);',
 	'  transition: left 400ms var(--lf-ease-out), opacity 200ms var(--lf-ease-out); }',
-	'.lf-marker-current { height: 34px; top: -8px; background: #ffd17c; box-shadow: 0 0 0 4px rgba(255, 209, 124, 0.18); }',
-	'.lf-ladder-scale { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; }',
-	'.lf-scale-item { padding: 10px 12px; border-radius: 14px; background: var(--lf-deep-surface-soft); }',
-	'.lf-scale-item span { display: block; font-size: 11px; line-height: 1.5; color: rgba(238, 246, 239, 0.76); }',
-	'.lf-scale-item strong { display: block; margin-top: 6px; font-size: 18px; line-height: 1.2; color: #ffffff;',
+	'.lf-marker-current { height: 28px; top: -7px; background: #ffd17c; box-shadow: 0 0 0 4px rgba(255, 209, 124, 0.18); }',
+	'.lf-ladder-scale { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 10px; }',
+	'.lf-scale-item { padding: 7px 10px; border-radius: 12px; background: var(--lf-deep-surface-soft); }',
+	'.lf-scale-item span { display: block; font-size: 10.5px; line-height: 1.4; color: var(--lf-dim); }',
+	'.lf-scale-item strong { display: block; margin-top: 2px; font-size: 16px; line-height: 1.2; color: var(--lf-fg); font-variant-numeric: tabular-nums;',
 	'  transition: color 200ms var(--lf-ease-out); }',
 
-	'.lf-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 22px; }',
-	'.lf-card p { margin: 12px 0 0; font-size: 13px; line-height: 1.7; color: rgba(238, 246, 239, 0.82); }',
+	'.lf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }',
+	'.lf-card p { margin: 8px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--lf-dim); }',
 
 	/* ── Preset Buttons (Emil-style: :active scale feedback, strong easing) ── */
-	'.lf-preset-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }',
+	'.lf-preset-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }',
 	'.lf-preset {',
-	'  min-height: 48px; padding: 0 14px; border-radius: 14px;',
+	'  min-height: 40px; padding: 0 12px; border-radius: 12px;',
 	'  border: 1px solid var(--lf-preset-border);',
 	'  background: var(--lf-preset-bg);',
-	'  color: #ffffff; box-shadow: none; cursor: pointer;',
+	'  color: var(--lf-fg); box-shadow: none; cursor: pointer;',
 	'  outline: none;',
 	'  -webkit-tap-highlight-color: transparent;',
 	'  transition: transform 160ms var(--lf-ease-out),',
@@ -281,41 +321,60 @@ var dashboardStyle = [
 	'}',
 	'.lf-preset:active { transform: scale(0.97); transition: transform 100ms var(--lf-ease-out); }',
 	'.lf-preset:hover, .lf-preset:focus-visible { transform: translateY(-1px); background: var(--lf-preset-hover); border-color: var(--lf-preset-hover-border); }',
-	'.lf-preset:focus-visible { box-shadow: 0 0 0 3px rgba(120, 169, 231, 0.4); }',
+	'.lf-preset:focus-visible { box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.4); }',
 	'.lf-preset.is-active { background: var(--lf-preset-active); border-color: var(--lf-preset-active-border); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }',
 
-	'.lf-note, .lf-insights, .lf-config-grid { margin-top: 14px; }',
-	'.lf-insight { margin: 0 0 10px; padding: 10px 12px; border-radius: 14px; background: var(--lf-deep-surface-soft); font-size: 13px; line-height: 1.6; color: rgba(238, 246, 239, 0.9); }',
+	'.lf-note, .lf-insights, .lf-config-grid { margin-top: 10px; }',
+	/* The hints are six sentences.  As one column this card was the tallest
+	 * thing on the page and stretched the two cards beside it, so the row is
+	 * now two columns of hints and the three cards come out even. */
+	'.lf-insights { display: grid; gap: 4px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--lf-frost-border); }',
+	'.lf-insight { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--lf-fg); }',
 	'.lf-config-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }',
-	'.lf-config-item { padding: 10px 12px; border-radius: 14px; background: var(--lf-deep-surface-soft); }',
-	'.lf-config-item span { display: block; font-size: 11px; line-height: 1.5; color: rgba(238, 246, 239, 0.76); }',
-	'.lf-config-item strong { display: block; margin-top: 6px; font-size: 18px; line-height: 1.3; color: #ffffff;',
+	'.lf-config-item { padding: 7px 10px; border-radius: 12px; background: var(--lf-deep-surface-soft); }',
+	'.lf-config-item span { display: block; font-size: 10.5px; line-height: 1.4; color: var(--lf-dim); }',
+	'.lf-config-item strong { display: block; margin-top: 2px; font-size: 16px; line-height: 1.3; color: var(--lf-fg); font-variant-numeric: tabular-nums;',
 	'  transition: color 200ms var(--lf-ease-out); }',
 
 	/* ── LuCI Form Integration ── */
-	'.lf-dashboard-shell + .cbi-map { margin-top: 0; border-radius: 22px; border: 1px solid var(--lf-form-border); box-shadow: 0 12px 30px rgba(17, 48, 54, 0.08); overflow: hidden; background: var(--lf-form-bg); }',
-	'.lf-dashboard-shell + .cbi-map > h2, .lf-dashboard-shell + .cbi-map > .cbi-map-descr { display: none; }',
-	'.lf-dashboard-shell + .cbi-map .cbi-section { margin: 0; border: 0; box-shadow: none; background: transparent; }',
-	'.lf-dashboard-shell + .cbi-map .cbi-section-node { padding-top: 6px; background: transparent; }',
-	'.lf-dashboard-shell + .cbi-map .cbi-section-node h3 { margin-top: 4px; font-size: 20px; color: var(--lf-form-title); }',
-	'.lf-dashboard-shell + .cbi-map .cbi-value { padding: 14px 18px; border-top: 1px solid var(--lf-form-border); }',
-	'.lf-dashboard-shell + .cbi-map .cbi-value-title { font-weight: 600; color: var(--lf-form-title); }',
-	'.lf-dashboard-shell + .cbi-map input[type="text"],',
-	'.lf-dashboard-shell + .cbi-map input[type="password"],',
-	'.lf-dashboard-shell + .cbi-map input[type="number"],',
-	'.lf-dashboard-shell + .cbi-map select {',
+	'.lf-settings { margin: 0; border-radius: 16px; border: 1px solid var(--lf-form-border); background: var(--lf-form-bg); box-shadow: 0 12px 30px rgba(17, 48, 54, 0.08); overflow: hidden; }',
+	'.lf-settings > .lf-settings-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-size: 14px; font-weight: 600; color: var(--lf-form-title); cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }',
+	'.lf-settings > .lf-settings-head::-webkit-details-marker { display: none; }',
+	'.lf-settings > .lf-settings-head:after { content: ""; margin-left: auto; width: 7px; height: 7px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform 200ms var(--lf-ease-out); }',
+	'.lf-settings[open] > .lf-settings-head { border-bottom: 1px solid var(--lf-form-border); }',
+	'.lf-settings[open] > .lf-settings-head:after { transform: rotate(-135deg); }',
+	'.lf-settings > .lf-settings-head:hover { color: var(--lf-accent); }',
+	'.lf-settings > .lf-settings-head:focus-visible { outline: 2px solid var(--lf-accent); outline-offset: 2px; }',
+	'.lf-settings .cbi-map { margin: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }',
+	/* the summary carries the section's own heading, so the one the form renders
+	 * would print "基本设置" twice.  luci-base's form.js appends that heading as
+	 * a direct child of .cbi-section - `sectionEl.appendChild(E('h3', {}, this.title))`
+	 * - which is a sibling of .cbi-section-node, not inside it, so the selector
+	 * has to say so: matching .cbi-section-node h3 hid nothing at all. */
+	'.lf-settings .cbi-map .cbi-section > h3 { display: none; }',
+	'.lf-settings .cbi-map .cbi-section-node h3 { display: none; }',
+	'.lf-settings .cbi-map .cbi-value:first-child { border-top: 0; }',
+	'.lf-settings .cbi-map > h2, .lf-settings .cbi-map > .cbi-map-descr { display: none; }',
+	'.lf-settings .cbi-map .cbi-section { margin: 0; border: 0; box-shadow: none; background: transparent; }',
+	'.lf-settings .cbi-map .cbi-section-node { padding-top: 6px; background: transparent; }',
+	'.lf-settings .cbi-map .cbi-value { padding: 11px 14px; border-top: 1px solid var(--lf-form-border); }',
+	'.lf-settings .cbi-map .cbi-value-title { font-weight: 600; color: var(--lf-form-title); }',
+	'.lf-settings .cbi-map input[type="text"],',
+	'.lf-settings .cbi-map input[type="password"],',
+	'.lf-settings .cbi-map input[type="number"],',
+	'.lf-settings .cbi-map select {',
 	'  border-radius: 12px; border-color: var(--lf-field-border);',
 	'  background: var(--lf-field-bg); color: var(--lf-form-title);',
 	'  box-shadow: none;',
 	'  transition: border-color 200ms var(--lf-ease-out);',
 	'}',
-	'.lf-dashboard-shell + .cbi-map input[type="text"]:focus,',
-	'.lf-dashboard-shell + .cbi-map input[type="number"]:focus,',
-	'.lf-dashboard-shell + .cbi-map select:focus {',
-	'  border-color: rgba(120, 169, 231, 0.5);',
-	'  box-shadow: 0 0 0 3px rgba(120, 169, 231, 0.15);',
+	'.lf-settings .cbi-map input[type="text"]:focus,',
+	'.lf-settings .cbi-map input[type="number"]:focus,',
+	'.lf-settings .cbi-map select:focus {',
+	'  border-color: rgba(10, 132, 255, 0.5);',
+	'  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);',
 	'}',
-	'.lf-dashboard-shell + .cbi-map input[type="range"] { width: 100%; accent-color: #1d6d5d; }',
+	'.lf-settings .cbi-map input[type="range"] { width: 100%; accent-color: var(--lf-accent); }',
 	'.lf-range-output { display: inline-flex; align-items: center; justify-content: center; min-width: 72px; margin-top: 10px; padding: 6px 12px; border-radius: 999px; background: var(--lf-range-pill-bg); color: var(--lf-range-pill-text); font-size: 12px; font-weight: 600;',
 	'  transition: background-color 200ms var(--lf-ease-out), color 200ms var(--lf-ease-out); }',
 
@@ -326,56 +385,55 @@ var dashboardStyle = [
 	'  #lf-demand-fill { transition: none; }',
 	'  .lf-marker { transition: none; }',
 	'  .lf-metric-value, .lf-scale-item strong, .lf-config-item strong { transition: none; }',
-	'  .lf-dashboard-shell + .cbi-map input[type="text"],',
-	'  .lf-dashboard-shell + .cbi-map input[type="number"],',
-	'  .lf-dashboard-shell + .cbi-map select { transition: none; }',
+	'  .lf-settings .cbi-map input[type="text"],',
+	'  .lf-settings .cbi-map input[type="number"],',
+	'  .lf-settings .cbi-map select { transition: none; }',
+	'  .lf-settings > .lf-settings-head:after { transition: none; }',
 	'  .lf-range-output { transition: none; }',
 	'}',
 
 	/* ── Responsive ── */
 	'@media screen and (max-width: 1180px) { .lf-hero, .lf-grid { grid-template-columns: 1fr; } .lf-metrics, .lf-preset-list, .lf-ladder-scale { grid-template-columns: repeat(2, minmax(0, 1fr)); } }',
-	'@media screen and (max-width: 760px) { .lf-dashboard { padding: 20px; } .lf-headline { font-size: 24px !important; } .lf-metrics, .lf-preset-list, .lf-grid, .lf-config-grid, .lf-ladder-scale { grid-template-columns: 1fr; } .lf-orb { min-height: 240px; } }'
+	'@media screen and (max-width: 760px) { .lf-dashboard { padding: 20px; } .lf-headline { font-size: 21px !important; } .lf-metrics, .lf-preset-list, .lf-grid, .lf-config-grid, .lf-ladder-scale { grid-template-columns: 1fr; } .lf-orb { min-height: 240px; } }'
 ].join('\n');
 
 var texts = {
-	enabled: t('Enabled', 'Включено'),
-	disabled: t('Disabled', 'Выключено'),
-	active: t('Cooling active', 'Охлаждение активно'),
-	transition: t('Modulating', 'Регулировка скорости'),
-	standby: t('Standby', 'Ожидание'),
-	unsupported: t('Unavailable', 'Недоступно'),
-	unavailable: t('Sensor unavailable', 'Датчик недоступен'),
-	toStart: t('to start', 'до запуска'),
-	thresholdReached: t('Full-speed ceiling reached', 'Достигнут предел полной скорости'),
-	saveApply: t('Save & Apply below to persist changes.', 'Нажмите «Сохранить и применить» ниже, чтобы сохранить изменения.'),
-	enableAndSave: t('Enable the service and Save & Apply to start the fan daemon.', 'Включите службу и нажмите «Сохранить и применить» для запуска демона вентилятора.'),
-	loadedToForm: t('Loaded into the form', 'Загружено в форму'),
-	notAvailable: t('Not available', 'Недоступно'),
-	unsupportedHint: t('This device needs a readable CPU thermal zone and a writable pwm-fan hwmon interface for the full temperature-driven control loop.', 'Для этого устройства необходим доступный для чтения тепловой датчик CPU и доступный для записи интерфейс pwm-fan hwmon для полного температурного управления.'),
-	modeUnsupportedHint: t('Turbo and Manual modes require a writable pwm-fan hwmon interface on the target board.', 'Режимы «Турбо» и «Ручной» требуют доступного для записи интерфейса pwm-fan hwmon на целевой плате.'),
-	telemetryWaiting: t('Waiting for telemetry...', 'Ожидание телеметрии...'),
-	monitoringState: t('Monitoring state', 'Состояние мониторинга'),
-	currentDevice: t('Current device', 'Текущее устройство'),
-	bpiHero: t('BPI-R4 tuned layout with live CPU temperature, PWM duty, and fan speed feedback across smart, manual and turbo modes.', 'Оптимизировано для BPI-R4: отображение температуры CPU, скважности PWM и обратной связи скорости вентилятора в режимах «Интеллектуальный», «Ручной» и «Турбо».'),
-	genericHero: t('Live OpenWrt cooling dashboard with a configurable smart temperature window, plus manual and turbo profiles on pwm-fan capable hardware.', 'Панель охлаждения OpenWrt в реальном времени с настраиваемой интеллектуальной температурной зоной, а также режимами «Ручной» и «Турбо» на оборудовании с pwm-fan.'),
-	turbo: t('Turbo', 'Турбо'),
-	smart: t('Smart', 'Интеллектуальный'),
-	manual: t('Manual', 'Ручной'),
-	turboHint: t('Turbo mode locks the fan at the configured full-speed RPM ceiling after Save & Apply.', 'Режим «Турбо» фиксирует вентилятор на настроенном пределе полной скорости после «Сохранить и применить».'),
-	smartHint: t('Smart mode linearly ramps from the stop temperature to the configured full-speed RPM ceiling.', 'Режим «Интеллектуальный» плавно регулирует скорость от температуры остановки до настроенного предела полной скорости.'),
-	manualHint: t('Manual mode applies the selected duty target after Save & Apply and reports the available fan speed feedback.', 'Режим «Ручной» применяет выбранную целевую скважность после «Сохранить и применить» и отображает обратную связь по скорости вентилятора.'),
-	modePending: t('Mode target', 'Целевой режим'),
-	currentDuty: t('Current fan duty', 'Текущая скважность вентилятора'),
-	estimatedTag: t('(estimated)', '(оценка)'),
-	actualTag: t('(actual)', '(факт)'),
-	speedSourceEstimated: t('PWM speed feedback', 'Обратная связь скорости PWM'),
-	speedSourceActual: t('Hardware speed feedback', 'Обратная связь аппаратной скорости'),
-	speedSourceUnavailable: t('Speed feedback unavailable', 'Обратная связь скорости недоступна'),
-	speedFeedback: t('Speed feedback', 'Обратная связь скорости'),
-	smartFloor: t('Fan stop below', 'Остановка вентилятора ниже'),
-	smartCeiling: t('Full speed above', 'Полная скорость выше'),
-	curveModulating: t('The fan is linearly modulating between the stop floor and the full-speed ceiling.', 'Вентилятор плавно регулирует скорость между нижним порогом остановки и пределом полной скорости.'),
-	precisionHint: t('Backend control uses the kernel thermal reading directly, so the smart curve tracks temperature changes at 0.1 C granularity.', 'Управление используется напрямую через показания термодатчика ядра, поэтому интеллектуальная кривая отслеживает изменения температуры с точностью до 0,1 °C.')
+	enabled: t('Enabled', '已启用'),
+	disabled: t('Disabled', '未启用'),
+	active: t('Cooling active', '正在散热'),
+	transition: t('Modulating', '调速中'),
+	standby: t('Standby', '待机'),
+	unsupported: t('Unavailable', '不可用'),
+	unavailable: t('Sensor unavailable', '传感器不可用'),
+	toStart: t('to start', '后启动'),
+	thresholdReached: t('Full-speed ceiling reached', '已达到满速温度上限'),
+	saveApply: t('Save & Apply below to persist changes.', '需要点击下方的“保存并应用”后，修改才会真正生效。'),
+	enableAndSave: t('Enable the service and Save & Apply to start the fan daemon.', '启用服务后，再点击“保存并应用”即可启动风扇守护进程。'),
+	loadedToForm: t('Loaded into the form', '已写入表单'),
+	notAvailable: t('Not available', '不可用'),
+	unsupportedHint: t('This device needs a readable CPU thermal zone and a writable pwm-fan hwmon interface for the full temperature-driven control loop.', '当前设备需要可读的 CPU 温区和可写的 PWM 风扇 hwmon 接口，才能使用完整的温度驱动控速。'),
+	modeUnsupportedHint: t('Turbo and Manual modes require a writable pwm-fan hwmon interface on the target board.', '狂暴模式和手动模式需要目标设备提供可写的 pwm-fan hwmon 接口。'),
+	telemetryWaiting: t('Waiting for telemetry...', '正在等待遥测数据...'),
+	monitoringState: t('Monitoring state', '监控状态'),
+	currentDevice: t('Current device', '当前设备'),
+	bpiHero: t('BPI-R4 tuned layout with live CPU temperature, PWM duty, and fan speed feedback across smart, manual and turbo modes.', '已针对 BPI-R4 优化，实时展示 CPU 温度、PWM 占空比，以及智能、手动、狂暴三种模式下的风扇转速反馈。'),
+	genericHero: t('Live OpenWrt cooling dashboard with a configurable smart temperature window, plus manual and turbo profiles on pwm-fan capable hardware.', '当目标硬件提供 pwm-fan 能力时，可在这里实时查看 OpenWrt 散热状态，并使用可配置智能温区、手动和狂暴三种模式。'),
+	turbo: t('Turbo', '狂暴'),
+	smart: t('Smart', '智能'),
+	manual: t('Manual', '手动'),
+	turboHint: t('Turbo mode locks the fan at the configured full-speed RPM ceiling after Save & Apply.', '狂暴模式在“保存并应用”后会把风扇锁定在已配置的满速转速上限。'),
+	manualHint: t('Manual mode applies the selected duty target after Save & Apply and reports the available fan speed feedback.', '手动模式会在“保存并应用”后采用所选占空比，并显示当前可用的风扇转速反馈。'),
+	modePending: t('Mode target', '目标模式'),
+	currentDuty: t('Current fan duty', '当前风扇占空比'),
+	estimatedTag: t('(estimated)', '（估算）'),
+	actualTag: t('(actual)', '（真实）'),
+	speedSourceEstimated: t('PWM speed feedback', 'PWM 转速反馈'),
+	speedSourceActual: t('Hardware speed feedback', '硬件转速反馈'),
+	speedSourceUnavailable: t('Speed feedback unavailable', '转速反馈不可用'),
+	speedFeedback: t('Speed feedback', '转速反馈'),
+	smartFloor: t('Fan stop below', '低于此温度停转'),
+	smartCeiling: t('Full speed above', '高于此温度满速'),
+	curveModulating: t('The fan is linearly modulating between the stop floor and the full-speed ceiling.', '当前风扇正在停转温度和满速温度之间线性调速。')
 };
 
 function toNumber(value) {
@@ -581,7 +639,7 @@ return view.extend({
 		return Math.round((percent * resolvedMaxRpm) / 100);
 	},
 
-	formatRpm: function(value) {
+	formatRpm: function(value, source) {
 		if (value === null || typeof value === 'undefined' || isNaN(value))
 			return texts.notAvailable;
 
@@ -729,7 +787,7 @@ return view.extend({
 		var display = this.buildDisplayState(preview);
 
 		this.setText(this.nodes.metricCpu, this.formatTemp(this.runtime && this.runtime.zone_temp));
-		this.setText(this.nodes.metricFan, this.formatRpm(display.fanRpm));
+		this.setText(this.nodes.metricFan, this.formatRpm(display.fanRpm, display.rpmSource));
 		this.setText(this.nodes.metricPwm, this.formatPercent(display.dutyPercent));
 		this.setText(this.nodes.metricMode, this.modeLabel(preview.mode));
 		this.setText(this.nodes.configEnabled, preview.enabled ? texts.enabled : texts.disabled);
@@ -737,7 +795,7 @@ return view.extend({
 		this.setText(this.nodes.configManual, this.formatPercent(preview.manual_pwm));
 		this.setText(this.nodes.configOn, this.formatTemp(preview.on));
 		this.setText(this.nodes.configOff, this.formatTemp(preview.off));
-		this.setText(this.nodes.configRpm, this.formatRpm(display.fanRpm));
+		this.setText(this.nodes.configRpm, this.formatRpm(display.fanRpm, display.rpmSource));
 	},
 
 	setMarker: function(node, value, minimum, maximum) {
@@ -799,6 +857,13 @@ return view.extend({
 	},
 
 	renderInsights: function(preview) {
+		/* One line where the mode can be described in one, two where smart mode
+		 * has a state worth naming.  It used to be six: the paragraph about
+		 * linear modulation and the "modulating now" line said the same thing in
+		 * two sentences, the speed-feedback line repeated the ladder's own
+		 * feedback cell, the 0.1 C granularity line was implementation detail,
+		 * and the closing "Save & Apply" line repeated the note already printed
+		 * under the presets. */
 		var hints = [];
 		var startDelta = (this.runtime && this.runtime.zone_temp !== null && preview.off !== null) ? (preview.off - this.runtime.zone_temp) : null;
 		var ceilingDelta = (this.runtime && this.runtime.zone_temp !== null && preview.on !== null) ? (preview.on - this.runtime.zone_temp) : null;
@@ -811,10 +876,10 @@ return view.extend({
 		} else if (preview.mode === 'turbo') {
 			hints.push(texts.turboHint + ' ' + maxRpm + ' RPM.');
 		} else if (preview.mode === 'manual') {
-			hints.push(texts.manualHint + ' ' + texts.modePending + ': ' + this.formatPercent(preview.manual_pwm) + ' / ' + maxRpm + ' RPM.');
+			hints.push(texts.manualHint + ' ' + this.formatPercent(preview.manual_pwm) + ' / ' + maxRpm + ' RPM.');
 		} else {
-			hints.push(texts.smartHint);
-			hints.push(texts.smartFloor + ': ' + this.formatTemp(preview.off) + ' / ' + texts.smartCeiling + ': ' + this.formatTemp(preview.on) + ' / ' + maxRpm + ' RPM');
+			hints.push(texts.smartFloor + ' ' + this.formatTemp(preview.off) + ' · ' +
+				texts.smartCeiling + ' ' + this.formatTemp(preview.on) + ' · ' + maxRpm + ' RPM');
 
 			if (startDelta !== null && startDelta > 0)
 				hints.push(this.formatTemp(startDelta) + ' ' + texts.toStart);
@@ -822,16 +887,10 @@ return view.extend({
 				hints.push(texts.thresholdReached);
 			else if (ceilingDelta !== null)
 				hints.push(texts.curveModulating);
-
-			hints.push(texts.precisionHint);
 		}
 
-		hints.push(texts.speedFeedback + ': ' + this.formatSpeedFeedback());
-
-		if (!this.runtime || !this.runtime.mode_supported)
+		if (this.runtime && !this.runtime.mode_supported)
 			hints.push(texts.modeUnsupportedHint);
-		else
-			hints.push(texts.saveApply);
 
 		this.nodes.insights.innerHTML = '';
 		hints.forEach(function(hint) {
@@ -997,8 +1056,20 @@ return view.extend({
 		var centerY = canvas.height / 2;
 		var outerRadius = 94;
 		var innerRadius = 58;
-		var bladeColor = demand > 0.72 ? '#f79259' : (demand > 0.42 ? '#f3cf7c' : '#7de2b8');
-		var glowColor = demand > 0.72 ? 'rgba(247, 146, 89, 0.22)' : (demand > 0.42 ? 'rgba(243, 207, 124, 0.22)' : 'rgba(125, 226, 184, 0.2)');
+		/* The well, the track and the demand colours have to follow the surface
+		 * the orb now sits on.  They were picked against the blue gradient: a
+		 * near-black well with pale pastels on it.  On the light material the
+		 * shell is made of, the well reads as a hole and the pastels wash out,
+		 * so the light theme gets the same three hues taken down to a legible
+		 * depth.  These values mirror --lf-well, --lf-well-hub, --lf-track and
+		 * the --lf-down / --lf-up family in the stylesheet above. */
+		var orbDark = (typeof applyThemeClass._dark === 'boolean') ? applyThemeClass._dark : isDarkTheme();
+		var bladeColor = orbDark
+			? (demand > 0.72 ? '#f79259' : (demand > 0.42 ? '#f3cf7c' : '#7de2b8'))
+			: (demand > 0.72 ? '#d9662f' : (demand > 0.42 ? '#c98a12' : '#1f9d63'));
+		var glowColor = orbDark
+			? (demand > 0.72 ? 'rgba(247, 146, 89, 0.22)' : (demand > 0.42 ? 'rgba(243, 207, 124, 0.22)' : 'rgba(125, 226, 184, 0.20)'))
+			: (demand > 0.72 ? 'rgba(217, 102, 47, 0.20)' : (demand > 0.42 ? 'rgba(201, 138, 18, 0.20)' : 'rgba(31, 157, 99, 0.20)'));
 
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.save();
@@ -1011,11 +1082,11 @@ return view.extend({
 
 		context.beginPath();
 		context.arc(0, 0, outerRadius, 0, Math.PI * 2, false);
-		context.fillStyle = 'rgba(7, 20, 26, 0.38)';
+		context.fillStyle = orbDark ? 'rgba(7, 20, 26, 0.38)' : 'rgba(255, 255, 255, 0.72)';
 		context.fill();
 
 		context.lineWidth = 12;
-		context.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+		context.strokeStyle = orbDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(128, 150, 175, 0.20)';
 		context.beginPath();
 		context.arc(0, 0, outerRadius, 0, Math.PI * 2, false);
 		context.stroke();
@@ -1041,7 +1112,7 @@ return view.extend({
 
 		context.beginPath();
 		context.arc(0, 0, innerRadius, 0, Math.PI * 2, false);
-		context.fillStyle = 'rgba(10, 27, 33, 0.92)';
+		context.fillStyle = orbDark ? 'rgba(10, 27, 33, 0.92)' : 'rgba(255, 255, 255, 0.92)';
 		context.fill();
 
 		context.beginPath();
@@ -1141,13 +1212,19 @@ return view.extend({
 		dashboard.innerHTML = '' +
 			'<div class="lf-hero">' +
 				'<div class="lf-copy">' +
-					'<div class="lf-eyebrow">' + escapeHtml(t('Adaptive Fan Profile', 'Адаптивный профиль вентилятора')) + '</div>' +
-					'<div class="lf-headline" style="all:unset;display:block;margin:16px 0 10px;padding:0;background:transparent;color:#ffffff;font-size:30px;font-weight:700;line-height:1.15;">' + escapeHtml(t('Live Cooling Dashboard', 'Панель охлаждения в реальном времени')) + '</div>' +
+					'<div class="lf-eyebrow">' + escapeHtml(t('Adaptive Fan Profile', '自适应风扇控制')) + '</div>' +
+					'<div class="lf-headline" style="all:unset;display:block;margin:12px 0 8px;padding:0;background:transparent;color:var(--lf-fg);font-size:25px;font-weight:700;line-height:1.15;">' + escapeHtml(t('Live Cooling Dashboard', '实时散热面板')) + '</div>' +
 					'<p>' + escapeHtml(heroText) + '</p>' +
 					'<div class="lf-chip-row">' +
 						'<span class="lf-chip">' + primaryChip + '</span>' +
 						'<span class="lf-chip lf-chip-alert" id="lf-support-chip" style="display:none"></span>' +
 						'<span class="lf-chip lf-runtime-badge" id="lf-runtime-badge" data-state="disabled">' + escapeHtml(texts.monitoringState) + '</span>' +
+					'</div>' +
+					'<div class="lf-metrics">' +
+						'<div class="lf-metric"><div class="lf-metric-label">' + escapeHtml(t('CPU temperature', 'CPU 温度')) + '</div><div class="lf-metric-value" id="lf-metric-cpu">--</div></div>' +
+						'<div class="lf-metric"><div class="lf-metric-label">' + escapeHtml(t('Fan speed', '风扇转速')) + '</div><div class="lf-metric-value" id="lf-metric-fan">--</div></div>' +
+						'<div class="lf-metric"><div class="lf-metric-label">' + escapeHtml(t('Current PWM duty', '当前 PWM 占空比')) + '</div><div class="lf-metric-value" id="lf-metric-pwm">--</div></div>' +
+						'<div class="lf-metric"><div class="lf-metric-label">' + escapeHtml(t('Control mode', '控制模式')) + '</div><div class="lf-metric-value" id="lf-metric-mode">--</div></div>' +
 					'</div>' +
 				'</div>' +
 				'<div class="lf-visual">' +
@@ -1168,15 +1245,9 @@ return view.extend({
 					'</div>' +
 				'</div>' +
 			'</div>' +
-			'<div class="lf-metrics">' +
-				'<div class="lf-metric"><div class="lf-metric-label">' + escapeHtml(t('CPU temperature', 'Температура CPU')) + '</div><div class="lf-metric-value" id="lf-metric-cpu">--</div></div>' +
-				'<div class="lf-metric"><div class="lf-metric-label">' + escapeHtml(t('Fan speed', 'Скорость вентилятора')) + '</div><div class="lf-metric-value" id="lf-metric-fan">--</div></div>' +
-				'<div class="lf-metric"><div class="lf-metric-label">' + escapeHtml(t('Current PWM duty', 'Текущая скважность PWM')) + '</div><div class="lf-metric-value" id="lf-metric-pwm">--</div></div>' +
-				'<div class="lf-metric"><div class="lf-metric-label">' + escapeHtml(t('Control mode', 'Режим управления')) + '</div><div class="lf-metric-value" id="lf-metric-mode">--</div></div>' +
-			'</div>' +
 			'<div class="lf-ladder-card">' +
 				'<div class="lf-ladder-head">' +
-					'<h4>' + escapeHtml(t('Smart curve', 'Интеллектуальная кривая')) + '</h4>' +
+					'<h4>' + escapeHtml(t('Smart curve', '智能曲线')) + '</h4>' +
 					'<span class="lf-source-pill" id="lf-source-label">' + sourceText + '</span>' +
 				'</div>' +
 				'<div class="lf-ladder-track">' +
@@ -1187,33 +1258,30 @@ return view.extend({
 				'</div>' +
 				'<div class="lf-ladder-scale">' +
 					'<div class="lf-scale-item"><span>' + escapeHtml(texts.smartFloor) + '</span><strong id="lf-scale-off">--</strong></div>' +
-					'<div class="lf-scale-item"><span>' + escapeHtml(t('Current temperature', 'Текущая температура')) + '</span><strong id="lf-scale-current">--</strong></div>' +
+					'<div class="lf-scale-item"><span>' + escapeHtml(t('Current temperature', '当前温度')) + '</span><strong id="lf-scale-current">--</strong></div>' +
 					'<div class="lf-scale-item"><span>' + escapeHtml(texts.smartCeiling) + '</span><strong id="lf-scale-on">--</strong></div>' +
 					'<div class="lf-scale-item"><span>' + escapeHtml(texts.speedFeedback) + '</span><strong id="lf-scale-next">--</strong></div>' +
 				'</div>' +
 			'</div>' +
 			'<div class="lf-grid">' +
 				'<div class="lf-card">' +
-				'<h4>' + escapeHtml(t('Operating profiles', 'Режимы работы')) + '</h4>' +
-					'<p>' + escapeHtml(t('Use these shortcuts to load Turbo, Smart or Manual targets into the form below before Save & Apply.', 'Используйте эти кнопки для загрузки целей «Турбо», «Интеллектуальный» или «Ручной» в форму ниже перед нажатием «Сохранить и применить».')) + '</p>' +
+					'<h4>' + escapeHtml(t('Operating profiles', '运行模式')) + '</h4>' +
+					'<p>' + escapeHtml(t('Use these shortcuts to load Turbo, Smart or Manual targets into the form below before Save & Apply.', '可用这些快捷按钮把狂暴、智能或手动目标写入下方表单，然后再执行“保存并应用”。')) + '</p>' +
 					'<div class="lf-preset-list">' +
-						'<button type="button" class="lf-preset" data-preset="turbo">' + escapeHtml(t('Turbo mode', 'Режим «Турбо»')) + '</button>' +
-						'<button type="button" class="lf-preset" data-preset="smart">' + escapeHtml(t('Smart mode', 'Режим «Интеллектуальный»')) + '</button>' +
-						'<button type="button" class="lf-preset" data-preset="manual">' + escapeHtml(t('Manual mode', 'Режим «Ручной»')) + '</button>' +
+						'<button type="button" class="lf-preset" data-preset="turbo">' + escapeHtml(t('Turbo mode', '狂暴模式')) + '</button>' +
+						'<button type="button" class="lf-preset" data-preset="smart">' + escapeHtml(t('Smart mode', '智能模式')) + '</button>' +
+						'<button type="button" class="lf-preset" data-preset="manual">' + escapeHtml(t('Manual mode', '手动模式')) + '</button>' +
 					'</div>' +
+					'<div class="lf-insights" id="lf-insights"><p class="lf-insight">' + escapeHtml(texts.telemetryWaiting) + '</p></div>' +
 					'<p class="lf-note" id="lf-preset-note">' + escapeHtml(texts.saveApply) + '</p>' +
 				'</div>' +
 				'<div class="lf-card">' +
-					'<h4>' + escapeHtml(t('Runtime insight', 'Совет по работе')) + '</h4>' +
-					'<div class="lf-insights" id="lf-insights"><p class="lf-insight">' + escapeHtml(texts.telemetryWaiting) + '</p></div>' +
-				'</div>' +
-				'<div class="lf-card">' +
-					'<h4>' + escapeHtml(t('Current config', 'Текущие настройки')) + '</h4>' +
+					'<h4>' + escapeHtml(t('Current config', '当前设置')) + '</h4>' +
 					'<div class="lf-config-grid">' +
-						'<div class="lf-config-item"><span>' + escapeHtml(t('Enabled in UCI', 'Состояние UCI')) + '</span><strong id="lf-config-enabled">--</strong></div>' +
-						'<div class="lf-config-item"><span>' + escapeHtml(t('Control mode', 'Режим управления')) + '</span><strong id="lf-config-mode">--</strong></div>' +
-						'<div class="lf-config-item"><span>' + escapeHtml(t('Manual target', 'Ручная цель')) + '</span><strong id="lf-config-manual">--</strong></div>' +
-						'<div class="lf-config-item"><span>' + escapeHtml(t('Runtime fan speed', 'Текущая скорость вентилятора')) + '</span><strong id="lf-config-rpm">--</strong></div>' +
+						'<div class="lf-config-item"><span>' + escapeHtml(t('Enabled in UCI', 'UCI 启用状态')) + '</span><strong id="lf-config-enabled">--</strong></div>' +
+						'<div class="lf-config-item"><span>' + escapeHtml(t('Control mode', '控制模式')) + '</span><strong id="lf-config-mode">--</strong></div>' +
+						'<div class="lf-config-item"><span>' + escapeHtml(t('Manual target', '手动目标')) + '</span><strong id="lf-config-manual">--</strong></div>' +
+						'<div class="lf-config-item"><span>' + escapeHtml(t('Runtime fan speed', '当前风扇转速')) + '</span><strong id="lf-config-rpm">--</strong></div>' +
 						'<div class="lf-config-item"><span>' + escapeHtml(texts.smartFloor) + '</span><strong id="lf-config-off">--</strong></div>' +
 						'<div class="lf-config-item"><span>' + escapeHtml(texts.smartCeiling) + '</span><strong id="lf-config-on">--</strong></div>' +
 					'</div>' +
@@ -1324,59 +1392,59 @@ return view.extend({
 		this.currentRotorSpeed = 0;
 
 		var initialStatus = normalizeStatus(data[1]);
-		var m = new form.Map('luci-fan', t('Fan Control', 'Управление вентилятором'), t('Configure Smart, Turbo and Manual fan profiles for pwm-fan capable boards such as the BPI-R4. The live panel reads CPU temperature, PWM duty, and fan speed feedback over ubus.', 'Настройка режимов «Интеллектуальный», «Турбо» и «Ручной» для плат с pwm-fan, таких как BPI-R4. Панель отображает температуру CPU, скважность PWM и обратную связь скорости вентилятора через ubus.'));
-		var s = m.section(form.TypedSection, 'luci-fan', t('Profile Settings', 'Основные настройки'));
+		var m = new form.Map('luci-fan', t('Fan Control', '风扇控制'), t('Configure Smart, Turbo and Manual fan profiles for pwm-fan capable boards such as the BPI-R4. The live panel reads CPU temperature, PWM duty, and fan speed feedback over ubus.', '为 BPI-R4 等支持 pwm-fan 的设备配置智能、狂暴和手动风扇模式。实时面板会通过 ubus 读取 CPU 温度、PWM 占空比，以及风扇转速反馈。'));
+		var s = m.section(form.TypedSection, 'luci-fan', t('Profile Settings', '基本设置'));
 		var o;
 		var dashboard = this.renderDashboardShell(initialStatus);
 
 		s.anonymous = true;
 		s.addremove = false;
 
-		o = s.option(form.Flag, 'enabled', t('Enable fan service', 'Включить службу вентилятора'));
+		o = s.option(form.Flag, 'enabled', t('Enable fan service', '启用风扇服务'));
 		o.rmempty = false;
 		o.default = '0';
-		o.description = t('Start the fan daemon on Save & Apply. Smart mode uses the configured temperature window, Turbo holds the configured RPM ceiling, and Manual applies the slider target on pwm-fan capable boards.', 'Запуск демона вентилятора при нажатии «Сохранить и применить». Режим «Интеллектуальный» использует настроенную температурную зону, «Турбо» фиксирует предел оборотов, а «Ручной» применяет цель ползунка на платах с pwm-fan.');
+		o.description = t('Start the fan daemon on Save & Apply. Smart mode uses the configured temperature window, Turbo holds the configured RPM ceiling, and Manual applies the slider target on pwm-fan capable boards.', '点击“保存并应用”后会启动风扇守护进程。智能模式会按已配置的温度区间调速，狂暴模式固定在已配置的满速转速上限，手动模式会在支持 pwm-fan 的设备上应用滑条目标。');
 
-		o = s.option(form.ListValue, 'mode', t('Control mode', 'Режим управления'));
+		o = s.option(form.ListValue, 'mode', t('Control mode', '控制模式'));
 		o.rmempty = false;
 		o.default = initialStatus.mode || 'smart';
-		o.value('smart', t('Smart', 'Интеллектуальный'));
-		o.value('turbo', t('Turbo', 'Турбо'));
-		o.value('manual', t('Manual', 'Ручной'));
-		o.description = t('Smart mode follows the configured stop and full-speed temperatures. Turbo and Manual require pwm-fan hwmon support on the target board.', 'Режим «Интеллектуальный» регулирует скорость по настроенным температурам остановки и полной скорости. Режимы «Турбо» и «Ручной» требуют поддержки pwm-fan hwmon на целевой плате.');
+		o.value('smart', t('Smart', '智能'));
+		o.value('turbo', t('Turbo', '狂暴'));
+		o.value('manual', t('Manual', '手动'));
+		o.description = t('Smart mode follows the configured stop and full-speed temperatures. Turbo and Manual require pwm-fan hwmon support on the target board.', '智能模式会按已配置的停转温度和满速温度调速。狂暴模式和手动模式需要目标设备提供 pwm-fan hwmon 支持。');
 
 		o = s.option(form.Value, 'off_temp', texts.smartFloor);
 		o.datatype = 'ufloat';
 		o.placeholder = String(initialStatus.smart_min_temp != null ? roundTemp(initialStatus.smart_min_temp) : 30);
 		o.default = String(initialStatus.smart_min_temp != null ? roundTemp(initialStatus.smart_min_temp) : 30);
-		o.description = t('Temperature in C below which the smart profile stops the fan. You can customize when the fan starts to stay off.', 'Температура в °C, ниже которой вентилятор останавливается в интеллектуальном режиме. Можно настроить порог отключения.');
+		o.description = t('Temperature in C below which the smart profile stops the fan. You can customize when the fan starts to stay off.', '智能模式下低于该温度时风扇停转，可自定义风扇开始保持关闭的温度。');
 		o.depends('mode', 'smart');
 
 		o = s.option(form.Value, 'on_temp', texts.smartCeiling);
 		o.datatype = 'ufloat';
 		o.placeholder = String(initialStatus.smart_max_temp != null ? roundTemp(initialStatus.smart_max_temp) : 60);
 		o.default = String(initialStatus.smart_max_temp != null ? roundTemp(initialStatus.smart_max_temp) : 60);
-		o.description = t('Temperature in C at which smart mode reaches the configured RPM ceiling.', 'Температура в °C, при которой интеллектуальный режим достигает настроенного предела оборотов.');
+		o.description = t('Temperature in C at which smart mode reaches the configured RPM ceiling.', '智能模式下达到该温度时会拉到已配置的满速转速上限。');
 		o.depends('mode', 'smart');
 
-		o = s.option(form.Value, 'max_rpm', t('Maximum fan RPM', 'Максимальные обороты вентилятора'));
+		o = s.option(form.Value, 'max_rpm', t('Maximum fan RPM', '风扇最大转速'));
 		o.datatype = 'and(uinteger,min(500),max(10000))';
 		o.placeholder = String(initialStatus.fan_max_rpm != null ? Math.round(initialStatus.fan_max_rpm) : 3000);
 		o.default = String(initialStatus.fan_max_rpm != null ? Math.round(initialStatus.fan_max_rpm) : 3000);
-		o.description = t('Display and estimation ceiling for fan speed. Set values such as 2500, 3000 or 3500 to match your hardware.', 'Предел отображения и оценки скорости вентилятора. Установите значение 2500, 3000 или 3500 в соответствии с вашим оборудованием.');
+		o.description = t('Display and estimation ceiling for fan speed. Set values such as 2500, 3000 or 3500 to match your hardware.', '风扇转速的显示和估算上限。可设置为 2500、3000 或 3500 等数值，以匹配你的风扇。');
 
-		o = s.option(form.Value, 'manual_pwm', t('Manual PWM target', 'Ручная цель PWM'));
+		o = s.option(form.Value, 'manual_pwm', t('Manual PWM target', '手动 PWM 目标'));
 		o.datatype = 'and(uinteger,min(0),max(100))';
 		o.placeholder = String(initialStatus.manual_pwm != null ? Math.round(initialStatus.manual_pwm) : 70);
 		o.default = String(initialStatus.manual_pwm != null ? Math.round(initialStatus.manual_pwm) : 70);
-		o.description = t('Duty target in percent for Manual mode. 0 turns the fan off, 100 drives the maximum PWM value, which maps to the configured RPM ceiling in the display.', 'Целевая скважина в процентах для ручного режима. 0 — вентилятор выключен, 100 — максимальное значение PWM, соответствующее настроенному пределу оборотов.');
+		o.description = t('Duty target in percent for Manual mode. 0 turns the fan off, 100 drives the maximum PWM value, which maps to the configured RPM ceiling in the display.', '手动模式下的目标占空比，单位为百分比。0 表示关闭风扇，100 表示输出最大 PWM，对应页面显示中已配置的转速上限。');
 		o.depends('mode', 'manual');
 
-		o = s.option(form.Value, 'poll_interval', t('Polling interval', 'Интервал опроса'));
+		o = s.option(form.Value, 'poll_interval', t('Polling interval', '轮询间隔'));
 		o.datatype = 'and(uinteger,min(1),max(30))';
 		o.placeholder = String(initialStatus.poll_interval != null ? Math.round(initialStatus.poll_interval) : 5);
 		o.default = String(initialStatus.poll_interval != null ? Math.round(initialStatus.poll_interval) : 5);
-		o.description = t('Fan daemon loop interval in seconds. The default 5-second cadence is usually enough for the configurable smart curve and reduces unnecessary PWM writes.', 'Интервал цикла демона вентилятора в секундах. Значение по умолчанию (5 секунд) обычно достаточно для интеллектуальной кривой и уменьшает лишние записи PWM.');
+		o.description = t('Fan daemon loop interval in seconds. The default 5-second cadence is usually enough for the configurable smart curve and reduces unnecessary PWM writes.', '风扇守护进程的轮询间隔，单位为秒。默认 5 秒通常已足够匹配可配置智能曲线，并可减少无意义的 PWM 写入。');
 
 		return m.render().then(function(mapNode) {
 
@@ -1405,7 +1473,18 @@ return view.extend({
 			this._animFrameId = null; /* allow new animation loop */
 			this.requestFrame(this.animationLoop.bind(this));
 			this._pollHandle = poll.add(this.pollStatus.bind(this), this.statusPollInterval());
-			return applyThemeClass(E('div', { 'class': 'lf-page' }, [ dashboard, mapNode ]), 'lf-dark');
+			/* The profile form is folded away by default: everything it configures
+			 * is already reported above it, so it is only opened to change
+			 * something.  A <details> does that in the markup - no state to keep
+			 * in sync, no click handler, and a browser without details support
+			 * simply shows the form open, which is where it was. */
+			var settings = E('details', { 'class': 'lf-settings' }, [
+				E('summary', { 'class': 'lf-settings-head' }, [
+					escapeHtml(t('Profile settings', '基本设置'))
+				]),
+				mapNode
+			]);
+			return applyThemeClass(E('div', { 'class': 'lf-page' }, [ dashboard, settings ]), 'lf-dark');
 		}.bind(this));
 	}
 });

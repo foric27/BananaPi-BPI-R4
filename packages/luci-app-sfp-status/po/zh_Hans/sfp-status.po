@@ -42,10 +42,6 @@ msgid "Bias Current"
 msgstr "偏置电流"
 
 #: htdocs/luci-static/resources/view/status/include/15_sfp.js
-msgid "Available Interfaces"
-msgstr "可用接口"
-
-#: htdocs/luci-static/resources/view/status/include/15_sfp.js
 msgid "SFP Interfaces"
 msgstr "SFP接口"
 
@@ -67,4 +63,11 @@ msgstr "名称"
 
 #: htdocs/luci-static/resources/view/status/include/15_sfp.js
 msgid "Value"
-msgstr "数值"
+msgstr "数值"#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "RX Power"
+msgstr "接收光功率"
+
+#: htdocs/luci-static/resources/view/status/include/15_sfp.js
+msgid "TX Power"
+msgstr "发送光功率"
+

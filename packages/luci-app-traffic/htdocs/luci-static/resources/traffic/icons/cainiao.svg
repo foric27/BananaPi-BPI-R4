@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="815" height="770" viewBox="0 0 815 770" role="img" aria-label="蓝色底板上的白色机器人图标">
+  <defs>
+    <linearGradient id="antenna" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c6e5f7"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <linearGradient id="left-ear" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c5dded"/>
+      <stop offset=".42" stop-color="#e5f1f8"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+    <linearGradient id="right-ear" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".58" stop-color="#e5f1f8"/>
+      <stop offset="1" stop-color="#c5dded"/>
+    </linearGradient>
+    <linearGradient id="smile" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#29bdf2"/>
+      <stop offset="1" stop-color="#4afdc1"/>
+    </linearGradient>
+  </defs>
+
+  <path fill="#f6f6f6" d="M0 0h815v770H0z"/>
+  <path fill="#106efd" d="M223 66.5H583.5C660.8 66.5 723.5 129.2 723.5 206.5V566.5C723.5 643.8 660.8 706.5 583.5 706.5H223C145.7 706.5 83 643.8 83 566.5V206.5C83 129.2 145.7 66.5 223 66.5Z"/>
+
+  <!-- Legs and feet sit behind the body. -->
+  <path fill="#4afdc1" d="M350.4 572.5h25.4v40.4c0 5.4 4.1 17.2 4.1 24.5 0 5.2-16.3 7.5-31.9 7.5-15.1 0-30.5-2.1-30.5-6.4 0-4.1 19.7-23.4 32.9-29.6Z"/>
+  <path fill="#4afdc1" d="M444.4 572.5h24.6v36.5c14.1 6.8 32.7 26 32.7 29.3 0 4.4-15.1 6.5-30.5 6.5-15.8 0-32.5-2.3-32.5-7.5 0-7.2 5.7-19.3 5.7-24.7Z"/>
+
+  <!-- Small cap and rounded side panels. -->
+  <path fill="url(#antenna)" d="M298.6 159.6c0-17.3 45.7-32.8 103-32.8 56.6 0 101.5 15.2 101.5 32.6v12.4H298.6Z"/>
+  <path fill="url(#left-ear)" d="M184.2 348.1c-22.8 20.1-34.5 52.5-34.5 87.9 0 30.3 8.5 54.9 25.5 70.5 13.6 12.5 31.7 19.9 55.5 23.8l26.7-80.3-26.9-111.4Z"/>
+  <path fill="url(#right-ear)" d="M623.6 348.1c22.7 20.1 34.4 52.5 34.4 87.9 0 30.3-8.5 54.9-25.5 70.5-13.6 12.5-31.7 19.9-55.5 23.8l-26.7-80.3 26.9-111.4Z"/>
+
+  <!-- One white silhouette forms the face border and lower shell. -->
+  <path fill="#ffffff" d="M403.7 141.8c-91.6 0-149.2 37.8-182.2 106.1-26.1 54-43.9 112.8-43.9 170.2 0 47.3 18.3 89.2 52.6 120.4 38.9 35.3 96.5 51.3 173.5 51.3 77.2 0 134.8-16 173.8-51.3 34.3-31.2 52.6-73.1 52.6-120.4 0-57.4-17.8-116.2-43.9-170.2-33-68.3-90.6-106.1-182.5-106.1Z"/>
+
+  <!-- Dark visor. -->
+  <path fill="#000000" d="M403.9 173.1c-103.9 0-156.8 15.4-175 73.9-8 25.6-8.3 53.4-7.3 80.6 0 28.1 10.9 48.7 32.9 67.3 24 20.2 58.3 36.3 105.6 47.1 16.3 3.7 29.9 6.9 43.8 8.5 13.9-1.6 27.5-4.8 43.8-8.5 47.3-10.8 81.6-26.9 105.6-47.1 22-18.6 32.9-39.2 32.9-67.3 1-27.2.7-55-7.3-80.6-18.2-58.5-71.1-73.9-175.1-73.9Z"/>
+
+  <!-- Curved eye and small turquoise point at the bottom of the visor. -->
+  <path fill="none" stroke="url(#smile)" stroke-width="29" stroke-linecap="round" d="M347 333c0-31.4 25.5-57 57-57s57 25.6 57 57"/>
+  <path fill="#4afdc1" d="M359.5 442.2 405.4 406c1.4-1.1 3.2-1.1 4.6 0l46.4 36.2-43.2 8.4c-3.5.7-7.2.7-10.7 0Z"/>
+</svg>

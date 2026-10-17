@@ -229,7 +229,7 @@ the log (`logread -e traffic`).
 ## The catalogue
 
 `/etc/traffic/apps.tsv` and `/etc/traffic/categories.tsv` are generated, not
-hand-written. **1,631 applications** over ~32,000 keys, plus 44 categories:
+hand-written. **1,669 application and site names** over ~32,000 keys, plus category rules:
 
 | File | Rows | What it holds |
 |---|---|---|
@@ -252,7 +252,7 @@ node tools/build-catalog.js          # re-download, regenerate tables and icons
 node tools/build-catalog.js --skip-icons
 ```
 
-It also copies the icons: **662 brand logos** from
+It also copies brand logos from
 [dashboard-icons](https://github.com/homarr-labs/dashboard-icons),
 [Iconify's logos collection](https://iconify.design),
 [selfhst/icons](https://github.com/selfhst/icons) and
@@ -355,11 +355,9 @@ separated in name order, which is likewise rank-independent.
 
 * **Hero card** — total carried by clients, down/up rates, and the range
   selector. The range defaults to **one day**, which is the window the total, the
-  donut, the table and the chart all describe. In "since start" the two rates are
-  the live ones, derived from two consecutive samples; over a range they are the
-  averages for that range, which is what a rate means once there is a window to
-  divide by — the tooltip says so, because a dash in that position read as "no
-  traffic" instead of "measured differently here". There is no reset button (see
+  donut, the table and the chart all describe. The two rates are the current
+  live rates in every range; the range changes the totals and chart window, not
+  what the rate means. There is no reset button (see
   [above](#the-history-is-bounded-by-the-collector-not-by-a-button)).
 * **Throughput card** — down/up over time, drawn as plain SVG. Its tier is not a
   second choice: the curve is the selected range at a coarser granularity, so the
@@ -371,15 +369,38 @@ separated in name order, which is likewise rank-independent.
   lengths), and **1 h points for the last week**. The minute
   and hour tiers live in `<datadir>` (`series60.tsv`, `series1h.tsv`) so they
   survive a reboot; the 10 s tier is session state in `/tmp`. A quiet round is
-  recorded as a zero point rather than skipped, so a gap in the chart always means
-  the collector was not running, never merely "nothing happened". A colour key
+  recorded as a zero point rather than skipped. Points use actual timestamps;
+  missing intervals break the curve and its fill. The y axis describes interval
+  averages. A larger one-second peak is marked and quoted separately so it
+  cannot flatten the average-rate curve. A colour key
   names the two curves under the header, because they often differ by orders of
   magnitude and a small upload curve would otherwise read as a stray line.
-* **Donut card** — the ten largest applications with a matching legend, as a
-  full-width block above the table. It used to be a second column beside the
-  table, which stacked below the tablet breakpoint anyway and left a band of
-  empty page beside the donut; as a block above, the legend can spread across the
-  width instead of being squeezed into one narrow column.
+* **Donut card and throughput card** — the composition and the curve are the two
+  halves of one row, equal width from the same `calc(50% - .5rem)`, with the
+  collector state above them, the readings above the list, and the list last. The
+  card order is set with flex `order`, so it lives in one place instead of being
+  whatever order the cards happen to be built in. This was a grid placed by named
+  areas first, which reads better but did not survive a real browser: the area
+  template was ignored and the columns fell back to `auto`, so every card shrank
+  to its own content and the page came out as a ragged left-aligned stack. There
+  is deliberately **no `gap`** anywhere in the page layout either — flex `gap`
+  needs Safari 14.1, and a browser without it drops the spacing silently, so the
+  gutter is a margin on the left half. Below the tablet width the halves go full
+  width, in the same order.
+* **Donut card** — the ten largest applications with a matching legend. It used
+  to be a full-width block above the table, and before that a column beside the
+  table; as half of the row with the curve, the legend still spreads sideways
+  instead of being squeezed into one narrow column. Named slices below 0.5% of
+  the headline total join **Attributed**; the complete application
+  rows remain in the table. **Unattributed** stays separate and neutral. All
+  percentages use the headline total. Names that arrive in the snapshot —
+  applications, site names and the protocol buckets (`SSL/TLS`, `QUIC`,
+  `Other`) — are shown exactly as the collector wrote them and are deliberately
+  not translated. They are data rather than interface copy: one snapshot is read
+  by every language, and a bucket renamed in the browser would stop matching the
+  same bucket in the snapshot, the hourly archive and the logs, which is what
+  makes a log line or a screenshot checkable against the page. Only the two
+  names the page invents — **Attributed** and **Unattributed** — are localized.
 * **List card** — application, total and share, received, sent, busiest client,
   device count; 100 rows kept in the DOM, so a page left open all day does not
   grow. The column widths live in a `<colgroup>`: under `table-layout:fixed` those
@@ -406,12 +427,14 @@ a list of apps.
 
 ## Icons
 
-The package ships **731 icons** in two clearly different kinds:
+The package ships **1,503 SVG files** (about **2.90 MiB** uncompressed; the
+0.1.102 set was 900 files / 2.17 MiB). This includes brand artwork, category
+glyphs, and 18 explicitly neutral placeholders; file count is not brand coverage.
 
 | Kind | Count | Source | Rendered as |
 |---|---|---|---|
-| Brand logos | 662 | [dashboard-icons](https://github.com/homarr-labs/dashboard-icons), [Iconify logos](https://iconify.design), [selfhst/icons](https://github.com/selfhst/icons) and [simple-icons](https://simpleicons.org) | the product mark |
-| Category / protocol glyphs | 69 | [lucide-static](https://lucide.dev) (ISC) | line art in muted grey, plus a `TYPE` tag in the list |
+| Brand logos | catalogued in `SOURCES.tsv` | [dashboard-icons](https://github.com/homarr-labs/dashboard-icons), [Iconify](https://iconify.design), [selfhst/icons](https://github.com/selfhst/icons), [simple-icons](https://simpleicons.org) and locally curated sources | the product mark |
+| Category / protocol glyphs | 71 Lucide assets plus other generic icons | [lucide-static](https://lucide.dev) (ISC) and sources recorded in `SOURCES.tsv` | line art in muted grey, plus a `TYPE` tag in the list |
 
 The two kinds are deliberately not interchangeable. A brand logo answers *which
 product*, a glyph answers *what kind of traffic* — SSL/TLS, QUIC, HTTP, DNS,
@@ -427,11 +450,75 @@ avatar until that file has actually loaded, so a missing icon is invisible
 rather than broken. Both the image and the avatar occupy the same 26 px box, so
 row rhythm never shifts.
 
-**644 of 1,631 names** have an upstream logo — 64 of the 100 that carry the most
-domains. The rest keep their avatar; the open sets carry comparatively little of
-the Chinese app landscape and no logo is invented for a name that none of them
-knows. To add one by hand, drop an SVG into
-`htdocs/luci-static/resources/traffic/icons/` — no code change.
+The local `icons/domains.tsv` index maps **875 source-verified site domains** to
+packaged artwork, including their subdomains. It is loaded once with the icon
+indexes; SVG images are requested for rendered rows, not all 1,503 files.
+For a bare domain, the page can also reuse an already packaged logo with the same
+root name (for example, `stripe.com` uses `stripe.svg`). A short, verified alias
+list groups related domain rows under their service and lets the reader expand
+the original domain traffic; a shared CDN is kept separate. If an icon index
+arrives after the first table render, visible rows try again. Unknown domains
+retain their exact name and a two-letter fallback mark. The browser never asks
+a third-party favicon service for each row. Additional packaged icons can be
+added with a matching `SOURCES.tsv` provenance row and then checked with
+`node tools/check-icons.js`.
+
+### 自动网站图标缓存（1.1.8-r1）
+
+无需任何设置。包内图标优先；未收录网站由路由器后台获取 favicon，网页与手机 App 共用 `/traffic-site-icons/websites.tsv` 索引及图片。获取失败保留旧图标；没有旧图标时显示域名前两个字母和固定配色。
+
+- 自动选择已挂载、可写的 NVMe；无可用 NVMe 时放在 `/tmp/traffic-site-icons`，缓存不写系统闪存。`/www/traffic-site-icons` 只建立发布缓存的符号链接。
+- 每分钟最多处理一个网站，使用独占进程锁；整个任务最多 20 秒，单次 HTTPS 请求最多 4 秒。与流量采集并行，不增加常驻进程，不阻塞实时速率。
+- 单图下载最多 64 KiB，总缓存最多 16 MiB（按磁盘分配量计入图片，预留索引、失败记录与临时替换空间）。最多缓存 256 个高流量、未收录站点；完整应用/站点列表不裁剪，其他站点使用字母回退。
+- 成功缓存 7 天后按需更新，失败至少 24 小时后再试；未活跃超过 7 天的记录清理。索引仅在内容变化时原子替换，避免重复写入。
+- 只访问 HTTPS 公网 IPv4 地址，固定经过校验的 DNS 结果，不跟随重定向、不发送代理、Cookie 或路由器凭据。当前接受 PNG / ICO，并检查图标尺寸；主动内容 SVG、其他格式及无法访问的站点使用已有图标或字母回退。
+- `/tmp` 占用 RAM，重启后丢失；NVMe 缓存可跨重启保留。16 MiB 是上限，并非预分配量；对于 4 GB 内存约为 0.4%，Lua / curl 运行时内存另计。
+
+实际占用可查看 `cat /tmp/traffic/website-icons.metrics`：包含自动目录、实际分配字节数、记录数量、Lua 堆内存与该轮 CPU 时间。Lua 堆不等于进程 RSS，也不包含 curl；整机峰值需在路由器运行采集任务时测量 `/proc/<pid>/status`。本机策略测试不能代替 MT7988 实测。
+
+Direct filename matching covers **835 / 1,669 catalogue names** and **77.7% of
+catalogue rules**. The actual page resolver, including aliases, covers
+**839 / 1,669 names** and **78.4% of catalogue rules**. These counts include
+category/neutral glyphs and do not measure observed traffic or unique brands.
+The domain index additionally gives raw site rows a path to artwork even when
+their names are absent from the catalogue. All 875 mappings are tested through
+the actual page resolver by `node tools/icon-resolution-selftest.js`.
+
+The expansion lock `tools/site-icons.tsv` records 595 extra selections: 579
+have site domains, while 16 are game/platform marks available by explicit
+application name (some are reserved for future catalogue entries). A packaged
+PlayStation model icon does not imply that traffic can identify that console
+model. Dedicated game host rules cover Honkai Star Rail, Honkai Impact 3rd,
+Zenless Zone Zero and Wuthering Waves without relabelling shared publisher hosts.
+`node tools/expand-icons.js` maintains the set and its domain index.
+
+Legacy untraceable icons were replaced with recorded upstream artwork or
+explicit neutral placeholders. Reviewed replacements are pinned in
+`tools/icons-local`; the generator preserves their complete provenance rows.
+It no longer accepts prefix/substring brand matches (for example BlueDriver
+for Blued or Stoat for STO Express). `check-icons.js` rejects unknown or empty
+source metadata. Source records point to upstream terms; they are not a blanket
+licence grant for third-party trademarks.
+
+Where an upstream set states its licence the row carries it, as an SPDX id with
+the URL that states it: the Iconify sets are recorded from the icon-sets
+`collections.json` index, which is the only place they declare one - the
+per-collection JSON the glyphs themselves come from has no licence field at
+all. The sets do not agree with each other, which is why the column is filled
+rather than waved at: `cbi` is CC BY-NC-SA 4.0 while `cib` is CC0-1.0, and
+`arcticons` is share-alike. `check-icons.js` rejects a set that carries two
+different licences or that falls back to "see the collection licence", so a set
+nobody has verified fails instead of being described vaguely.
+
+Uncovered names retain their avatar. To add an icon by hand,
+put an SVG in `htdocs/luci-static/resources/traffic/icons/`, record its source
+in `root/usr/share/traffic/icons/SOURCES.tsv`, and run
+`node tools/check-icons.js --write` to refresh the index. No page code change is
+needed when its filename matches the service slug. The manifest ships with the
+package but outside the web directory: it is a licensing record for the
+redistributed artwork, nothing on the router reads it at runtime, and a 210 KiB
+table does not need to be served to every LAN client. The icons themselves stay
+in `htdocs/` because the page loads those.
 
 Note that `currentColor` is replaced with an explicit grey when a glyph is
 saved, and a monochrome brand mark is pinned to the same grey: an SVG loaded
@@ -439,7 +526,9 @@ through `<img>` does not inherit the page colour, so `currentColor` would
 resolve to black and disappear in dark mode.
 
 Icons remain the trademarks of their owners and are used here only to identify
-the corresponding service; check the upstream licences before redistributing.
+the corresponding service. The licences the bundled sets declare are recorded
+per row in `root/usr/share/traffic/icons/SOURCES.tsv`; check them before
+redistributing.
 
 ## Limitations — read before trusting the numbers
 

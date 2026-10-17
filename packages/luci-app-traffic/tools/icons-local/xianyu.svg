@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="600" height="600" viewBox="0 0 600 600">
+  <title>原图重绘 SVG</title>
+
+  <!-- 背景 -->
+  <rect width="600" height="600" fill="#FFFFFF"/>
+  <rect x="30" y="30" width="540" height="540" rx="90"
+        fill="#FEE50F"/>
+
+  <!-- 图标主体 -->
+  <g fill="none"
+     stroke="#342318"
+     stroke-width="28"
+     stroke-linecap="round"
+     stroke-linejoin="round">
+
+    <!-- 左侧汉字风格主体 -->
+    <path d="M 89 212 L 89 402"/>
+    <path d="M 89 279 L 260 279"/>
+    <path d="M 260 212 L 260 402"/>
+    <path d="M 171 279 L 171 402"/>
+    <path d="M 132 341 L 132 402"/>
+    <path d="M 217 341 L 217 402"/>
+
+    <!-- 左上横笔 -->
+    <path d="M 171 212 L 260 212"/>
+
+    <!-- 左上圆点 -->
+    <circle cx="128" cy="211" r="17" fill="#342318" stroke="none"/>
+
+    <!-- 中间凸起的小圆头 -->
+    <path d="M 175 279 L 175 263"/>
+
+    <!-- 右上日历顶部 -->
+    <path d="M 328 202 L 498 202"/>
+    <path d="M 328 202 L 328 217"/>
+    <path d="M 498 202 L 498 217"/>
+
+    <!-- 日历外框 -->
+    <rect x="328" y="260" width="184" height="91"
+          rx="11" stroke-width="27"/>
+
+    <!-- 日历内部横竖分隔 -->
+    <path d="M 328 305 L 512 305"/>
+    <path d="M 414 260 L 414 351"/>
+
+    <!-- 底部波浪 -->
+    <path d="M 326 406
+             C 360 385, 392 391, 426 399
+             C 456 406, 486 414, 512 402"/>
+  </g>
+
+  <!-- 日历内部四个黄色格 -->
+  <g fill="#FEE50F">
+    <rect x="342" y="272" width="57" height="19"/>
+    <rect x="428" y="272" width="66" height="19"/>
+    <rect x="342" y="317" width="57" height="19"/>
+    <rect x="428" y="317" width="66" height="19"/>
+  </g>
+</svg>

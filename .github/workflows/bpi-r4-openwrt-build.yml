@@ -5,21 +5,23 @@ on:
     # 01:00 МСК = 22:00 UTC (вне пиковой нагрузки — минимум задержек GitHub)
     - cron: 0 22 * * *
   workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
 
-# Запрет параллельных запусков (расписание + ручной) и дубликатов релизов
-concurrency:
-  group: build-${{ github.workflow }}
-  cancel-in-progress: false
-
+# Минимальные права по умолчанию. Пишущие права выдаются только job'у сборки.
 permissions:
-  actions: write
-  contents: write
+  contents: read
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt.git
   REPO_BRANCH: openwrt-25.12
   MTK_FEED_URL: https://github.com/mediatek/mtk-openwrt-feeds.git
   MTK_FEED_BRANCH: main
+  # Необязательный пин: задайте repository variable OPENWRT_REF / MTK_FEED_REF
+  # (ветка, тег или 40-hex SHA). Пустое значение = следить за веткой.
+  OPENWRT_REF: ${{ vars.OPENWRT_REF }}
+  MTK_FEED_REF: ${{ vars.MTK_FEED_REF }}
   CONFIG_FILE: config/defconfig
   DIY_P1_SH: scripts/customize.sh
   UPLOAD_FIRMWARE: true
@@ -29,8 +31,72 @@ env:
   OPENWRT_DEVICE: mediatek
 
 jobs:
-  build:
+  # Быстрые проверки: 1-2 минуты вместо 20. Гейтят сборку на расписании.
+  checks:
+    name: Lint and offline tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - name: Check out the project branch
+      uses: actions/checkout@v7.0.1
+
+    - name: Shell syntax
+      run: |
+        set -euo pipefail
+        bash -n build.sh
+        bash -n scripts/customize.sh
+        while IFS= read -r f; do
+          bash -n "$f"
+        done < <(find packages -type f \
+          \( -name '*.sh' \
+             -o -path '*/root/etc/init.d/*' \
+             -o -path '*/root/etc/uci-defaults/*' \
+             -o -path '*/root/usr/libexec/rpcd/*' \
+             -o -path '*/root/usr/libexec/*' \) \
+          ! -name '*.lua' ! -name '*.js' ! -name 'luci.turboacc')
+
+    - name: ShellCheck (advisory)
+      continue-on-error: true
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq shellcheck
+        shellcheck -S error build.sh scripts/customize.sh
+        find packages -type f \
+          \( -name '*.sh' \
+             -o -path '*/root/etc/init.d/*' \
+             -o -path '*/root/etc/uci-defaults/*' \
+             -o -path '*/root/usr/libexec/*' \) \
+          ! -name '*.lua' ! -name '*.js' ! -name 'luci.turboacc' -print0 |
+          xargs -0 -r shellcheck -S error -s sh
+
+    - name: luci-app-traffic offline tests
+      run: |
+        set -euo pipefail
+        cd packages/luci-app-traffic
+        # Shell suites exercise the collector/rpcd/live paths against fixtures.
+        for t in collector rpcd live peak rollhour fetch-icons; do
+          echo "=== $t ==="
+          timeout 900 bash "tools/${t}-selftest.sh"
+        done
+        # Node suites check the catalogue, icons and the rendered page.
+        for t in catalog-selftest check-icons icon-expansion-selftest icon-resolution-selftest page-render-selftest guard-mutation-test; do
+          echo "=== $t ==="
+          timeout 300 node "tools/${t}.js"
+        done
+
+  build:
+    needs: checks
+    # Сборка и публикация — только по расписанию или вручную. Push/PR дают
+    # быстрый lint, но не 20-минутную сборку и не новый релиз.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+    concurrency:
+      group: build-${{ github.workflow }}
+      cancel-in-progress: false
 
     steps:
     - name: Maximize build space
@@ -52,7 +118,7 @@ jobs:
       run: |
         ( sudo -E apt-get -qq update
         sudo -E apt-get -qq install build-essential clang flex g++ gawk gcc-multilib gettext \
-        git libncurses-dev libssl-dev python3-setuptools rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils zstd ccache libelf-dev
+        git libncurses-dev libssl-dev python3-setuptools rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils zstd ccache libelf-dev rename
         sudo -E apt-get -qq purge azure-cli ghc* zulu* hhvm llvm* firefox powershell openjdk* dotnet* google* mysql* php* android* speedtest-cli
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq autoremove --purge
@@ -63,11 +129,47 @@ jobs:
 
     - name: Download firmware source code
       run: |
-        git clone --depth 1 $REPO_URL -b $REPO_BRANCH src/openwrt
-        cd src/openwrt
-        git log --pretty=tformat:"%h" -n1 tools toolchain || echo "No toolchain history"
-        cd $GITHUB_WORKSPACE
-        git clone --depth 1 $MTK_FEED_URL -b $MTK_FEED_BRANCH src/mtk-openwrt-feeds
+        set -euo pipefail
+        mkdir -p src
+        REF="${OPENWRT_REF:-$REPO_BRANCH}"
+        MTK_REF="${MTK_FEED_REF:-$MTK_FEED_BRANCH}"
+
+        is_sha() { [[ "$1" =~ ^[0-9a-fA-F]{40}$ ]]; }
+
+        clone_ref() {
+          local url="$1" ref="$2" dir="$3"
+          if is_sha "$ref"; then
+            git init -q "$dir"
+            git -C "$dir" remote add origin "$url"
+            git -C "$dir" fetch --depth 1 origin "$ref"
+            git -C "$dir" checkout -q FETCH_HEAD
+          else
+            git clone --depth 1 -b "$ref" "$url" "$dir"
+          fi
+        }
+
+        # Клонируем во временный каталог: оборванная попытка не оставляет
+        # каталог, в который упрётся следующая.
+        clone_retry() {
+          local url="$1" ref="$2" dir="$3" i
+          for i in 1 2 3 4 5; do
+            rm -rf "$dir.tmp"
+            if clone_ref "$url" "$ref" "$dir.tmp"; then
+              mv "$dir.tmp" "$dir"
+              return 0
+            fi
+            echo "clone failed ($i/5): $url@$ref" >&2
+            sleep 10
+          done
+          rm -rf "$dir.tmp"
+          return 1
+        }
+
+        clone_retry "$REPO_URL" "$REF" src/openwrt
+        clone_retry "$MTK_FEED_URL" "$MTK_REF" src/mtk-openwrt-feeds
+        git -C src/openwrt log --pretty=tformat:"%h" -n1 tools toolchain || echo "No toolchain history"
+        echo "OPENWRT_COMMIT=$(git -C src/openwrt rev-parse HEAD)" >> "$GITHUB_ENV"
+        echo "MTK_COMMIT=$(git -C src/mtk-openwrt-feeds rev-parse HEAD)" >> "$GITHUB_ENV"
 
     - name: Generate cache keys
       id: cache-key
@@ -98,17 +200,23 @@ jobs:
 
     - name: Load config
       run: |
-        [ -e "$CONFIG_FILE" ] && cat "$CONFIG_FILE" > src/openwrt/.config
+        set -euo pipefail
+        [ -e "$CONFIG_FILE" ] || { echo "::error::Файл конфигурации не найден: $CONFIG_FILE"; exit 1; }
+        cat "$CONFIG_FILE" > src/openwrt/.config
 
     - name: Download the installation package
       id: package
+      env:
+        # Те же таймауты, что и в build.sh: download.pl читает CURL_OPTIONS.
+        CURL_OPTIONS: --connect-timeout 10 --max-time 300 --speed-time 30 --speed-limit 2048
       run: |
+        set -euo pipefail
         cd src/openwrt
         make defconfig
 
         # Гейт: все наши переведённые пакеты обязаны остаться в .config
         # (make defconfig молча сбрасывает =y при неудовлетворённой зависимости)
-        REQUIRED_IN_CONFIG="caddy luci-app-caddy luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband luci-app-traffic smp_util mtkhnat_util"
+        REQUIRED_IN_CONFIG="luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband luci-app-traffic smp_util mtkhnat_util"
         for _sym in $REQUIRED_IN_CONFIG; do
           grep -q "^CONFIG_PACKAGE_${_sym}=y" .config || {
             echo "::error::Пакет выпал из конфигурации: CONFIG_PACKAGE_${_sym}=y (неудовлетворённая зависимость?)"
@@ -116,7 +224,7 @@ jobs:
           }
         done
 
-        make download -j$(nproc) 2>&1
+        make download -j"$(nproc)"
         # Удаление битых (обрезанных) загрузок в dl/ верхнего уровня
         # (dl/go-mod-cache не трогаем)
         find dl -maxdepth 1 -type f -size -1024c -exec ls -l {} \;
@@ -125,6 +233,7 @@ jobs:
     - name: Compile the firmware
       id: compile
       run: |
+        set -euo pipefail
         cd src/openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j$(($(nproc)/2 + 1)) || make -j1 V=s
@@ -132,6 +241,20 @@ jobs:
         du -sh .ccache
         echo "date1=$(date +'%Y.%m.%d')" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
+
+    - name: Verify firmware artifacts
+      run: |
+        set -euo pipefail
+        cd src/openwrt/bin/targets/mediatek/filogic
+        ls -lh *.img.gz *.itb
+        # Тот же 8GB-гейт, что и в build.sh: без этих файлов релиз неполный.
+        for _art in sdcard_8g.img.gz preloader-8g.bin; do
+          ls *"$_art" >/dev/null || { echo "::error::Не найден 8GB-артефакт: *$_art"; exit 1; }
+        done
+        {
+          echo "openwrt $(git -C "$GITHUB_WORKSPACE/src/openwrt" rev-parse HEAD)"
+          echo "mtk-openwrt-feeds $(git -C "$GITHUB_WORKSPACE/src/mtk-openwrt-feeds" rev-parse HEAD)"
+        } > source-versions.txt
 
     - name: Save ccache
       if: steps.compile.outputs.status == 'success' && steps.ccache-restore.outputs.cache-hit != 'true'
@@ -250,10 +373,14 @@ jobs:
       id: organize
       if: ${{ steps.compile.outputs.status == 'success' && env.UPLOAD_FIRMWARE == 'true' && !cancelled() }}
       run: |
+        set -euo pipefail
         cd src/openwrt/bin/targets/mediatek/filogic
-        rm -rf packages *mt798* *.config *.buildinfo *.json sha256sums
-        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
-        echo "status=success" >> $GITHUB_OUTPUT
+        # Публикуем образы, sha256sums, profiles.json, *.buildinfo и
+        # source-versions.txt — по ним проверяют целостность и повторяют сборку.
+        # Убираем только каталог target-пакетов, чтобы релиз не разрастался.
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> "$GITHUB_ENV"
+        echo "status=success" >> "$GITHUB_OUTPUT"
 
     - name: Upload the firmware to github
       uses: actions/upload-artifact@v7.0.1
@@ -261,6 +388,7 @@ jobs:
       with:
         name: ${{ env.date1 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_DEVICE }}_${{ env.REPO_BRANCH }}
         path: ${{ env.FIRMWARE }}
+        if-no-files-found: error
 
     - name: Generate release tags
       id: tag
@@ -268,12 +396,17 @@ jobs:
       run: |
         echo "release_tag=${{ env.date1 }}-${{ env.OPENWRT_NAME }}_${{ env.REPO_BRANCH }}" >> $GITHUB_OUTPUT
         cat > release.txt << EOF
-        ## ImmortalWrt 25.12 WiFi7 для BPI-R4
+        ## OpenWrt 25.12 WiFi7 для BPI-R4
 
         - **Дата:** $(date +'%Y-%m-%d %H:%M %Z')
         - **Платформа:** MediaTek Filogic (BananaPi BPI-R4)
         - **Ветка:** ${{ env.REPO_BRANCH }}
+        - **OpenWrt:** ${{ env.OPENWRT_COMMIT }}
+        - **mtk-openwrt-feeds:** ${{ env.MTK_COMMIT }}
         - **IP по умолчанию:** 192.168.1.1
+
+        В архиве: образы, sha256sums, profiles.json, *.buildinfo и
+        source-versions.txt с точными ревизиями исходников.
 
         📥 Скачать прошивку
         EOF
@@ -286,6 +419,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
+        fail_on_unmatched_files: true
         name: ${{ steps.tag.outputs.release_tag }}
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt

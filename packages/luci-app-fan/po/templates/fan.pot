@@ -1,213 +1,284 @@
 msgid ""
 msgstr ""
-"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: luci-app-fan"
+"PO-Revision-Date: 2026-10-03 00:00+0000"
+"MIME-Version: 1.0"
+"Content-Type: text/plain; charset=UTF-8"
+"Content-Transfer-Encoding: 8bit"
 
-msgid "Enabled"
-msgstr ""
-
-msgid "Disabled"
-msgstr ""
-
-msgid "Cooling active"
-msgstr ""
-
-msgid "Modulating"
-msgstr ""
-
-msgid "Standby"
-msgstr ""
-
-msgid "Unavailable"
-msgstr ""
-
-msgid "Sensor unavailable"
-msgstr ""
-
-msgid "to start"
-msgstr ""
-
-msgid "Full-speed ceiling reached"
-msgstr ""
-
-msgid "Save & Apply below to persist changes."
-msgstr ""
-
-msgid "Enable the service and Save & Apply to start the fan daemon."
-msgstr ""
-
-msgid "Loaded into the form"
-msgstr ""
-
-msgid "Not available"
-msgstr ""
-
-msgid "This device needs a readable CPU thermal zone and a writable pwm-fan hwmon interface for the full temperature-driven control loop."
-msgstr ""
-
-msgid "Turbo and Manual modes require a writable pwm-fan hwmon interface on the target board."
-msgstr ""
-
-msgid "Waiting for telemetry..."
-msgstr ""
-
-msgid "Monitoring state"
-msgstr ""
-
-msgid "Current device"
-msgstr ""
-
-msgid "BPI-R4 tuned layout with live CPU temperature, PWM duty, and fan speed feedback across smart, manual and turbo modes."
-msgstr ""
-
-msgid "Live OpenWrt cooling dashboard with a configurable smart temperature window, plus manual and turbo profiles on pwm-fan capable hardware."
-msgstr ""
-
-msgid "Turbo"
-msgstr ""
-
-msgid "Smart"
-msgstr ""
-
-msgid "Manual"
-msgstr ""
-
-msgid "Turbo mode locks the fan at the configured full-speed RPM ceiling after Save & Apply."
-msgstr ""
-
-msgid "Smart mode linearly ramps from the stop temperature to the configured full-speed RPM ceiling."
-msgstr ""
-
-msgid "Manual mode applies the selected duty target after Save & Apply and reports the available fan speed feedback."
-msgstr ""
-
-msgid "Mode target"
-msgstr ""
-
-msgid "Current fan duty"
-msgstr ""
-
-msgid "(estimated)"
-msgstr ""
-
+#: htdocs/luci-static/resources/view/fan.js
 msgid "(actual)"
 msgstr ""
 
-msgid "PWM speed feedback"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "(estimated)"
 msgstr ""
 
-msgid "Hardware speed feedback"
-msgstr ""
-
-msgid "Speed feedback unavailable"
-msgstr ""
-
-msgid "Speed feedback"
-msgstr ""
-
-msgid "Fan stop below"
-msgstr ""
-
-msgid "Full speed above"
-msgstr ""
-
-msgid "The fan is linearly modulating between the stop floor and the full-speed ceiling."
-msgstr ""
-
-msgid "Backend control uses the kernel thermal reading directly, so the smart curve tracks temperature changes at 0.1 C granularity."
-msgstr ""
-
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Adaptive Fan Profile"
 msgstr ""
 
-msgid "Live Cooling Dashboard"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "BPI-R4 tuned layout with live CPU temperature, PWM duty, and fan speed feedback across smart, manual and turbo modes."
 msgstr ""
 
+#: htdocs/luci-static/resources/view/fan.js
 msgid "CPU temperature"
 msgstr ""
 
-msgid "Fan speed"
-msgstr ""
-
-msgid "Current PWM duty"
-msgstr ""
-
-msgid "Control mode"
-msgstr ""
-
-msgid "Smart curve"
-msgstr ""
-
-msgid "Current temperature"
-msgstr ""
-
-msgid "Operating profiles"
-msgstr ""
-
-msgid "Use these shortcuts to load Turbo, Smart or Manual targets into the form below before Save & Apply."
-msgstr ""
-
-msgid "Turbo mode"
-msgstr ""
-
-msgid "Smart mode"
-msgstr ""
-
-msgid "Manual mode"
-msgstr ""
-
-msgid "Runtime insight"
-msgstr ""
-
-msgid "Current config"
-msgstr ""
-
-msgid "Enabled in UCI"
-msgstr ""
-
-msgid "Manual target"
-msgstr ""
-
-msgid "Runtime fan speed"
-msgstr ""
-
-msgid "Fan Control"
-msgstr ""
-
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Configure Smart, Turbo and Manual fan profiles for pwm-fan capable boards such as the BPI-R4. The live panel reads CPU temperature, PWM duty, and fan speed feedback over ubus."
 msgstr ""
 
-msgid "Profile Settings"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Control mode"
 msgstr ""
 
-msgid "Enable fan service"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Cooling active"
 msgstr ""
 
-msgid "Start the fan daemon on Save & Apply. Smart mode uses the configured temperature window, Turbo holds the configured RPM ceiling, and Manual applies the slider target on pwm-fan capable boards."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current PWM duty"
 msgstr ""
 
-msgid "Smart mode follows the configured stop and full-speed temperatures. Turbo and Manual require pwm-fan hwmon support on the target board."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current config"
 msgstr ""
 
-msgid "Temperature in C below which the smart profile stops the fan. You can customize when the fan starts to stay off."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current device"
 msgstr ""
 
-msgid "Temperature in C at which smart mode reaches the configured RPM ceiling."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current fan duty"
 msgstr ""
 
-msgid "Maximum fan RPM"
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Current temperature"
 msgstr ""
 
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Disabled"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Display and estimation ceiling for fan speed. Set values such as 2500, 3000 or 3500 to match your hardware."
 msgstr ""
 
-msgid "Manual PWM target"
-msgstr ""
-
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Duty target in percent for Manual mode. 0 turns the fan off, 100 drives the maximum PWM value, which maps to the configured RPM ceiling in the display."
 msgstr ""
 
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Enable fan service"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Enable the service and Save & Apply to start the fan daemon."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Enabled"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Enabled in UCI"
+msgstr ""
+
+#: root/usr/share/luci/menu.d/luci-app-fan.json
+msgid "Fan Control"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Fan daemon loop interval in seconds. The default 5-second cadence is usually enough for the configurable smart curve and reduces unnecessary PWM writes."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Fan speed"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Fan stop below"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Full speed above"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Full-speed ceiling reached"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Hardware speed feedback"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Live Cooling Dashboard"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Live OpenWrt cooling dashboard with a configurable smart temperature window, plus manual and turbo profiles on pwm-fan capable hardware."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Loaded into the form"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual PWM target"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual mode"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual mode applies the selected duty target after Save & Apply and reports the available fan speed feedback."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Manual target"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Maximum fan RPM"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Mode target"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Modulating"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Monitoring state"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Not available"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Operating profiles"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "PWM speed feedback"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
 msgid "Polling interval"
 msgstr ""
 
-msgid "Fan daemon loop interval in seconds. The default 5-second cadence is usually enough for the configurable smart curve and reduces unnecessary PWM writes."
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Profile Settings"
 msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Profile settings"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Runtime fan speed"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Save & Apply below to persist changes."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Sensor unavailable"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Smart"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Smart curve"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Smart mode"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Smart mode follows the configured stop and full-speed temperatures. Turbo and Manual require pwm-fan hwmon support on the target board."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Speed feedback"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Speed feedback unavailable"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Standby"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Start the fan daemon on Save & Apply. Smart mode uses the configured temperature window, Turbo holds the configured RPM ceiling, and Manual applies the slider target on pwm-fan capable boards."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Temperature in C at which smart mode reaches the configured RPM ceiling."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Temperature in C below which the smart profile stops the fan. You can customize when the fan starts to stay off."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "The fan is linearly modulating between the stop floor and the full-speed ceiling."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "This device needs a readable CPU thermal zone and a writable pwm-fan hwmon interface for the full temperature-driven control loop."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Turbo"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Turbo and Manual modes require a writable pwm-fan hwmon interface on the target board."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Turbo mode"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Turbo mode locks the fan at the configured full-speed RPM ceiling after Save & Apply."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Unavailable"
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Use these shortcuts to load Turbo, Smart or Manual targets into the form below before Save & Apply."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "Waiting for telemetry..."
+msgstr ""
+
+#: htdocs/luci-static/resources/view/fan.js
+msgid "to start"
+msgstr ""
+
+#: root/usr/share/luci/menu.d/luci-app-fan.json
+msgid "Fan Control"
+msgstr ""
+

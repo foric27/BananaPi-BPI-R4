@@ -1,0 +1,254 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-traffic"
+"PO-Revision-Date: 2026-10-03 00:00+0000"
+"MIME-Version: 1.0"
+"Content-Type: text/plain; charset=UTF-8"
+"Content-Transfer-Encoding: 8bit"
+"Language: zh_Hans
+"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Accounted share"
+msgstr "已分类占比"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "All traffic"
+msgstr "所有流量"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Application"
+msgstr "应用"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Apps and sites"
+msgstr "应用与站点"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Attributed"
+msgstr "已归属"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Browser clients"
+msgstr "客户端合计"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Bucket"
+msgstr "周期"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Categorised"
+msgstr "分类归入"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Client count"
+msgstr "客户端数"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Client totals"
+msgstr "客户端计数"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Collector has not produced a snapshot yet"
+msgstr "采集器尚未生成快照"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Collector version"
+msgstr "版本"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Counter error"
+msgstr "计数器错误"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Counter total"
+msgstr "计数器总量"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Current hour"
+msgstr "当前小时"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Devices"
+msgstr "设备数"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Domain identified"
+msgstr "域名命中"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Flows"
+msgstr "连接跟踪"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Host names"
+msgstr "主机名"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Interval"
+msgstr "间隔"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Last 12 hours"
+msgstr "最近 12 小时"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Last 24 hours"
+msgstr "最近 24 小时"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Last 7 days"
+msgstr "最近 7 天"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Last hour"
+msgstr "最近 1 小时"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "No samples yet"
+msgstr "暂无采样数据"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "No traffic recorded yet."
+msgstr "暂无流量记录。"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Other"
+msgstr "其他"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Peak (1 s)"
+msgstr "峰值（1 秒）"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Peak (interval avg)"
+msgstr "峰值（区间均值）"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Peak clients/hour"
+msgstr "单小时客户端峰值"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Received"
+msgstr "下载"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Router and tunnel"
+msgstr "隧道"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Running"
+msgstr "运行中"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Running, no traffic measured yet"
+msgstr "运行中，尚未统计到流量"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Sent"
+msgstr "上传"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Show domains"
+msgstr "展开域名"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Since start"
+msgstr "本次启动以来"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Snapshot is stale"
+msgstr "快照已过期"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "State"
+msgstr "状态"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Throughput"
+msgstr "吞吐速率"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Top client (this session)"
+msgstr "热门客户端（本次运行）"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Total traffic"
+msgstr "总量"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Traffic breakdown"
+msgstr "流量构成"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Unattributed"
+msgstr "未归属"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "Waiting to resolve"
+msgstr "待解析"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "avg down"
+msgstr "下行均值"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "by any client DNS"
+msgstr "任意客户端 DNS 识别"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "by client DNS"
+msgstr "同客户端 DNS 识别"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "conntrack"
+msgstr "连接跟踪"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "every packet counted at the LAN interface, proxied traffic included"
+msgstr "在 LAN 接口处逐包计数，包含被代理的流量"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "maximum number of clients seen in any single hour of this range"
+msgstr "所选范围中任一小时观察到的最大客户端数；跨小时未去重"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "nft counters"
+msgstr "nft 计数器"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "number of clients seen for this application in the current session"
+msgstr "本次运行中此应用的客户端数"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "of all traffic"
+msgstr "占全部流量"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "share of the traffic the router carried that the app and client accounting could name"
+msgstr "在路由器实际承载的流量中，应用与客户端归属能说出名字的部分所占比例"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "the busiest client of each application is recorded for the current run, while the byte columns can cover the selected range"
+msgstr "每个应用的热门客户端记录的是本次运行的累计值，而字节列可能只覆盖所选时间范围，两者不是同一个统计窗口"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "the busiest client of the selected range, from the archived client rows"
+msgstr "所选时间范围内最忙的客户端，取自归档的客户端记录"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "the busiest client overall, for the current run"
+msgstr "整体最忙的客户端，统计自本次运行"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "total"
+msgstr "总计"
+
+#: htdocs/luci-static/resources/view/traffic/overview.js
+msgid "up"
+msgstr "上行"
+
+#: root/usr/share/luci/menu.d/luci-app-traffic.json
+msgid "Traffic Analysis"
+msgstr "流量分析"
+

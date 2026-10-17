@@ -23,8 +23,13 @@ set -o pipefail
 # ============================================================
 REPO_URL="https://github.com/openwrt/openwrt.git"
 REPO_BRANCH="openwrt-25.12"
+# Точную ревизию можно зафиксировать, не редактируя файл:
+#   OPENWRT_REF=<branch|tag|40-hex-sha> MTK_FEED_REF=<...> ./build.sh
+# Пустое значение означает «следить за веткой» (REPO_BRANCH / MTK_FEED_BRANCH).
+OPENWRT_REF="${OPENWRT_REF:-$REPO_BRANCH}"
 MTK_FEED_URL="https://github.com/mediatek/mtk-openwrt-feeds.git"
 MTK_FEED_BRANCH="main"
+MTK_FEED_REF="${MTK_FEED_REF:-$MTK_FEED_BRANCH}"
 CONFIG_FILE="config/defconfig"
 DIY_SH="scripts/customize.sh"
 # Внешние деревья (клон/сборка) и служебные каталоги
@@ -46,6 +51,11 @@ usage() {
   --jobs N            Число потоков компиляции (по умолчанию: nproc)
   --refresh-go-cache  Очистить кеш Go-модулей перед сборкой
   --help              Показать эту справку
+
+Переменные окружения:
+  OPENWRT_REF=<ref>   Ветка/тег/40-hex SHA OpenWrt (по умолчанию $REPO_BRANCH)
+  MTK_FEED_REF=<ref>  Ветка/тег/40-hex SHA mtk-openwrt-feeds (по умолчанию $MTK_FEED_BRANCH)
+  CURL_OPTIONS=...    Таймауты curl для make download (см. ниже)
 EOF
 }
 
@@ -95,12 +105,47 @@ info()  { echo -e "${GREEN}[INFO]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 
-# Повтор сетевых git-операций (GitHub бывает недоступен/флапает)
-git_retry() {
-    local _try=1
+# Полный 40-hex id — значит, ревизия пинована, а не ветка/тег.
+is_commit_sha() {
+    [[ "$1" =~ ^[0-9a-fA-F]{40}$ ]]
+}
+
+# Клон с повтором. Клонируем во временный каталог: если сеть оборвалась,
+# следующая попытка не упирается в «destination path already exists».
+clone_retry() {
+    local url="$1" ref="$2" dir="$3" _try=1
     while [ "$_try" -le 5 ]; do
-        if "$@"; then return 0; fi
-        warn "git-операция не удалась (попытка $_try/5): $*"
+        rm -rf "$dir.tmp"
+        if is_commit_sha "$ref"; then
+            if git init -q "$dir.tmp" &&
+               git -C "$dir.tmp" remote add origin "$url" &&
+               git -C "$dir.tmp" fetch --depth 1 origin "$ref" &&
+               git -C "$dir.tmp" checkout -q FETCH_HEAD; then
+                mv "$dir.tmp" "$dir"
+                return 0
+            fi
+        elif git clone --depth 1 -b "$ref" "$url" "$dir.tmp"; then
+            mv "$dir.tmp" "$dir"
+            return 0
+        fi
+        warn "клон не удался (попытка $_try/5): $url@$ref"
+        _try=$((_try + 1))
+        sleep 10
+    done
+    rm -rf "$dir.tmp"
+    return 1
+}
+
+# Обновление существующего дерева до ветки/тега/SHA.
+update_repo() {
+    local dir="$1" ref="$2" _try=1
+    while [ "$_try" -le 5 ]; do
+        if git -C "$dir" fetch --depth 1 origin "$ref" &&
+           git -C "$dir" reset --hard -q FETCH_HEAD &&
+           git -C "$dir" clean -fdq; then
+            return 0
+        fi
+        warn "обновление не удалось (попытка $_try/5): $dir@$ref"
         _try=$((_try + 1))
         sleep 10
     done
@@ -151,13 +196,14 @@ if [ -d "$OPENWRT_DIR" ] && [ ! -d "$OPENWRT_DIR/.git" ]; then
 fi
 
 if [ -d "$OPENWRT_DIR" ]; then
-    info "Директория $OPENWRT_DIR/ существует, обновление до свежего $REPO_BRANCH..."
-    git_retry git -C "$OPENWRT_DIR" fetch --depth 1 origin "$REPO_BRANCH"
-    git -C "$OPENWRT_DIR" reset --hard FETCH_HEAD
-    git -C "$OPENWRT_DIR" clean -fd
+    info "Директория $OPENWRT_DIR/ существует, обновление до $OPENWRT_REF..."
+    update_repo "$OPENWRT_DIR" "$OPENWRT_REF" || {
+        error "Не удалось обновить OpenWrt до $OPENWRT_REF"
+        exit 1
+    }
 else
-    info "Клонирование $REPO_URL (ветка $REPO_BRANCH) в $OPENWRT_DIR..."
-    if ! git_retry git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" "$OPENWRT_DIR"; then
+    info "Клонирование $REPO_URL ($OPENWRT_REF) в $OPENWRT_DIR..."
+    if ! clone_retry "$REPO_URL" "$OPENWRT_REF" "$OPENWRT_DIR"; then
         error "Не удалось склонировать репозиторий"
         exit 1
     fi
@@ -166,14 +212,24 @@ fi
 
 # MTK feed (патчи/файлы/пакеты MTK для 25.12)
 if [ -d "$MTK_FEED_DIR" ]; then
-    info "Обновление $MTK_FEED_DIR ($MTK_FEED_BRANCH)..."
-    git_retry git -C "$MTK_FEED_DIR" fetch --depth 1 origin "$MTK_FEED_BRANCH"
-    git -C "$MTK_FEED_DIR" reset --hard FETCH_HEAD
-    git -C "$MTK_FEED_DIR" clean -fd
+    info "Обновление $MTK_FEED_DIR ($MTK_FEED_REF)..."
+    update_repo "$MTK_FEED_DIR" "$MTK_FEED_REF" || {
+        error "Не удалось обновить mtk-openwrt-feeds до $MTK_FEED_REF"
+        exit 1
+    }
 else
-    info "Клонирование $MTK_FEED_URL (ветка $MTK_FEED_BRANCH) в $MTK_FEED_DIR..."
-    git_retry git clone --depth 1 "$MTK_FEED_URL" -b "$MTK_FEED_BRANCH" "$MTK_FEED_DIR"
+    info "Клонирование $MTK_FEED_URL ($MTK_FEED_REF) в $MTK_FEED_DIR..."
+    if ! clone_retry "$MTK_FEED_URL" "$MTK_FEED_REF" "$MTK_FEED_DIR"; then
+        error "Не удалось склонировать mtk-openwrt-feeds"
+        exit 1
+    fi
 fi
+
+# Точные ревизии, которые уйдут в образ: по ним сборку можно повторить.
+OPENWRT_COMMIT=$(git -C "$OPENWRT_DIR" rev-parse HEAD)
+MTK_FEED_COMMIT=$(git -C "$MTK_FEED_DIR" rev-parse HEAD)
+info "OpenWrt: $OPENWRT_COMMIT ($OPENWRT_REF)"
+info "mtk-openwrt-feeds: $MTK_FEED_COMMIT ($MTK_FEED_REF)"
 
 # Сброс фидов (MTK-патчи применяются к ним; повторный прогон должен быть чистым)
 if [ -d "$OPENWRT_DIR/feeds" ]; then
@@ -218,17 +274,6 @@ BUILD_START=$(date +%s)
 info "make defconfig..."
 make defconfig
 
-# Гейт: все наши переведённые пакеты обязаны остаться в .config.
-# make defconfig молча сбрасывает =y при неудовлетворённой зависимости.
-REQUIRED_IN_CONFIG="caddy luci-app-caddy luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband luci-app-traffic smp_util mtkhnat_util"
-for _sym in $REQUIRED_IN_CONFIG; do
-    if ! grep -q "^CONFIG_PACKAGE_${_sym}=y" .config; then
-        error "Пакет выпал из конфигурации: CONFIG_PACKAGE_${_sym}=y (неудовлетворённая зависимость?)"
-        exit 1
-    fi
-done
-info "Все локальные пакеты в конфигурации:$REQUIRED_IN_CONFIG"
-
 # Интерактивный выбор пакетов (опционально)
 if [ "$NO_MENUCONFIG" -eq 0 ]; then
     info "Запуск menuconfig для настройки пакетов..."
@@ -236,6 +281,19 @@ if [ "$NO_MENUCONFIG" -eq 0 ]; then
 else
     info "menuconfig пропущен"
 fi
+
+# Гейт: все наши переведённые пакеты обязаны остаться в .config.
+# make defconfig молча сбрасывает =y при неудовлетворённой зависимости.
+# Проверяем ПОСЛЕ menuconfig: интерактивное изменение тоже не должно
+# выкидывать обязательные пакеты незамеченным.
+REQUIRED_IN_CONFIG="luci-app-fan luci-app-modemband luci-app-sfp-status luci-app-turboacc-mtk modemband luci-app-traffic smp_util mtkhnat_util"
+for _sym in $REQUIRED_IN_CONFIG; do
+    if ! grep -q "^CONFIG_PACKAGE_${_sym}=y" .config; then
+        error "Пакет выпал из конфигурации: CONFIG_PACKAGE_${_sym}=y (неудовлетворённая зависимость?)"
+        exit 1
+    fi
+done
+info "Все локальные пакеты в конфигурации:$REQUIRED_IN_CONFIG"
 
 # Кеш Go-модулей сохраняется между сборками; очистка --refresh-go-cache
 if [ "$REFRESH_GO_CACHE" -eq 1 ]; then
@@ -290,6 +348,20 @@ rm -rf output/*
 cp -r "$OPENWRT_DIR"/bin/targets/mediatek/filogic/* output/
 [ -f "$LOG_FILE" ] && cp "$LOG_FILE" output/
 
+# Пакеты, не привязанные к target (LuCI, утилиты), лежат в bin/packages,
+# а не в bin/targets/.../packages. Без них output/ — не репозиторий пакетов.
+if [ -d "$OPENWRT_DIR/bin/packages" ]; then
+    mkdir -p output/packages
+    cp -a "$OPENWRT_DIR"/bin/packages/. output/packages/ 2>/dev/null || \
+        warn "Не удалось скопировать bin/packages (продолжаем)"
+fi
+
+# Точные ревизии исходников — рядом с образами, чтобы сборку можно было повторить.
+{
+    printf 'openwrt %s (%s)\n' "$OPENWRT_COMMIT" "$OPENWRT_REF"
+    printf 'mtk-openwrt-feeds %s (%s)\n' "$MTK_FEED_COMMIT" "$MTK_FEED_REF"
+} > output/source-versions.txt
+
 if ! ls output/*.img.gz >/dev/null 2>&1 && ! ls output/*.itb >/dev/null 2>&1; then
     error "Прошивка не найдена в output/ (ожидается *.img.gz или *.itb)"
     exit 1
@@ -311,6 +383,7 @@ info "=== Итог сборки ==="
 info "Прошивка:"
 ls -lh output/*.img.gz 2>/dev/null || ls -lh output/*.itb 2>/dev/null
 info "Пакетов: $(find output/packages -name '*.apk' 2>/dev/null | wc -l)"
+info "Исходники: openwrt=$OPENWRT_COMMIT mtk-openwrt-feeds=$MTK_FEED_COMMIT"
 info "Время сборки: $((BUILD_DURATION / 60)) мин $((BUILD_DURATION % 60)) сек"
 info "Лог: $LOG_FILE"
 info "=== Сборка завершена ==="
