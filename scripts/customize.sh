@@ -278,9 +278,12 @@ fi
 mkdir -p package/community
 pushd package/community >/dev/null
 
+# luci-theme-argon 3.x already ships the argon-config app (etc/config/argon,
+# rpcd/luci.argon, menu/acl, view). Cloning jerrykuku/luci-app-argon-config as
+# well produced two packages owning the same files and apk refused to install
+# ("trying to overwrite ... owned by luci-theme-argon"). Do not add it back.
 COMMUNITY_PKGS="
 luci-theme-argon;jerrykuku/luci-theme-argon
-luci-app-argon-config;jerrykuku/luci-app-argon-config
 luci-app-temp-status;gSpotx2f/luci-app-temp-status
 luci-app-cpu-status;gSpotx2f/luci-app-cpu-status
 luci-app-cpu-perf;gSpotx2f/luci-app-cpu-perf

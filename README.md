@@ -189,7 +189,7 @@ done
 
 | Пакет | Описание | Автор |
 |---|---|---|
-| `luci-theme-argon`, `luci-app-argon-config` | Тема Argon и её настройки | [jerrykuku](https://github.com/jerrykuku) |
+| `luci-theme-argon` | Тема Argon и её настройки (config app входит в тему) | [jerrykuku](https://github.com/jerrykuku) |
 | `luci-app-temp-status` | Датчики температуры | [gSpotx2f](https://github.com/gSpotx2f) |
 | `luci-app-cpu-status` | Загрузка CPU | [gSpotx2f](https://github.com/gSpotx2f) |
 | `luci-app-cpu-perf` | Производительность CPU | [gSpotx2f](https://github.com/gSpotx2f) |
