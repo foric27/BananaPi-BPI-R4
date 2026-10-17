@@ -167,9 +167,30 @@ REQUIRED_PACKAGES=(
     ccache rename libelf-dev perl
 )
 
+# gcc-multilib — метапакет; на новых Ubuntu он может отсутствовать при
+# установленном gcc-<N>-multilib. Проверяем возможность собрать -m32, а не
+# только имя пакета: иначе build.sh требует установку того, что уже есть.
+pkg_present() {
+    local pkg="$1" status _c _o _rc
+    dpkg -s "$pkg" >/dev/null 2>&1 && return 0
+    [ "$pkg" = "gcc-multilib" ] || return 1
+    status=$(dpkg-query -W -f='${db:Status-Abbrev}\n' 'gcc-*-multilib' 2>/dev/null || true)
+    case "$status" in
+        *ii*) ;;
+        *) return 1 ;;
+    esac
+    _c=$(mktemp) || return 1
+    _o=$(mktemp) || { rm -f "$_c"; return 1; }
+    printf 'int main(void){return 0;}\n' > "$_c"
+    gcc -m32 -c "$_c" -o "$_o" >/dev/null 2>&1
+    _rc=$?
+    rm -f "$_c" "$_o"
+    return "$_rc"
+}
+
 MISSING_PACKAGES=()
 for pkg in "${REQUIRED_PACKAGES[@]}"; do
-    if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+    if ! pkg_present "$pkg"; then
         MISSING_PACKAGES+=("$pkg")
     fi
 done
