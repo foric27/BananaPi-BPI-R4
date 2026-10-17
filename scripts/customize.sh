@@ -278,12 +278,12 @@ fi
 mkdir -p package/community
 pushd package/community >/dev/null
 
-# luci-theme-argon 3.x already ships the argon-config app (etc/config/argon,
-# rpcd/luci.argon, menu/acl, view). Cloning jerrykuku/luci-app-argon-config as
-# well produced two packages owning the same files and apk refused to install
-# ("trying to overwrite ... owned by luci-theme-argon"). Do not add it back.
+# Argon is intentionally not built: the image uses the stock
+# luci-theme-bootstrap. Remove clones left by earlier runs; the feed copies are
+# dropped below as well.
+rm -rf luci-theme-argon luci-app-argon-config
+
 COMMUNITY_PKGS="
-luci-theme-argon;jerrykuku/luci-theme-argon
 luci-app-temp-status;gSpotx2f/luci-app-temp-status
 luci-app-cpu-status;gSpotx2f/luci-app-cpu-status
 luci-app-cpu-perf;gSpotx2f/luci-app-cpu-perf
@@ -329,7 +329,8 @@ for _src_dir in "$GITHUB_WORKSPACE/packages/"*/; do
 done
 echo "[CUSTOM] локальные пакеты скопированы:$_copied_list"
 
-# Дубли из фидов, которые мы поставляем локально (иначе warning/конфликт)
+# Дубли из фидов: modemband мы поставляем локально, Argon не используем
+# (штатная тема — luci-theme-bootstrap), поэтому вычищаем и фидовые копии.
 for _dup in luci-app-modemband luci-theme-argon luci-app-argon-config; do
     rm -rf "feeds/luci/applications/$_dup" "feeds/luci/themes/$_dup"
 done

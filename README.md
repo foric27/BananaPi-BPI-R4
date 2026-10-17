@@ -185,11 +185,11 @@ done
 
 ## Сторонние LuCI-приложения
 
-Подключаются при сборке через `git clone`:
+Подключаются при сборке через `git clone`. Тема оформления — штатная
+`luci-theme-bootstrap`; Argon не собирается.
 
 | Пакет | Описание | Автор |
 |---|---|---|
-| `luci-theme-argon` | Тема Argon и её настройки (config app входит в тему) | [jerrykuku](https://github.com/jerrykuku) |
 | `luci-app-temp-status` | Датчики температуры | [gSpotx2f](https://github.com/gSpotx2f) |
 | `luci-app-cpu-status` | Загрузка CPU | [gSpotx2f](https://github.com/gSpotx2f) |
 | `luci-app-cpu-perf` | Производительность CPU | [gSpotx2f](https://github.com/gSpotx2f) |
@@ -245,7 +245,6 @@ Workflow [`.github/workflows/bpi-r4-openwrt-build.yml`](.github/workflows/bpi-r4
 | Форк-источник проекта | [MedyMa/BananaPi-BPI-R4](https://github.com/MedyMa/BananaPi-BPI-R4) | GPL-2.0 |
 | Локальные LuCI-пакеты | [MedyMa/luci-app](https://github.com/MedyMa/luci-app) | см. репозитории |
 | modemband | Cezary Jackiewicz ([eko.one.pl](https://eko.one.pl)) | MIT |
-| Тема Argon | [jerrykuku](https://github.com/jerrykuku) | GPL-3.0 |
 | gSpotx2f-приложения | [gSpotx2f](https://github.com/gSpotx2f) | GPL-2.0 |
 | CI-шаблон | [P3TERX/Actions-OpenWrt](https://github.com/P3TERX/Actions-OpenWrt) | MIT |
 
