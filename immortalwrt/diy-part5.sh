@@ -210,6 +210,23 @@ fi
 # Удаляем onionshare-cli (неразрешённые метаданные, пакета нет в нашей конфигурации)
 rm -rf feeds/packages/net/onionshare-cli
 
+# Пакеты фидов с самозависимостями в Kconfig: при make defconfig они дают
+# «error: recursive dependency detected!» (варианты dnsdist, snort3/openappid,
+# knot-resolver и luci-app-weechat). В прошивку не входят — удаляем из фидов
+# и чистим возможные старые симлинки package/feeds.
+rm -rf feeds/packages/net/dnsdist \
+       feeds/packages/net/snort3 \
+       feeds/packages/net/openappid \
+       feeds/packages/net/knot-resolver \
+       feeds/luci/applications/luci-app-weechat
+rm -rf package/feeds/packages/dnsdist \
+       package/feeds/packages/dnsdist-full \
+       package/feeds/packages/snort3 \
+       package/feeds/packages/openappid \
+       package/feeds/packages/knot-resolver \
+       package/feeds/packages/knot-resolver_dnstap \
+       package/feeds/luci/luci-app-weechat
+
 # Патч LuCI package-manager: разрешаем загрузку локальных APK-пакетов
 [ -f feeds/luci/applications/luci-app-package-manager/root/usr/libexec/package-manager-call ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1004-luci-package-manager-apk-upload-untrusted-master.patch"
