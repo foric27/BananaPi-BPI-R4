@@ -1,0 +1,418 @@
+diff --git a/package/boot/arm-trusted-firmware-mediatek/Makefile b/package/boot/arm-trusted-firmware-mediatek/Makefile
+index 0537c15..c95da54 100644
+--- a/package/boot/arm-trusted-firmware-mediatek/Makefile
++++ b/package/boot/arm-trusted-firmware-mediatek/Makefile
+@@ -686,6 +686,34 @@ define Trusted-Firmware-A/mt7988-spim-nand-ubi-ddr4
+   USE_UBI:=1
+ endef
+ 
++define Trusted-Firmware-A/mt7988-emmc-comb-4bg
++  NAME:=MediaTek MT7988 (eMMC, DDR4 8GB)
++  BOOT_DEVICE:=emmc
++  BUILD_SUBTARGET:=filogic
++  PLAT:=mt7988
++  DRAM_USE_COMB:=1
++  DDR4_4BG_MODE:=1
++endef
++
++define Trusted-Firmware-A/mt7988-sdmmc-comb-4bg
++  NAME:=MediaTek MT7988 (SD card, DDR4 8GB)
++  BOOT_DEVICE:=sdmmc
++  BUILD_SUBTARGET:=filogic
++  PLAT:=mt7988
++  DRAM_USE_COMB:=1
++  DDR4_4BG_MODE:=1
++endef
++
++define Trusted-Firmware-A/mt7988-spim-nand-ubi-comb-4bg
++  NAME:=MediaTek MT7988 (SPI-NAND via SPIM, UBI, DDR4 8GB)
++  BOOT_DEVICE:=spim-nand
++  BUILD_SUBTARGET:=filogic
++  PLAT:=mt7988
++  DRAM_USE_COMB:=1
++  DDR4_4BG_MODE:=1
++  USE_UBI:=1
++endef
++
+ TFA_TARGETS:= \
+ 	mt7622-nor-1ddr \
+ 	mt7622-nor-2ddr \
+@@ -761,7 +789,10 @@ TFA_TARGETS:= \
+ 	mt7988-snand-ubi-comb \
+ 	mt7988-spim-nand-comb \
+ 	mt7988-spim-nand-ubi-comb \
+-	mt7988-spim-nand-ubi-ddr4
++	mt7988-spim-nand-ubi-ddr4 \
++	mt7988-emmc-comb-4bg \
++	mt7988-sdmmc-comb-4bg \
++	mt7988-spim-nand-ubi-comb-4bg
+ 
+ TFA_MAKE_FLAGS += \
+ 	BOOT_DEVICE=$(BOOT_DEVICE) \
+diff --git a/package/boot/uboot-mediatek/Makefile b/package/boot/uboot-mediatek/Makefile
+index 6fd556c..3108a6b 100644
+--- a/package/boot/uboot-mediatek/Makefile
++++ b/package/boot/uboot-mediatek/Makefile
+@@ -1190,7 +1190,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-emmc
+   BL2_BOOTDEV:=emmc
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-emmc-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-emmc-comb +trusted-firmware-a-mt7988-emmc-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-sdmmc
+@@ -1202,7 +1202,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-sdmmc
+   BL2_BOOTDEV:=sdmmc
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-sdmmc-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-sdmmc-comb +trusted-firmware-a-mt7988-sdmmc-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-snand
+@@ -1214,7 +1214,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-snand
+   BL2_BOOTDEV:=spim-nand-ubi
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-spim-nand-ubi-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-spim-nand-ubi-comb +trusted-firmware-a-mt7988-spim-nand-ubi-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-poe-emmc
+@@ -1226,7 +1226,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-poe-emmc
+   BL2_BOOTDEV:=emmc
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-emmc-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-emmc-comb +trusted-firmware-a-mt7988-emmc-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-poe-sdmmc
+@@ -1238,7 +1238,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-poe-sdmmc
+   BL2_BOOTDEV:=sdmmc
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-sdmmc-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-sdmmc-comb +trusted-firmware-a-mt7988-sdmmc-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_bananapi_bpi-r4-poe-snand
+@@ -1250,7 +1250,7 @@ define U-Boot/mt7988_bananapi_bpi-r4-poe-snand
+   BL2_BOOTDEV:=spim-nand-ubi
+   BL2_SOC:=mt7988
+   BL2_DDRTYPE:=comb
+-  DEPENDS:=+trusted-firmware-a-mt7988-spim-nand-ubi-comb
++  DEPENDS:=+trusted-firmware-a-mt7988-spim-nand-ubi-comb +trusted-firmware-a-mt7988-spim-nand-ubi-comb-4bg
+ endef
+ 
+ define U-Boot/mt7988_tplink_tl-7dr7230-v1
+diff --git a/package/boot/uboot-mediatek/patches/450-add-bpi-r4.patch b/package/boot/uboot-mediatek/patches/450-add-bpi-r4.patch
+index a224f93..8f92930 100644
+--- a/package/boot/uboot-mediatek/patches/450-add-bpi-r4.patch
++++ b/package/boot/uboot-mediatek/patches/450-add-bpi-r4.patch
+@@ -1,6 +1,6 @@
+ --- /dev/null
+ +++ b/configs/mt7988a_bananapi_bpi-r4-emmc_defconfig
+-@@ -0,0 +1,139 @@
++@@ -0,0 +1,140 @@
+ +CONFIG_ARM=y
+ +CONFIG_SYS_HAS_NONCACHED_MEMORY=y
+ +CONFIG_POSITION_INDEPENDENT=y
+@@ -75,6 +75,7 @@
+ +CONFIG_CMD_FS_UUID=y
+ +CONFIG_CMD_UBI=y
+ +CONFIG_CMD_UBI_RENAME=y
+++CONFIG_CMD_MEMSIZE=y
+ +CONFIG_OF_EMBED=y
+ +CONFIG_ENV_OVERWRITE=y
+ +CONFIG_ENV_IS_IN_MMC=y
+@@ -284,7 +285,7 @@
+ +CONFIG_HEXDUMP=y
+ --- /dev/null
+ +++ b/configs/mt7988a_bananapi_bpi-r4-snand_defconfig
+-@@ -0,0 +1,139 @@
++@@ -0,0 +1,140 @@
+ +CONFIG_ARM=y
+ +CONFIG_SYS_HAS_NONCACHED_MEMORY=y
+ +CONFIG_POSITION_INDEPENDENT=y
+@@ -356,6 +357,7 @@
+ +CONFIG_CMD_FS_UUID=y
+ +CONFIG_CMD_UBI=y
+ +CONFIG_CMD_UBI_RENAME=y
+++CONFIG_CMD_MEMSIZE=y
+ +CONFIG_OF_EMBED=y
+ +CONFIG_ENV_OVERWRITE=y
+ +CONFIG_ENV_IS_IN_UBI=y
+@@ -495,7 +497,7 @@
+ +_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title       [33m$ver[0m"
+ --- /dev/null
+ +++ b/defenvs/bananapi_bpi-r4_snand_env
+-@@ -0,0 +1,67 @@
++@@ -0,0 +1,68 @@
+ +ipaddr=192.168.1.1
+ +serverip=192.168.1.254
+ +loadaddr=0x50000000
+@@ -560,12 +562,13 @@
+ +emmc_write_production=part start mmc 0 $part_default part_addr && part size mmc 0 $part_default part_size && run mmc_write_vol
+ +emmc_write_recovery=part start mmc 0 $part_recovery part_addr && part size mmc 0 $part_recovery part_size && run mmc_write_vol
+ +_init_env=setenv _init_env ; run ubi_create_env ; saveenv ; saveenv
+-+_firstboot=setenv _firstboot ; run _switch_to_menu ; run _init_env ; run boot_first
+++_firstboot=setenv _firstboot ; run _select_bl2 ; run _switch_to_menu ; run _init_env ; run boot_first
+++_select_bl2=setenv _select_bl2 ; msize g ramsize; if test ${ramsize} = 8; then setenv bootfile_bl2 openwrt-mediatek-filogic-bananapi_bpi-r4-snand-preloader-8g.bin;fi
+ +_switch_to_menu=setenv _switch_to_menu ; setenv bootdelay 3 ; setenv bootmenu_delay 3 ; setenv bootmenu_0 $bootmenu_0d ; setenv bootmenu_0d ; run _bootmenu_update_title
+ +_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title       [33m$ver[0m"
+ --- /dev/null
+ +++ b/defenvs/bananapi_bpi-r4_emmc_env
+-@@ -0,0 +1,57 @@
++@@ -0,0 +1,58 @@
+ +ipaddr=192.168.1.1
+ +serverip=192.168.1.254
+ +loadaddr=0x50000000
+@@ -620,7 +623,8 @@
+ +emmc_write_production=part start mmc 0 $part_default part_addr && part size mmc 0 $part_default part_size && run mmc_write_vol
+ +emmc_write_recovery=part start mmc 0 $part_recovery part_addr && part size mmc 0 $part_recovery part_size && run mmc_write_vol
+ +_init_env=setenv _init_env ; setenv _create_env ; saveenv ; saveenv
+-+_firstboot=setenv _firstboot ; run _switch_to_menu ; run _init_env ; run boot_first
+++_firstboot=setenv _firstboot ; run _select_bl2 ; run _switch_to_menu ; run _init_env ; run boot_first
+++_select_bl2=setenv _select_bl2 ; msize g ramsize; if test ${ramsize} = 8; then setenv bootfile_bl2 openwrt-mediatek-filogic-bananapi_bpi-r4-emmc-preloader-8g.bin;fi
+ +_switch_to_menu=setenv _switch_to_menu ; setenv bootdelay 3 ; setenv bootmenu_delay 3 ; setenv bootmenu_0 $bootmenu_0d ; setenv bootmenu_0d ; run _bootmenu_update_title
+ +_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title       [33m$ver[0m"
+ --- /dev/null
+@@ -873,7 +877,7 @@
+ +};
+ --- /dev/null
+ +++ b/configs/mt7988a_bananapi_bpi-r4-poe-emmc_defconfig
+-@@ -0,0 +1,139 @@
++@@ -0,0 +1,140 @@
+ +CONFIG_ARM=y
+ +CONFIG_SYS_HAS_NONCACHED_MEMORY=y
+ +CONFIG_POSITION_INDEPENDENT=y
+@@ -948,6 +952,7 @@
+ +CONFIG_CMD_FS_UUID=y
+ +CONFIG_CMD_UBI=y
+ +CONFIG_CMD_UBI_RENAME=y
+++CONFIG_CMD_MEMSIZE=y
+ +CONFIG_OF_EMBED=y
+ +CONFIG_ENV_OVERWRITE=y
+ +CONFIG_ENV_IS_IN_MMC=y
+@@ -1157,7 +1162,7 @@
+ +CONFIG_HEXDUMP=y
+ --- /dev/null
+ +++ b/configs/mt7988a_bananapi_bpi-r4-poe-snand_defconfig
+-@@ -0,0 +1,139 @@
++@@ -0,0 +1,140 @@
+ +CONFIG_ARM=y
+ +CONFIG_SYS_HAS_NONCACHED_MEMORY=y
+ +CONFIG_POSITION_INDEPENDENT=y
+@@ -1229,6 +1234,7 @@
+ +CONFIG_CMD_FS_UUID=y
+ +CONFIG_CMD_UBI=y
+ +CONFIG_CMD_UBI_RENAME=y
+++CONFIG_CMD_MEMSIZE=y
+ +CONFIG_OF_EMBED=y
+ +CONFIG_ENV_OVERWRITE=y
+ +CONFIG_ENV_IS_IN_UBI=y
+@@ -1299,7 +1305,7 @@
+ +CONFIG_HEXDUMP=y
+ --- /dev/null
+ +++ b/defenvs/bananapi_bpi-r4-poe_emmc_env
+-@@ -0,0 +1,57 @@
++@@ -0,0 +1,58 @@
+ +ipaddr=192.168.1.1
+ +serverip=192.168.1.254
+ +loadaddr=0x50000000
+@@ -1354,7 +1360,8 @@
+ +emmc_write_production=part start mmc 0 $part_default part_addr && part size mmc 0 $part_default part_size && run mmc_write_vol
+ +emmc_write_recovery=part start mmc 0 $part_recovery part_addr && part size mmc 0 $part_recovery part_size && run mmc_write_vol
+ +_init_env=setenv _init_env ; setenv _create_env ; saveenv ; saveenv
+-+_firstboot=setenv _firstboot ; run _switch_to_menu ; run _init_env ; run boot_first
+++_firstboot=setenv _firstboot ; run _select_bl2 ; run _switch_to_menu ; run _init_env ; run boot_first
+++_select_bl2=setenv _select_bl2 ; msize g ramsize ; if test ${ramsize} = 8 ; then setenv bootfile_bl2 openwrt-mediatek-filogic-bananapi_bpi-r4-poe-emmc-preloader-8g.bin ; fi
+ +_switch_to_menu=setenv _switch_to_menu ; setenv bootdelay 3 ; setenv bootmenu_delay 3 ; setenv bootmenu_0 $bootmenu_0d ; setenv bootmenu_0d ; run _bootmenu_update_title
+ +_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title       [33m$ver[0m"
+ --- /dev/null
+@@ -1428,7 +1435,7 @@
+ +_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title       [33m$ver[0m"
+ --- /dev/null
+ +++ b/defenvs/bananapi_bpi-r4-poe_snand_env
+-@@ -0,0 +1,67 @@
++@@ -0,0 +1,68 @@
+ +ipaddr=192.168.1.1
+ +serverip=192.168.1.254
+ +loadaddr=0x50000000
+@@ -1493,6 +1500,7 @@
+ +emmc_write_production=part start mmc 0 $part_default part_addr && part size mmc 0 $part_default part_size && run mmc_write_vol
+ +emmc_write_recovery=part start mmc 0 $part_recovery part_addr && part size mmc 0 $part_recovery part_size && run mmc_write_vol
+ +_init_env=setenv _init_env ; run ubi_create_env ; saveenv ; saveenv
+-+_firstboot=setenv _firstboot ; run _switch_to_menu ; run _init_env ; run boot_first
+++_firstboot=setenv _firstboot ; run _select_bl2 ; run _switch_to_menu ; run _init_env ; run boot_first
+++_select_bl2=setenv _select_bl2 ; msize g ramsize; if test ${ramsize} = 8; then setenv bootfile_bl2 openwrt-mediatek-filogic-bananapi_bpi-r4-poe-snand-preloader-8g.bin ; fi
+ +_switch_to_menu=setenv _switch_to_menu ; setenv bootdelay 3 ; setenv bootmenu_delay 3 ; setenv bootmenu_0 $bootmenu_0d ; setenv bootmenu_0d ; run _bootmenu_update_title
+ +_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title       [33m$ver[0m"
+diff --git a/package/boot/uboot-mediatek/patches/501-add-cmd-msize.patch b/package/boot/uboot-mediatek/patches/501-add-cmd-msize.patch
+new file mode 100644
+index 0000000..c121a9c
+--- /dev/null
++++ b/package/boot/uboot-mediatek/patches/501-add-cmd-msize.patch
+@@ -0,0 +1,117 @@
++From 83c596f12349fdc77fa76e1d017b4fc8882744ef Mon Sep 17 00:00:00 2001
++From: Frank Wunderlich <frank-w@public-files.de>
++Date: Sat, 17 Jan 2026 12:38:40 +0100
++To: Tom Rini <trini@konsulko.com>
++Cc: u-boot@lists.denx.de,
++  Daniel Golle <daniel@makrotopia.org>
++Subject: [PATCH v4] cmd: mem: add function for getting ram size for use in
++ scripts
++
++Add a command for getting detected ram size with possibility to write
++to environment variable.
++
++example usage:
++
++BPI-R4> msize
++4294967296
++BPI-R4> msize m
++4096m
++BPI-R4> msize g
++4g
++BPI-R4> msize g ramsize
++BPI-R4> printenv ramsize
++ramsize=4
++BPI-R4>
++
++board with 8GB ram:
++
++BPI-R4> msize
++8589934592
++BPI-R4> msize m
++8192m
++BPI-R4> msize g
++8g
++BPI-R4> msize g ramsize
++BPI-R4> printenv ramsize
++ramsize=8
++BPI-R4>
++
++Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
++---
++v4: drop rounding to full MB/GB as it leads to wrong display
++v3: add missing ifdefs
++v2: add Kconfig entry
++---
++ cmd/Kconfig |  5 +++++
++ cmd/mem.c   | 32 ++++++++++++++++++++++++++++++++
++ 2 files changed, 37 insertions(+)
++
++--- a/cmd/Kconfig
+++++ b/cmd/Kconfig
++@@ -980,6 +980,11 @@ config CMD_RANDOM
++ 	help
++ 	  random - fill memory with random data
++ 
+++config CMD_MEMSIZE
+++	bool "memsize"
+++	help
+++	  Get RAM via command for use in scripts.
+++
++ config CMD_MEMTEST
++ 	bool "memtest"
++ 	help
++--- a/cmd/mem.c
+++++ b/cmd/mem.c
++@@ -33,6 +33,7 @@
++ #include <linux/compiler.h>
++ #include <linux/ctype.h>
++ #include <linux/delay.h>
+++#include <linux/sizes.h>
++ 
++ DECLARE_GLOBAL_DATA_PTR;
++ 
++@@ -711,6 +712,29 @@ static int do_mem_loopw(struct cmd_tbl *
++ }
++ #endif /* CONFIG_LOOPW */
++ 
+++#ifdef CONFIG_CMD_MEMSIZE
+++static int do_mem_size(struct cmd_tbl *cmdtp, int flag, int argc,
+++		       char *const argv[])
+++{
+++	u64 memsize = gd->ram_size;
+++
+++	if (argc > 1) {
+++		if (!strcmp(argv[1], "m"))
+++			memsize = memsize / SZ_1M;
+++		else if (!strcmp(argv[1], "g"))
+++			memsize = memsize / SZ_1G;
+++		if (argc > 2)
+++			env_set_ulong(argv[2], memsize);
+++		else
+++			printf("%lld%s\n", memsize, argv[1]);
+++	} else {
+++		printf("%lld\n", memsize);
+++	}
+++
+++	return 0;
+++}
+++#endif /* CONFIG_CMD_MEMSIZE */
+++
++ #ifdef CONFIG_CMD_MEMTEST
++ static ulong mem_test_alt(volatile ulong *buf, ulong start_addr, ulong end_addr,
++ 			  volatile ulong *dummy)
++@@ -1404,6 +1428,14 @@ U_BOOT_CMD(
++ );
++ #endif /* CONFIG_LOOPW */
++ 
+++#ifdef CONFIG_CMD_MEMSIZE
+++U_BOOT_CMD(
+++	msize,	3,	1,	do_mem_size,
+++	"get detected ram size, optional set env variable with value",
+++	"[m, g] [envvar]"
+++);
+++#endif /* CONFIG_CMD_MEMSIZE */
+++
++ #ifdef CONFIG_CMD_MEMTEST
++ U_BOOT_CMD(
++ 	mtest,	5,	1,	do_mem_mtest,
+diff --git a/target/linux/mediatek/image/filogic.mk b/target/linux/mediatek/image/filogic.mk
+index f9f04f2..57ceef3 100644
+--- a/target/linux/mediatek/image/filogic.mk
++++ b/target/linux/mediatek/image/filogic.mk
+@@ -698,12 +698,15 @@ define Device/bananapi_bpi-r4-common
+   KERNEL_INITRAMFS_SUFFIX := -recovery.itb
+   ARTIFACTS := \
+ 	       emmc-gpt.bin emmc-preloader.bin emmc-bl31-uboot.fip \
+-	       sdcard.img.gz \
++	       emmc-preloader-8g.bin snand-preloader-8g.bin \
++	       sdcard.img.gz sdcard_8g.img.gz\
+ 	       snand-preloader.bin snand-bl31-uboot.fip
+   ARTIFACT/emmc-gpt.bin		:= mt798x-gpt emmc
+   ARTIFACT/emmc-preloader.bin	:= mt7988-bl2 emmc-comb
++  ARTIFACT/emmc-preloader-8g.bin	:= mt7988-bl2 emmc-comb-4bg
+   ARTIFACT/emmc-bl31-uboot.fip	:= mt7988-bl31-uboot $$(DEVICE_NAME)-emmc
+   ARTIFACT/snand-preloader.bin	:= mt7988-bl2 spim-nand-ubi-comb
++  ARTIFACT/snand-preloader-8g.bin	:= mt7988-bl2 spim-nand-ubi-comb-4bg
+   ARTIFACT/snand-bl31-uboot.fip	:= mt7988-bl31-uboot $$(DEVICE_NAME)-snand
+   ARTIFACT/sdcard.img.gz	:= mt798x-gpt sdmmc |\
+ 				   pad-to 17k | mt7988-bl2 sdmmc-comb |\
+@@ -720,6 +723,21 @@ define Device/bananapi_bpi-r4-common
+ 				   pad-to 64M | append-image squashfs-sysupgrade.itb | check-size |\
+ 				) \
+ 				  gzip
++  ARTIFACT/sdcard_8g.img.gz	:= mt798x-gpt sdmmc |\
++				   pad-to 17k | mt7988-bl2 sdmmc-comb-4bg |\
++				   pad-to 6656k | mt7988-bl31-uboot $$(DEVICE_NAME)-sdmmc |\
++				$(if $(CONFIG_TARGET_ROOTFS_INITRAMFS),\
++				   pad-to 12M | append-image-stage initramfs-recovery.itb | check-size 44m |\
++				) \
++				   pad-to 44M | mt7988-bl2 spim-nand-ubi-comb-4bg |\
++				   pad-to 45M | mt7988-bl31-uboot $$(DEVICE_NAME)-snand |\
++				   pad-to 51M | mt7988-bl2 emmc-comb-4bg |\
++				   pad-to 52M | mt7988-bl31-uboot $$(DEVICE_NAME)-emmc |\
++				   pad-to 56M | mt798x-gpt emmc |\
++				$(if $(CONFIG_TARGET_ROOTFS_SQUASHFS),\
++				   pad-to 64M | append-image squashfs-sysupgrade.itb | check-size |\
++				) \
++				  gzip
+   IMAGE_SIZE := $$(shell expr 64 + $$(CONFIG_TARGET_ROOTFS_PARTSIZE))m
+   KERNEL			:= kernel-bin | gzip
+   KERNEL_INITRAMFS := kernel-bin | lzma | \

@@ -4,18 +4,65 @@
 # Скрипт выполняется внутри дерева OpenWrt после `feeds update`.
 # Наши репозитории задаются в workflow (immortalwrt-25.12-bpi-r4.yml):
 #   LUCI_APP_REPO_URL / LUCI_APP_REPO_BRANCH — форк LuCI-приложений foric27/luci-app.
+#
+# Если репозиторий уже склонирован, он сверяется с origin: при изменениях
+# делается fetch + reset, без изменений ничего не скачивается (быстрая пересборка).
 
 # Репозитории сторонних пакетов и их ветки. Ветки указаны явно, чтобы сборка
 # не зависела от default-ветки апстрима; для обновления правится строка ниже.
 REPO_SOCAT="https://github.com/1522042029/luci-app-socat";                              BRANCH_SOCAT="main"
 REPO_ARGON="https://github.com/jerrykuku/luci-theme-argon";                             BRANCH_ARGON="master"
 REPO_JELL="https://github.com/kenzok8/jell";                                            BRANCH_JELL="main"
-REPO_DDNSTO="https://github.com/linkease/ddnsto-openwrt-package";                       BRANCH_DDNSTO="main"
-REPO_MOSDNS="https://github.com/sbwml/luci-app-mosdns";                                 BRANCH_MOSDNS="v5"
 
 # Наш форк LuCI-приложений: URL и ветка приходят из workflow.
 LUCI_APP_REPO_URL="${LUCI_APP_REPO_URL:-https://github.com/foric27/luci-app}"
 LUCI_APP_REPO_BRANCH="${LUCI_APP_REPO_BRANCH:-main}"
+
+# Корень дерева OpenWrt (скрипт запускается из него) и служебные каталоги:
+# кэш исходников репозиториев и маркер обновлений для локального build-скрипта.
+OPENWRT_DIR="$(pwd)"
+DIYS_SRC_DIR="$OPENWRT_DIR/.diy-sources"
+DIYS_STATE_DIR="$OPENWRT_DIR/.diy-state"
+mkdir -p "$DIYS_SRC_DIR" "$DIYS_STATE_DIR"
+
+# Возвращает SHA ветки в удалённом репозитории (пусто, если сеть недоступна).
+remote_branch_sha() {
+    git ls-remote --heads "$1" "refs/heads/$2" 2>/dev/null | awk '{print $1}' | head -n1 || true
+}
+
+# Синхронизирует git-репозиторий: клонирует при отсутствии, при изменении
+# ветки в origin делает fetch + reset --hard, без изменений ничего не скачивает.
+sync_repo() {
+    local url="$1"
+    local branch="$2"
+    local dir="$3"
+    local remote_sha local_sha
+
+    remote_sha="$(remote_branch_sha "$url" "$branch")"
+
+    if [ -d "$dir/.git" ]; then
+        local_sha="$(git -C "$dir" rev-parse HEAD 2>/dev/null || true)"
+        if [ -z "$remote_sha" ]; then
+            echo "[repo] $dir: origin недоступен, использую локальную копию"
+            return 0
+        fi
+        if [ "$local_sha" = "$remote_sha" ]; then
+            echo "[repo] $dir: актуален ($local_sha)"
+            return 0
+        fi
+        echo "[repo] $dir: обновление $local_sha -> $remote_sha"
+        git -C "$dir" fetch --depth=1 origin "$branch" || return 1
+        git -C "$dir" reset --hard FETCH_HEAD || return 1
+        touch "$DIYS_STATE_DIR/repos-updated"
+        return 0
+    fi
+
+    [ -n "$remote_sha" ] || { echo "[repo] не удалось получить ветку $branch из $url" >&2; return 1; }
+    [ -d "$dir" ] && rm -rf "$dir"
+    echo "[repo] $dir: клонирование $url ($branch)"
+    git clone --depth=1 --single-branch -b "$branch" "$url" "$dir" || return 1
+    touch "$DIYS_STATE_DIR/repos-updated"
+}
 
 # Применяет литеральную замену в Makefile, если файл и старый текст существуют.
 patch_makefile_dep() {
@@ -96,20 +143,21 @@ rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf feeds/luci/applications/luci-app-modemband
 
-# Клонируем community-пакеты (ветки зафиксированы в переменных выше).
+# Клонируем/обновляем community-пакеты (ветки зафиксированы в переменных выше).
 mkdir -p package/community
 pushd package/community
-git clone --depth=1 -b "$BRANCH_SOCAT" "$REPO_SOCAT"
-git clone --depth=1 -b "$BRANCH_ARGON" "$REPO_ARGON"
+sync_repo "$REPO_SOCAT" "$BRANCH_SOCAT" "luci-app-socat" || exit 1
+sync_repo "$REPO_ARGON" "$BRANCH_ARGON" "luci-theme-argon" || exit 1
 
-# Наши LuCI-приложения: один клон foric27/luci-app забирает сразу все пакеты.
+# Наши LuCI-приложения: кэшированный клон foric27/luci-app, из которого
+# раскладываются пакеты. При повторной сборке клон не скачивается заново.
 mkdir -p package/openwrt-packages
-_luci_repo="luci-app"
-git clone --depth=1 --single-branch -b "$LUCI_APP_REPO_BRANCH" "$LUCI_APP_REPO_URL" "$_luci_repo"
+_luci_cache="$DIYS_SRC_DIR/luci-app"
+sync_repo "$LUCI_APP_REPO_URL" "$LUCI_APP_REPO_BRANCH" "$_luci_cache" || exit 1
 for _app in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-traffic rpcd-mod-router-status; do
-    mv "$_luci_repo/Luci-app/$_app" package/openwrt-packages/
+    rm -rf "package/openwrt-packages/$_app"
+    cp -a "$_luci_cache/Luci-app/$_app" "package/openwrt-packages/$_app" || exit 1
 done
-rm -rf "$_luci_repo"
 for _app in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-traffic rpcd-mod-router-status; do
     [ -f "package/openwrt-packages/$_app/Makefile" ] || {
         echo "Package $_app was not fetched from $LUCI_APP_REPO_URL" >&2
@@ -122,19 +170,14 @@ if [ ! -f package/openwrt-packages/rpcd-mod-router-status/root/etc/init.d/router
 fi
 
 # wrtbwmon из репозитория jell
-git clone --depth=1 -b "$BRANCH_JELL" "$REPO_JELL"
-mv jell/wrtbwmon package/openwrt-packages/
-rm -rf jell
-
-# ddnsto и его LuCI-приложение: один клон на два пакета
-git clone --depth=1 -b "$BRANCH_DDNSTO" "$REPO_DDNSTO"
-mv ddnsto-openwrt-package/ddnsto ddnsto-openwrt-package/luci-app-ddnsto package/openwrt-packages/
-rm -rf ddnsto-openwrt-package
+sync_repo "$REPO_JELL" "$BRANCH_JELL" "$DIYS_SRC_DIR/jell" || exit 1
+rm -rf package/openwrt-packages/wrtbwmon
+cp -a "$DIYS_SRC_DIR/jell/wrtbwmon" package/openwrt-packages/wrtbwmon || exit 1
 popd
 
 # Сохраняем версионированные Go-компиляторы фида, bootstrap и совместимые
 # вспомогательные пакеты: замена дерева старой одноверсионной раскладкой
-# удаляет golang1.27/host, нужный Go-пакетам (cloudflared, mosdns и др.).
+# удаляет golang1.27/host, нужный Go-пакетам (frpc/frps, yq и др.).
 _go_values="feeds/packages/lang/golang/golang-values.mk"
 _go_feed_default="$(sed -n 's/^GO_DEFAULT_VERSION:=[[:space:]]*//p' "$_go_values" 2>/dev/null)"
 _go_default="$_go_feed_default"
@@ -155,9 +198,6 @@ fi
 if [ "$_go_default" != "$_go_feed_default" ]; then
     sed -i "s/^GO_DEFAULT_VERSION:=.*/GO_DEFAULT_VERSION:=$_go_default/" "$_go_values" || exit 1
 fi
-rm -rf feeds/packages/net/mosdns
-git clone --depth=1 -b "$BRANCH_MOSDNS" "$REPO_MOSDNS" package/mosdns
-
 # Обход проблемы GCC 14 + musl fortify для mbedtls
 if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
     if grep -q '\$(if \$(findstring cortex-a53,\$(CONFIG_CPU_TYPE)),-march=armv8-a)' package/libs/mbedtls/Makefile; then
@@ -225,6 +265,12 @@ patch_makefile_dep \
     package/feeds/packages/zabbix/Makefile \
     'libnetsnmp-ssl' \
     'libnetsnmp'
+
+# Бэкпорт поддержки 8GB версии BPI-R4 из снапшота OpenWrt: ATF/U-Boot
+# с режимом DDR4_4BG, команда msize и образы *8g. Патч идемпотентен.
+_8gb_patch="$GITHUB_WORKSPACE/patches/filogic/25.12/1100-bananapi-bpi-r4-8gb-support.patch"
+[ -f "$_8gb_patch" ] || { echo "Missing 8GB support patch: $_8gb_patch" >&2; exit 1; }
+apply_workspace_patch "$_8gb_patch"
 
 # Уменьшаем bootdelay U-Boot для BPI-R4
 patch_makefile_dep \
