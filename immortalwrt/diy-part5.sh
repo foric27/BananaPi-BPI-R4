@@ -7,16 +7,11 @@
 
 # Репозитории сторонних пакетов и их ветки. Ветки указаны явно, чтобы сборка
 # не зависела от default-ветки апстрима; для обновления правится строка ниже.
-REPO_HELLOWORLD="https://github.com/fw876/helloworld";                                  BRANCH_HELLOWORLD="dev"
-REPO_PASSWALL_PACKAGES="https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git"; BRANCH_PASSWALL_PACKAGES="main"
-REPO_PASSWALL="https://github.com/Openwrt-Passwall/openwrt-passwall.git";               BRANCH_PASSWALL="main"
-REPO_NIKKI="https://github.com/nikkinikki-org/OpenWrt-nikki";                           BRANCH_NIKKI="main"
 REPO_SOCAT="https://github.com/1522042029/luci-app-socat";                              BRANCH_SOCAT="main"
 REPO_ARGON="https://github.com/jerrykuku/luci-theme-argon";                             BRANCH_ARGON="master"
 REPO_JELL="https://github.com/kenzok8/jell";                                            BRANCH_JELL="main"
 REPO_DDNSTO="https://github.com/linkease/ddnsto-openwrt-package";                       BRANCH_DDNSTO="main"
 REPO_MOSDNS="https://github.com/sbwml/luci-app-mosdns";                                 BRANCH_MOSDNS="v5"
-REPO_OPENCLASH="https://github.com/vernesong/OpenClash";                                BRANCH_OPENCLASH="master"
 
 # Наш форк LuCI-приложений: URL и ветка приходят из workflow.
 LUCI_APP_REPO_URL="${LUCI_APP_REPO_URL:-https://github.com/foric27/luci-app}"
@@ -96,20 +91,14 @@ if [ -f "$_autocore_makefile" ] && [ -f package/emortal/autocore/files/tempinfo 
     done
 fi
 
-# Удаляем пакеты фидов, которые заменяются клонами из community-репозиториев.
+# Удаляем LuCI-пакеты фидов, которые заменяются клонами из community-репозиториев.
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
-rm -rf feeds/luci/applications/luci-app-passwall
 rm -rf feeds/luci/applications/luci-app-modemband
-rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 
 # Клонируем community-пакеты (ветки зафиксированы в переменных выше).
 mkdir -p package/community
 pushd package/community
-git clone --depth=1 -b "$BRANCH_HELLOWORLD" "$REPO_HELLOWORLD"
-git clone --depth=1 -b "$BRANCH_PASSWALL_PACKAGES" "$REPO_PASSWALL_PACKAGES"
-git clone --depth=1 -b "$BRANCH_PASSWALL" "$REPO_PASSWALL"
-git clone --depth=1 -b "$BRANCH_NIKKI" "$REPO_NIKKI"
 git clone --depth=1 -b "$BRANCH_SOCAT" "$REPO_SOCAT"
 git clone --depth=1 -b "$BRANCH_ARGON" "$REPO_ARGON"
 
@@ -143,11 +132,9 @@ mv ddnsto-openwrt-package/ddnsto ddnsto-openwrt-package/luci-app-ddnsto package/
 rm -rf ddnsto-openwrt-package
 popd
 
-sh "$GITHUB_WORKSPACE/scripts/fix-mihomo-source.sh" || exit 1
-
 # Сохраняем версионированные Go-компиляторы фида, bootstrap и совместимые
 # вспомогательные пакеты: замена дерева старой одноверсионной раскладкой
-# удаляет golang1.27/host, нужный cloudflared, tailscale и telegraf.
+# удаляет golang1.27/host, нужный Go-пакетам (cloudflared, docker и др.).
 _go_values="feeds/packages/lang/golang/golang-values.mk"
 _go_feed_default="$(sed -n 's/^GO_DEFAULT_VERSION:=[[:space:]]*//p' "$_go_values" 2>/dev/null)"
 _go_default="$_go_feed_default"
@@ -170,18 +157,6 @@ if [ "$_go_default" != "$_go_feed_default" ]; then
 fi
 rm -rf feeds/packages/net/mosdns
 git clone --depth=1 -b "$BRANCH_MOSDNS" "$REPO_MOSDNS" package/mosdns
-
-mkdir -p package/OpenClash
-pushd package/OpenClash
-git clone --depth=1 -b "$BRANCH_OPENCLASH" "$REPO_OPENCLASH"
-popd
-
-# helloworld simple-obfs/shadowsocks-libev: отключаем недетерминированный PKG_MIRROR_HASH
-for f in \
-    package/community/helloworld/simple-obfs/Makefile \
-    package/community/helloworld/shadowsocks-libev/Makefile; do
-    [ -f "$f" ] && sed -i '/^PKG_MIRROR_HASH:=/s/:=.*/:=skip/' "$f"
-done
 
 # Vendored cpuid v2.0.4 в containerd не проходит проверку linkname в Go >= 1.23.
 # MAKE_FLAGS фиксируется в BuildPackage, поэтому строку нужно вставить перед ним.
@@ -209,15 +184,7 @@ rm -rf feeds/packages/net/onionshare-cli
 [ -f feeds/luci/applications/luci-app-package-manager/root/usr/libexec/package-manager-call ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1004-luci-package-manager-apk-upload-untrusted-master.patch"
 
-# vpnc: добавляем -p к mkdir для идемпотентности
-if grep -q 'mkdir $(PKG_BUILD_DIR)/bin' feeds/packages/net/vpnc/Makefile 2>/dev/null; then
-    sed -i '/mkdir $(PKG_BUILD_DIR)\/bin/s/mkdir /mkdir -p /' feeds/packages/net/vpnc/Makefile
-fi
-
 ./scripts/feeds install -a
-
-# Зависимости фидов, нужные клонам community-пакетов (pcre2 в 25.12 уже в основном дереве)
-./scripts/feeds install c-ares udns
 
 # Удаляем APK-репозиторий kiddin9 (ломанный video/-подрепозиторий)
 for f in \
@@ -231,36 +198,6 @@ done
 rm -f package/base-files/files/etc/uci-defaults/99-apk-untrusted
 [ -d package/base-files/files/etc/uci-defaults ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1005-base-files-apk-manager-fixes-master.patch"
-
-# Проверяем наличие libmbedtls (нужен shadowsocks-libev)
-if [ ! -f package/libs/mbedtls/Makefile ]; then
-  echo "WARNING: package/libs/mbedtls/Makefile not found" >&2
-elif ! grep -q 'define Package/libmbedtls' package/libs/mbedtls/Makefile; then
-  echo "WARNING: package/libs/mbedtls/Makefile does not define libmbedtls" >&2
-fi
-
-# GO proxy для sing-box
-export GOEXPERIMENT=
-export GOPROXY=https://proxy.golang.org,direct
-
-# Совместимость с плавающими метаданными фидов.
-# rust: rust-lang удалил CI-артефакты LLVM 1.94.0, поэтому download-ci-llvm=true
-# отдаёт 404; собираем LLVM из исходников (configure.py: последний --set побеждает).
-_rust_makefile="feeds/packages/lang/rust/Makefile"
-if [ -f "$_rust_makefile" ]; then
-    if grep -qF -- '--set=llvm.download-ci-llvm=false' "$_rust_makefile"; then
-        echo "[DIY] rust: llvm.download-ci-llvm already false"
-    elif grep -qF -- '--set=llvm.download-ci-llvm=true' "$_rust_makefile"; then
-        sed -i 's/--set=llvm\.download-ci-llvm=true/--set=llvm.download-ci-llvm=false/' "$_rust_makefile"
-        grep -qF -- '--set=llvm.download-ci-llvm=false' "$_rust_makefile" || {
-            echo 'Failed to disable Rust CI LLVM download' >&2
-            exit 1
-        }
-        echo "[DIY] rust: llvm.download-ci-llvm=false (build LLVM from source)"
-    else
-        echo 'WARNING: rust Makefile has no llvm.download-ci-llvm flag' >&2
-    fi
-fi
 
 # luci-ssl-openssl: откатываемся на px5g-standalone, если px5g-openssl отсутствует
 _ssl_makefile="feeds/luci/collections/luci-ssl-openssl/Makefile"
