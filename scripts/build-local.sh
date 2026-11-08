@@ -48,6 +48,19 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# Убираем из PATH пользовательские python-обвязки ($HOME/.local/bin):
+# buildroot выбирает для хостовых инструментов первый python3.13/python3,
+# а uv-питон из ~/.local/bin идёт без setuptools и ломает prereq u-boot.
+_read_path=()
+IFS=: read -r -a _read_path <<< "$PATH"
+PATH=""
+for _dir in "${_read_path[@]}"; do
+    [ "$_dir" = "$HOME/.local/bin" ] && continue
+    PATH="${PATH:+$PATH:}$_dir"
+done
+export PATH
+unset _read_path _dir
+
 # Скрипты сборки используют $GITHUB_WORKSPACE как корень репозитория.
 export GITHUB_WORKSPACE="$REPO_DIR"
 export LUCI_APP_REPO_URL="${LUCI_APP_REPO_URL:-https://github.com/foric27/luci-app}"
@@ -188,6 +201,18 @@ main() {
     for tool in git make sha256sum; do
         command -v "$tool" >/dev/null 2>&1 || { echo "Не найден $tool" >&2; exit 1; }
     done
+
+    # Buildroot кэширует хостовые симлинки: если staging уже создан, а python3
+    # в нём указывает на питон без setuptools, prereq u-boot будет падать.
+    if [ -d "$OPENWRT_DIR/staging_dir/host" ]; then
+        _host_bin="$OPENWRT_DIR/staging_dir/host/bin"
+        _sys_python="$(command -v python3)"
+        mkdir -p "$_host_bin"
+        if [ -n "$_sys_python" ] && "$_sys_python" -c 'import setuptools' >/dev/null 2>&1; then
+            ln -sf "$_sys_python" "$_host_bin/python3"
+        fi
+        unset _host_bin _sys_python
+    fi
 
     log "Локальная сборка ImmortalWrt 25.12 для BPI-R4"
     echo "Репозиторий:   $REPO_DIR"
