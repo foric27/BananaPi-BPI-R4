@@ -270,7 +270,16 @@ patch_makefile_dep \
 # с режимом DDR4_4BG, команда msize и образы *8g. Патч идемпотентен.
 _8gb_patch="$GITHUB_WORKSPACE/patches/filogic/25.12/1100-bananapi-bpi-r4-8gb-support.patch"
 [ -f "$_8gb_patch" ] || { echo "Missing 8GB support patch: $_8gb_patch" >&2; exit 1; }
-apply_workspace_patch "$_8gb_patch"
+apply_workspace_patch "$_8gb_patch" || exit 1
+grep -q 'mt7988-emmc-comb-4bg' package/boot/arm-trusted-firmware-mediatek/Makefile || {
+    echo '8GB support patch was not applied to arm-trusted-firmware-mediatek' >&2
+    exit 1
+}
+grep -q 'sdcard_8g.img.gz' target/linux/mediatek/image/filogic.mk || {
+    echo '8GB support patch was not applied to filogic.mk' >&2
+    exit 1
+}
+echo "[DIY] 8GB support enabled (ATF/U-Boot DDR4_4BG, 8g images)"
 
 # Уменьшаем bootdelay U-Boot для BPI-R4
 patch_makefile_dep \
