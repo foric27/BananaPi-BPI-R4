@@ -1,2 +1,14 @@
-*/.DS_Store
+# ОС и IDE
 .DS_Store
+*/.DS_Store
+.idea/
+.vscode/
+
+# Локальная сборка прошивки (scripts/build-local.sh)
+/openwrt/
+/logs/
+*.log
+*.pid
+
+# Локальные инструкции для агентов (в репозиторий не попадают)
+AGENTS.md

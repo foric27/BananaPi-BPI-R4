@@ -20,6 +20,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 OPENWRT_DIR="${OPENWRT_DIR:-$REPO_DIR/openwrt}"
+
+# Кэш ccache держим внутри дерева сборки: домашний каталог в этой среде
+# может быть доступен только для чтения.
+export CCACHE_DIR="$OPENWRT_DIR/.ccache"
+export CCACHE_BASEDIR="$OPENWRT_DIR"
 REPO_URL="${REPO_URL:-https://github.com/immortalwrt/immortalwrt}"
 REPO_BRANCH="${REPO_BRANCH:-openwrt-25.12}"
 CONFIG_FILE="${CONFIG_FILE:-$REPO_DIR/immortalwrt/mediatek/defconfig-25.12}"
