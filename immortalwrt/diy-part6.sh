@@ -67,6 +67,20 @@ if [ -f "$_uhttpd_config" ]; then
     echo "[DIY] uhttpd: HTTP-порт по умолчанию 8888 (LuCI: http://192.168.1.1:8888)"
 fi
 
+# Стандартный LAN-адрес: в старых локальных деревьях мог остаться sed на
+# 192.168.2.1 из предыдущих версий скрипта — возвращаем дефолт 192.168.1.1.
+_config_generate="package/base-files/files/bin/config_generate"
+if [ -f "$_config_generate" ]; then
+    if grep -q '192\.168\.2\.1' "$_config_generate"; then
+        sed -i 's/192\.168\.2\.1/192.168.1.1/g' "$_config_generate"
+        echo "[DIY] config_generate: восстановлен стандартный IP 192.168.1.1"
+    fi
+    grep -q '192\.168\.1\.1' "$_config_generate" || {
+        echo 'config_generate does not use the default 192.168.1.1 address' >&2
+        exit 1
+    }
+fi
+
 _lighttpd_conf="feeds/packages/net/lighttpd/files/lighttpd.conf"
 if [ -f "$_lighttpd_conf" ]; then
     if ! grep -qE '^[[:space:]]*server\.port[[:space:]]*=' "$_lighttpd_conf"; then
