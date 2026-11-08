@@ -134,7 +134,7 @@ popd
 
 # Сохраняем версионированные Go-компиляторы фида, bootstrap и совместимые
 # вспомогательные пакеты: замена дерева старой одноверсионной раскладкой
-# удаляет golang1.27/host, нужный Go-пакетам (cloudflared, docker и др.).
+# удаляет golang1.27/host, нужный Go-пакетам (cloudflared, mosdns и др.).
 _go_values="feeds/packages/lang/golang/golang-values.mk"
 _go_feed_default="$(sed -n 's/^GO_DEFAULT_VERSION:=[[:space:]]*//p' "$_go_values" 2>/dev/null)"
 _go_default="$_go_feed_default"
@@ -157,16 +157,6 @@ if [ "$_go_default" != "$_go_feed_default" ]; then
 fi
 rm -rf feeds/packages/net/mosdns
 git clone --depth=1 -b "$BRANCH_MOSDNS" "$REPO_MOSDNS" package/mosdns
-
-# Vendored cpuid v2.0.4 в containerd не проходит проверку linkname в Go >= 1.23.
-# MAKE_FLAGS фиксируется в BuildPackage, поэтому строку нужно вставить перед ним.
-f=feeds/packages/utils/containerd/Makefile
-if [ ! -f "$f" ]; then
-    echo "[DIY] containerd Makefile missing: $f" >&2
-elif ! grep -q 'checklinkname=0' "$f"; then
-    awk -v ins="MAKE_FLAGS += EXTRA_LDFLAGS='-s -w -checklinkname=0'" '{print} /^Build\/Compile=/ {print ins}' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
-    echo "[DIY] containerd: -checklinkname=0 injected=$(grep -c 'checklinkname=0' "$f")"
-fi
 
 # Обход проблемы GCC 14 + musl fortify для mbedtls
 if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
