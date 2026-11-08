@@ -1,15 +1,18 @@
 #!/bin/bash
+# diy-part6.sh — проверка профиля BPI-R4 и патч mt76 для ImmortalWrt 25.12
 
 set -e
 
-configure_official_25_12() {
+# Проверяем, что после `make defconfig` выбран только BPI-R4 и сохранены
+# обязательные настройки Wi-Fi: драйвер mt7996e и прошивка mt7990.
+configure_bpi_r4() {
     local selected_device required
-    [ -r .config ] || { echo 'Missing ordinary 25.12 .config' >&2; return 1; }
+    [ -r .config ] || { echo 'Missing 25.12 .config' >&2; return 1; }
     make defconfig
 
     selected_device="$(sed -n '/^CONFIG_TARGET_.*_DEVICE_.*=y$/p' .config)"
     if [ "$selected_device" != 'CONFIG_TARGET_mediatek_filogic_DEVICE_bananapi_bpi-r4=y' ]; then
-        echo "Ordinary 25.12 must select only BPI-R4; resolved devices: $selected_device" >&2
+        echo "25.12 must select only BPI-R4; resolved devices: $selected_device" >&2
         return 1
     fi
     for required in \
@@ -18,21 +21,18 @@ configure_official_25_12() {
         'CONFIG_PACKAGE_kmod-mt7996e=y' \
         'CONFIG_PACKAGE_kmod-mt7990-firmware=y'; do
         grep -qxF "$required" .config || {
-            echo "Ordinary 25.12 profile lost a required setting: $required" >&2
+            echo "25.12 profile lost a required setting: $required" >&2
             return 1
         }
     done
 }
 
-case "${1:-}" in
-    --configure) configure_official_25_12; exit ;;
-    "") configure_official_25_12 ;;
-    *) echo "Unknown DIY mode: $1" >&2; exit 2 ;;
-esac
+configure_bpi_r4
 
-# Modify default IP
+# Меняем IP-адрес по умолчанию на 192.168.2.1
 sed -i 's/192.168.1.1/192.168.2.1/g' package/base-files/files/bin/config_generate
 
+# Применяет патч к package/kernel/mt76, если он ещё не применён.
 validate_and_apply_mt76_patch() {
     local patch_file="$1"
 
@@ -41,6 +41,7 @@ validate_and_apply_mt76_patch() {
         return 2
     }
 
+    # Нормализуем переводы строк в файле патча перед применением
     perl -0pi -e 's/\r\n/\n/g; s/\r/\n/g' "$patch_file"
 
     if (cd package/kernel/mt76 && patch -p1 -R --dry-run < "$patch_file" >/dev/null 2>&1); then
@@ -56,7 +57,8 @@ validate_and_apply_mt76_patch() {
     (cd package/kernel/mt76 && patch -p1 < "$patch_file")
 }
 
-# 25.12 上游自带 mt7990-firmware，只需追加 wed_enable=1 的 patch
+# В 25.12 прошивка mt7990-firmware уже есть в исходниках, поэтому достаточно
+# патча, включающего wed_enable=1.
 MT76_PATCH="1007-mt76-makefile-wed-enable.patch"
 
 validate_and_apply_mt76_patch \

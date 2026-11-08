@@ -1,15 +1,28 @@
 #!/bin/bash
-# diy-part5.sh — ImmortalWrt 25.12 feeds & community packages
+# diy-part5.sh — подготовка фидов и community-пакетов для ImmortalWrt 25.12 (BPI-R4)
+#
+# Скрипт выполняется внутри дерева OpenWrt после `feeds update`.
+# Наши репозитории задаются в workflow (immortalwrt-25.12-bpi-r4.yml):
+#   LUCI_APP_REPO_URL / LUCI_APP_REPO_BRANCH — форк LuCI-приложений foric27/luci-app.
 
-merge_package(){
-    repo=`echo $1 | rev | cut -d'/' -f 1 | rev`
-    pkg=`echo $2 | rev | cut -d'/' -f 1 | rev`
-    git clone --depth=1 --single-branch $1
-    [ -d package/openwrt-packages ] || mkdir -p package/openwrt-packages
-    mv $2 package/openwrt-packages/
-    rm -rf $repo
-}
+# Репозитории сторонних пакетов и их ветки. Ветки указаны явно, чтобы сборка
+# не зависела от default-ветки апстрима; для обновления правится строка ниже.
+REPO_HELLOWORLD="https://github.com/fw876/helloworld";                                  BRANCH_HELLOWORLD="dev"
+REPO_PASSWALL_PACKAGES="https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git"; BRANCH_PASSWALL_PACKAGES="main"
+REPO_PASSWALL="https://github.com/Openwrt-Passwall/openwrt-passwall.git";               BRANCH_PASSWALL="main"
+REPO_NIKKI="https://github.com/nikkinikki-org/OpenWrt-nikki";                           BRANCH_NIKKI="main"
+REPO_SOCAT="https://github.com/1522042029/luci-app-socat";                              BRANCH_SOCAT="main"
+REPO_ARGON="https://github.com/jerrykuku/luci-theme-argon";                             BRANCH_ARGON="master"
+REPO_JELL="https://github.com/kenzok8/jell";                                            BRANCH_JELL="main"
+REPO_DDNSTO="https://github.com/linkease/ddnsto-openwrt-package";                       BRANCH_DDNSTO="main"
+REPO_MOSDNS="https://github.com/sbwml/luci-app-mosdns";                                 BRANCH_MOSDNS="v5"
+REPO_OPENCLASH="https://github.com/vernesong/OpenClash";                                BRANCH_OPENCLASH="master"
 
+# Наш форк LuCI-приложений: URL и ветка приходят из workflow.
+LUCI_APP_REPO_URL="${LUCI_APP_REPO_URL:-https://github.com/foric27/luci-app}"
+LUCI_APP_REPO_BRANCH="${LUCI_APP_REPO_BRANCH:-main}"
+
+# Применяет литеральную замену в Makefile, если файл и старый текст существуют.
 patch_makefile_dep() {
     local file_path="$1"
     local old_text="$2"
@@ -31,6 +44,7 @@ patch_makefile_dep() {
     }
 }
 
+# Применяет патч из репозитория сборки, если он ещё не применён.
 apply_workspace_patch() {
     local patch_file="$1"
 
@@ -43,8 +57,8 @@ apply_workspace_patch() {
     git apply --recount --ignore-space-change --ignore-whitespace "$patch_file"
 }
 
-# 25.12 autocore uses files/tempinfo instead of the 24.10 files/arm layout.
-# Keep the existing overview temperature row and its CPU value.
+# В 25.12 autocore использует files/tempinfo вместо раскладки files/arm из 24.10.
+# Сохраняем строку температуры на обзоре и её значение CPU.
 _autocore_makefile="package/emortal/autocore/Makefile"
 if [ -f "$_autocore_makefile" ] && [ -f package/emortal/autocore/files/tempinfo ]; then
     install -m 0755 "$GITHUB_WORKSPACE/scripts/tempinfo" \
@@ -56,8 +70,8 @@ if [ -f "$_autocore_makefile" ] && [ -f package/emortal/autocore/files/tempinfo 
         fi
     done
     if [ -n "$_temp_deps" ]; then
-        # Add to this package after its DEPENDS assignment. No dependency on
-        # another platform's lines or on the vendor-only mhz package.
+        # Добавляем зависимости в блок DEPENDS этого пакета, не затрагивая
+        # строки других платформ и vendor-пакет mhz.
         if ! awk -v deps="$_temp_deps" '
             /^define Package\/autocore$/ { in_package = 1 }
             in_package && /^endef$/ {
@@ -82,44 +96,58 @@ if [ -f "$_autocore_makefile" ] && [ -f package/emortal/autocore/files/tempinfo 
     done
 fi
 
-# Remove feed packages replaced by community clones
+# Удаляем пакеты фидов, которые заменяются клонами из community-репозиториев.
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf feeds/luci/applications/luci-app-passwall
 rm -rf feeds/luci/applications/luci-app-modemband
 rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-libev,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,trojan-plus,tuic-client,v2ray-plugin,xray-plugin,geoview,shadow-tls}
 
-# Clone community packages
+# Клонируем community-пакеты (ветки зафиксированы в переменных выше).
 mkdir -p package/community
 pushd package/community
-git clone --depth=1 -b dev https://github.com/fw876/helloworld
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall-packages.git
-git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall.git
-git clone --depth=1 https://github.com/nikkinikki-org/OpenWrt-nikki
-git clone --depth=1 https://github.com/1522042029/luci-app-socat
-git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
-# LuCI apps are maintained in the foric27/luci-app fork. It does not contain
-# luci-app-adguardhome anymore, so AdGuardHome has no LuCI page here.
-merge_package https://github.com/foric27/luci-app luci-app/Luci-app/luci-app-fan
-merge_package https://github.com/foric27/luci-app luci-app/Luci-app/luci-app-sfp-status
-merge_package https://github.com/foric27/luci-app luci-app/Luci-app/luci-app-modemband
-merge_package https://github.com/foric27/luci-app luci-app/Luci-app/luci-app-traffic
-merge_package https://github.com/foric27/luci-app luci-app/Luci-app/rpcd-mod-router-status
-if [ ! -f package/openwrt-packages/rpcd-mod-router-status/Makefile ] || \
-   [ ! -f package/openwrt-packages/rpcd-mod-router-status/root/etc/init.d/router-status ]; then
+git clone --depth=1 -b "$BRANCH_HELLOWORLD" "$REPO_HELLOWORLD"
+git clone --depth=1 -b "$BRANCH_PASSWALL_PACKAGES" "$REPO_PASSWALL_PACKAGES"
+git clone --depth=1 -b "$BRANCH_PASSWALL" "$REPO_PASSWALL"
+git clone --depth=1 -b "$BRANCH_NIKKI" "$REPO_NIKKI"
+git clone --depth=1 -b "$BRANCH_SOCAT" "$REPO_SOCAT"
+git clone --depth=1 -b "$BRANCH_ARGON" "$REPO_ARGON"
+
+# Наши LuCI-приложения: один клон foric27/luci-app забирает сразу все пакеты.
+mkdir -p package/openwrt-packages
+_luci_repo="luci-app"
+git clone --depth=1 --single-branch -b "$LUCI_APP_REPO_BRANCH" "$LUCI_APP_REPO_URL" "$_luci_repo"
+for _app in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-traffic rpcd-mod-router-status; do
+    mv "$_luci_repo/Luci-app/$_app" package/openwrt-packages/
+done
+rm -rf "$_luci_repo"
+for _app in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-traffic rpcd-mod-router-status; do
+    [ -f "package/openwrt-packages/$_app/Makefile" ] || {
+        echo "Package $_app was not fetched from $LUCI_APP_REPO_URL" >&2
+        exit 1
+    }
+done
+if [ ! -f package/openwrt-packages/rpcd-mod-router-status/root/etc/init.d/router-status ]; then
     echo "Independent router status package was not fetched" >&2
     exit 1
 fi
-merge_package https://github.com/kenzok8/jell jell/wrtbwmon
-merge_package "-b main https://github.com/linkease/ddnsto-openwrt-package" ddnsto-openwrt-package/ddnsto
-merge_package "-b main https://github.com/linkease/ddnsto-openwrt-package" ddnsto-openwrt-package/luci-app-ddnsto
+
+# wrtbwmon из репозитория jell
+git clone --depth=1 -b "$BRANCH_JELL" "$REPO_JELL"
+mv jell/wrtbwmon package/openwrt-packages/
+rm -rf jell
+
+# ddnsto и его LuCI-приложение: один клон на два пакета
+git clone --depth=1 -b "$BRANCH_DDNSTO" "$REPO_DDNSTO"
+mv ddnsto-openwrt-package/ddnsto ddnsto-openwrt-package/luci-app-ddnsto package/openwrt-packages/
+rm -rf ddnsto-openwrt-package
 popd
 
 sh "$GITHUB_WORKSPACE/scripts/fix-mihomo-source.sh" || exit 1
 
-# Keep the feed's versioned Go compilers, bootstrap and matching helpers.
-# Replacing this tree with the old single-version recipe removes
-# golang1.27/host, which cloudflared, tailscale and telegraf require.
+# Сохраняем версионированные Go-компиляторы фида, bootstrap и совместимые
+# вспомогательные пакеты: замена дерева старой одноверсионной раскладкой
+# удаляет golang1.27/host, нужный cloudflared, tailscale и telegraf.
 _go_values="feeds/packages/lang/golang/golang-values.mk"
 _go_feed_default="$(sed -n 's/^GO_DEFAULT_VERSION:=[[:space:]]*//p' "$_go_values" 2>/dev/null)"
 _go_default="$_go_feed_default"
@@ -136,27 +164,27 @@ if ! grep -qxF "PKG_NAME:=golang$_go_default" "feeds/packages/lang/golang/golang
     echo "Missing native Go $_go_default toolchain in the packages feed" >&2
     exit 1
 fi
-# Use at least Go 1.27 for community packages; keep a newer feed default.
+# Для community-пакетов нужен Go не ниже 1.27; более новый default фида сохраняем.
 if [ "$_go_default" != "$_go_feed_default" ]; then
     sed -i "s/^GO_DEFAULT_VERSION:=.*/GO_DEFAULT_VERSION:=$_go_default/" "$_go_values" || exit 1
 fi
 rm -rf feeds/packages/net/mosdns
-git clone --depth=1 https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
+git clone --depth=1 -b "$BRANCH_MOSDNS" "$REPO_MOSDNS" package/mosdns
 
 mkdir -p package/OpenClash
 pushd package/OpenClash
-git clone --depth=1 https://github.com/vernesong/OpenClash
+git clone --depth=1 -b "$BRANCH_OPENCLASH" "$REPO_OPENCLASH"
 popd
 
-# helloworld simple-obfs/shadowsocks-libev: skip the non-deterministic PKG_MIRROR_HASH
+# helloworld simple-obfs/shadowsocks-libev: отключаем недетерминированный PKG_MIRROR_HASH
 for f in \
     package/community/helloworld/simple-obfs/Makefile \
     package/community/helloworld/shadowsocks-libev/Makefile; do
     [ -f "$f" ] && sed -i '/^PKG_MIRROR_HASH:=/s/:=.*/:=skip/' "$f"
 done
 
-# containerd's vendored cpuid v2.0.4 hits Go's >= 1.23 linkname check. MAKE_FLAGS is
-# frozen by the BuildPackage eval, so the line must be injected before it.
+# Vendored cpuid v2.0.4 в containerd не проходит проверку linkname в Go >= 1.23.
+# MAKE_FLAGS фиксируется в BuildPackage, поэтому строку нужно вставить перед ним.
 f=feeds/packages/utils/containerd/Makefile
 if [ ! -f "$f" ]; then
     echo "[DIY] containerd Makefile missing: $f" >&2
@@ -165,7 +193,7 @@ elif ! grep -q 'checklinkname=0' "$f"; then
     echo "[DIY] containerd: -checklinkname=0 injected=$(grep -c 'checklinkname=0' "$f")"
 fi
 
-# GCC 14 + musl fortify workaround for mbedtls
+# Обход проблемы GCC 14 + musl fortify для mbedtls
 if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
     if grep -q '\$(if \$(findstring cortex-a53,\$(CONFIG_CPU_TYPE)),-march=armv8-a)' package/libs/mbedtls/Makefile; then
         sed -i '/$(if $(findstring cortex-a53,$(CONFIG_CPU_TYPE)),-march=armv8-a)/a TARGET_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile
@@ -174,23 +202,24 @@ if ! grep -q '_FORTIFY_SOURCE=0' package/libs/mbedtls/Makefile; then
   fi
 fi
 
-# Drop onionshare-cli (unresolved metadata, not in our config)
+# Удаляем onionshare-cli (неразрешённые метаданные, пакета нет в нашей конфигурации)
 rm -rf feeds/packages/net/onionshare-cli
 
+# Патч LuCI package-manager: разрешаем загрузку локальных APK-пакетов
 [ -f feeds/luci/applications/luci-app-package-manager/root/usr/libexec/package-manager-call ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1004-luci-package-manager-apk-upload-untrusted-master.patch"
 
-# vpnc: add -p to mkdir for idempotency
+# vpnc: добавляем -p к mkdir для идемпотентности
 if grep -q 'mkdir $(PKG_BUILD_DIR)/bin' feeds/packages/net/vpnc/Makefile 2>/dev/null; then
     sed -i '/mkdir $(PKG_BUILD_DIR)\/bin/s/mkdir /mkdir -p /' feeds/packages/net/vpnc/Makefile
 fi
 
 ./scripts/feeds install -a
 
-# Feed deps needed by community clones (pcre2 is in main tree since 25.12)
+# Зависимости фидов, нужные клонам community-пакетов (pcre2 в 25.12 уже в основном дереве)
 ./scripts/feeds install c-ares udns
 
-# Remove kiddin9 APK repo (triggers broken video/ sub-repo)
+# Удаляем APK-репозиторий kiddin9 (ломанный video/-подрепозиторий)
 for f in \
     package/base-files/files/etc/apk/repositories \
     package/base-files/files/etc/apk/repositories.d/* \
@@ -198,25 +227,25 @@ for f in \
     [ -f "$f" ] && grep -q 'kiddin9' "$f" 2>/dev/null && sed -i '/kiddin9/d' "$f" 2>/dev/null || true
 done
 
-# APK runtime fixes: allow local unsigned APK uploads and disable broken feed entries
+# Правки APK на этапе выполнения: локальные неподписанные пакеты и битые записи фидов
 rm -f package/base-files/files/etc/uci-defaults/99-apk-untrusted
 [ -d package/base-files/files/etc/uci-defaults ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1005-base-files-apk-manager-fixes-master.patch"
 
-# Verify libmbedtls presence (required by shadowsocks-libev)
+# Проверяем наличие libmbedtls (нужен shadowsocks-libev)
 if [ ! -f package/libs/mbedtls/Makefile ]; then
   echo "WARNING: package/libs/mbedtls/Makefile not found" >&2
 elif ! grep -q 'define Package/libmbedtls' package/libs/mbedtls/Makefile; then
   echo "WARNING: package/libs/mbedtls/Makefile does not define libmbedtls" >&2
 fi
 
-# GO proxy for sing-box
+# GO proxy для sing-box
 export GOEXPERIMENT=
 export GOPROXY=https://proxy.golang.org,direct
 
-# Compatibility fixes for floating feeds metadata
-# rust: rust-lang pruned the 1.94.0 CI LLVM artifacts, so download-ci-llvm=true
-# 404s; build LLVM from source instead (configure.py: last --set wins).
+# Совместимость с плавающими метаданными фидов.
+# rust: rust-lang удалил CI-артефакты LLVM 1.94.0, поэтому download-ci-llvm=true
+# отдаёт 404; собираем LLVM из исходников (configure.py: последний --set побеждает).
 _rust_makefile="feeds/packages/lang/rust/Makefile"
 if [ -f "$_rust_makefile" ]; then
     if grep -qF -- '--set=llvm.download-ci-llvm=false' "$_rust_makefile"; then
@@ -233,7 +262,7 @@ if [ -f "$_rust_makefile" ]; then
     fi
 fi
 
-# luci-ssl-openssl: fall back to px5g-standalone if px5g-openssl is absent
+# luci-ssl-openssl: откатываемся на px5g-standalone, если px5g-openssl отсутствует
 _ssl_makefile="feeds/luci/collections/luci-ssl-openssl/Makefile"
 if [ -f "$_ssl_makefile" ] && \
     grep -qF -- '+px5g-openssl' "$_ssl_makefile" && \
@@ -246,8 +275,8 @@ if [ -f "$_ssl_makefile" ] && \
     echo "[DIY] luci-ssl-openssl: dep px5g-openssl -> px5g-standalone"
 fi
 
-# kernel 6.12.103: the 2026-08-24 merge added fmsh SPI-NAND patches (436/437)
-# that do not apply; the chips are unused by BPI-R4, so drop them.
+# Ядро 6.12.103: в слиянии от 2026-08-24 появились патчи fmsh SPI-NAND (436/437),
+# которые не применяются; BPI-R4 эти чипы не использует — удаляем.
 rm -f target/linux/generic/backport-6.12/436-v7.3-mtd-spinand-fmsh-*.patch \
       target/linux/generic/backport-6.12/437-v7.3-mtd-spinand-fmsh-*.patch
 echo "[DIY] removed fmsh backport patches 436/437 (broken against kernel 6.12.103)"
@@ -270,23 +299,23 @@ patch_makefile_dep \
     'libnetsnmp-ssl' \
     'libnetsnmp'
 
-# Reduce BPI-R4 U-Boot bootdelay
+# Уменьшаем bootdelay U-Boot для BPI-R4
 patch_makefile_dep \
     package/boot/uboot-mediatek/patches/450-add-bpi-r4.patch \
     'CONFIG_BOOTDELAY=30' \
     'CONFIG_BOOTDELAY=10'
 
-# LuCI patches for 25.12 (regenerated 2026-07-03); guarded with || true so a
-# moved feed base fails silently instead of aborting the build.
+# LuCI-патчи для 25.12 (перегенерированы 2026-07-03); проверяются через || true,
+# чтобы изменённая база фида не обрывала сборку молча.
 
-# RPCD: add getWifiStationHints ubus method + helper functions
+# RPCD: метод ubus getWifiStationHints и вспомогательные функции
 [ -f feeds/luci/modules/luci-base/root/usr/share/rpcd/ucode/luci ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1000-luci-rpcd-getWifiStationHints-master.patch" || true
 
-# 60_wifi.js: wifi7/MLO station hints + mhz_hi support (merged 1000+1002)
+# 60_wifi.js: подсказки для wifi7/MLO и поддержка mhz_hi (объединены 1000+1002)
 [ -f feeds/luci/modules/luci-mod-status/htdocs/luci-static/resources/view/status/include/60_wifi.js ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1000-luci-status-60wifi-master.patch" || true
 
-# wireless.js: station hints + mtk mode matrix + MLO OFDMA (merged 1001+999+1003)
+# wireless.js: подсказки станций + матрица режимов MTK + MLO OFDMA (объединены 1001+999+1003)
 [ -f feeds/luci/modules/luci-mod-network/htdocs/luci-static/resources/view/network/wireless.js ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1001-luci-wireless-combined-master.patch" || true
