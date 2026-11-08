@@ -119,6 +119,31 @@ preflight() {
             ln -sf "$sys_python" "$host_bin/python3"
         fi
     fi
+
+    # WSL2 отдаёт EINVAL на chown непривилегированного пользователя (вместо EPERM).
+    # libfakeroot считает «нет прав» только EPERM, поэтому apk не может выставить
+    # владельцев и package/install падает. Кладём патч в tools/fakeroot/patches и
+    # при необходимости пересобираем host-fakeroot.
+    local fakeroot_patch="$REPO_DIR/patches/host/0001-fakeroot-treat-EINVAL-as-EPERM.patch"
+    if [ -f "$fakeroot_patch" ] && [ -d "$OPENWRT_DIR/tools/fakeroot/patches" ]; then
+        cp -f "$fakeroot_patch" "$OPENWRT_DIR/tools/fakeroot/patches/"
+        local host_fakeroot="$OPENWRT_DIR/staging_dir/host/bin/fakeroot"
+        if [ -x "$host_fakeroot" ] && [ -f "$OPENWRT_DIR/.config" ]; then
+            local probe="$STATE_DIR/fakeroot-probe"
+            mkdir -p "$STATE_DIR"
+            : > "$probe"
+            if ! "$host_fakeroot" chown 0:0 "$probe" >/dev/null 2>&1; then
+                echo "[env] fakeroot не эмулирует chown (EINVAL) — пересобираю host-fakeroot"
+                ( cd "$OPENWRT_DIR" && make tools/fakeroot/clean tools/fakeroot/compile )
+                if ! "$host_fakeroot" chown 0:0 "$probe" >/dev/null 2>&1; then
+                    echo "fakeroot: chown не работает даже после патча" >&2
+                    exit 1
+                fi
+                echo "[env] fakeroot: chown теперь эмулируется"
+            fi
+            rm -f "$probe"
+        fi
+    fi
 }
 
 # Шаг 1 («Загрузка исходного кода прошивки» в workflow): клон или обновление OpenWrt.
