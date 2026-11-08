@@ -52,13 +52,6 @@ jobs:
         sudo -E apt-get -qq clean ) &
         sudo timedatectl set-timezone "$TZ" || true
 
-    - name: Initialize Environment and Display System Info
-      env:
-        DEBIAN_FRONTEND: noninteractive
-      run: |
-        chmod +x $OPENWRT_NAME/*.sh
-        $GITHUB_WORKSPACE/$OPENWRT_NAME/system-Information.sh
-
     - name: Download firmware source code
       run: |
         git clone --filter=blob:none --single-branch -c core.abbrev=7 $REPO_URL -b $REPO_BRANCH openwrt

@@ -98,12 +98,13 @@ git clone --depth=1 -b main https://github.com/Openwrt-Passwall/openwrt-passwall
 git clone --depth=1 https://github.com/nikkinikki-org/OpenWrt-nikki
 git clone --depth=1 https://github.com/1522042029/luci-app-socat
 git clone --depth=1 https://github.com/jerrykuku/luci-theme-argon
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-fan
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-sfp-status
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-adguardhome
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-modemband
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/luci-app-traffic
-merge_package https://github.com/MedyMa/luci-app luci-app/Luci-app/rpcd-mod-router-status
+# LuCI apps are maintained in the foric27/luci-app fork. It does not contain
+# luci-app-adguardhome anymore, so AdGuardHome has no LuCI page here.
+merge_package https://github.com/foric27/luci-app luci-app/Luci-app/luci-app-fan
+merge_package https://github.com/foric27/luci-app luci-app/Luci-app/luci-app-sfp-status
+merge_package https://github.com/foric27/luci-app luci-app/Luci-app/luci-app-modemband
+merge_package https://github.com/foric27/luci-app luci-app/Luci-app/luci-app-traffic
+merge_package https://github.com/foric27/luci-app luci-app/Luci-app/rpcd-mod-router-status
 if [ ! -f package/openwrt-packages/rpcd-mod-router-status/Makefile ] || \
    [ ! -f package/openwrt-packages/rpcd-mod-router-status/root/etc/init.d/router-status ]; then
     echo "Independent router status package was not fetched" >&2
