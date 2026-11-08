@@ -47,6 +47,7 @@ for required in \
     'CONFIG_PACKAGE_luci-app-frps=y' \
     'CONFIG_PACKAGE_luci-app-p910nd=y' \
     'CONFIG_PACKAGE_luci-app-sms-tool-js=y' \
+    'CONFIG_PACKAGE_lighttpd=y' \
     'CONFIG_PACKAGE_luci-app-uhttpd=y'; do
     grep -qxF "$required" .config || {
         echo "The resolved 25.12 config lost an expected package: $required" >&2
@@ -54,8 +55,29 @@ for required in \
     }
 done
 
-# Меняем IP-адрес по умолчанию на 192.168.2.1
-sed -i 's/192.168.1.1/192.168.2.1/g' package/base-files/files/bin/config_generate
+# Веб-серверы: Lighttpd — на 80-м порту (по умолчанию), uhttpd/LuCI — на 8888.
+# IP-адрес прошивки остаётся стандартным (192.168.1.1), config_generate не правим.
+_uhttpd_config="package/network/services/uhttpd/files/uhttpd.config"
+if [ -f "$_uhttpd_config" ]; then
+    sed -i 's/0\.0\.0\.0:80/0.0.0.0:8888/g; s/\[::\]:80/[::]:8888/g' "$_uhttpd_config"
+    grep -q '0.0.0.0:8888' "$_uhttpd_config" || {
+        echo 'Failed to move uhttpd to port 8888' >&2
+        exit 1
+    }
+    echo "[DIY] uhttpd: HTTP-порт по умолчанию 8888 (LuCI: http://192.168.1.1:8888)"
+fi
+
+_lighttpd_conf="feeds/packages/net/lighttpd/files/lighttpd.conf"
+if [ -f "$_lighttpd_conf" ]; then
+    if ! grep -qE '^[[:space:]]*server\.port[[:space:]]*=' "$_lighttpd_conf"; then
+        printf '\n# HTTP-порт по умолчанию для Lighttpd\nserver.port = 80\n' >> "$_lighttpd_conf"
+    fi
+    grep -qE '^[[:space:]]*server\.port[[:space:]]*=[[:space:]]*80' "$_lighttpd_conf" || {
+        echo 'Lighttpd is not configured for port 80' >&2
+        exit 1
+    }
+    echo "[DIY] lighttpd: HTTP-порт по умолчанию 80"
+fi
 
 # Применяет патч к package/kernel/mt76, если он ещё не применён.
 validate_and_apply_mt76_patch() {

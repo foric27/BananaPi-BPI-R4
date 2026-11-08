@@ -1,10 +1,11 @@
 # BananaPi R4 Firmware
 
 ## Tips
-* Default Gateway: 192.168.2.1
+* Default Gateway: 192.168.1.1
 * Default Password: password
 * Support BRI-R4-NIC-BE14 Model
 * Support MTK-HNAT
+* Lighttpd on port 80, LuCI (uhttpd) on port 8888
 
 ## References
 * https://github.com/immortalwrt/immortalwrt
