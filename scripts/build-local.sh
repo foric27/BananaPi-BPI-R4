@@ -97,6 +97,17 @@ preflight() {
         warn "У системного python3 нет setuptools — prereq u-boot может упасть"
     }
 
+    # В WSL2 соединения по IPv6 к CDN зависают, а curl без таймаута скорости может
+    # ждать вечно. Принудительно используем IPv4 и обрываем зависшие загрузки:
+    # curl читает настройки из $CURL_HOME/.curlrc, wget — из $WGETRC.
+    local curl_home="$REPO_DIR/.cache/curl"
+    local wgetrc="$REPO_DIR/.cache/wgetrc"
+    mkdir -p "$curl_home"
+    printf 'ipv4\nspeed-limit = 1024\nspeed-time = 60\nconnect-timeout = 20\n' > "$curl_home/.curlrc"
+    printf 'prefer-family = IPv4\ntimeout = 60\ntries = 3\n' > "$wgetrc"
+    export CURL_HOME="$curl_home"
+    export WGETRC="$wgetrc"
+
     # Buildroot кэширует хостовые симлинки: если staging уже создан, а python3
     # в нём указывает на питон без setuptools, prereq u-boot будет падать.
     if [ -d "$OPENWRT_DIR/staging_dir/host" ]; then

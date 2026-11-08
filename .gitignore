@@ -4,6 +4,9 @@
 .idea/
 .vscode/
 
+# Локальные кэши и логи build-local.sh
+/.cache/
+
 # Локальная сборка прошивки (scripts/build-local.sh)
 /openwrt/
 /logs/
