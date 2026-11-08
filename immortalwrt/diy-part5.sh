@@ -270,6 +270,12 @@ patch_makefile_dep \
 # с режимом DDR4_4BG, команда msize и образы *8g. Патч идемпотентен.
 _8gb_patch="$GITHUB_WORKSPACE/patches/filogic/25.12/1100-bananapi-bpi-r4-8gb-support.patch"
 [ -f "$_8gb_patch" ] || { echo "Missing 8GB support patch: $_8gb_patch" >&2; exit 1; }
+# Патч создаёт новый файл 501-add-cmd-msize.patch. После обновления исходников
+# (git reset) правленые файлы откатываются, а этот файл остаётся — удаляем его,
+# чтобы повторное применение не упало на «already exists».
+if ! git apply --recount --ignore-space-change --ignore-whitespace --reverse --check "$_8gb_patch" >/dev/null 2>&1; then
+    rm -f package/boot/uboot-mediatek/patches/501-add-cmd-msize.patch
+fi
 apply_workspace_patch "$_8gb_patch" || exit 1
 grep -q 'mt7988-emmc-comb-4bg' package/boot/arm-trusted-firmware-mediatek/Makefile || {
     echo '8GB support patch was not applied to arm-trusted-firmware-mediatek' >&2
