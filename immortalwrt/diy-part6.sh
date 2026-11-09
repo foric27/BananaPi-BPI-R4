@@ -118,40 +118,6 @@ if [ -f "$_lighttpd_conf" ]; then
     echo "[DIY] lighttpd: HTTP-порт по умолчанию 80"
 fi
 
-# Пересобираем пакеты, в файлы которых вносим правки, если их содержимое
-# изменилось с прошлого прогона: иначе make может пропустить пакет по stamp
-# и в образ попадёт устаревший конфиг. На первом прогоне тулчейна ещё нет —
-# тогда просто запоминаем хэши, всё равно всё собирается с нуля.
-_diy_refresh_package() {
-    local name="$1"
-    local file="$2"
-    local target="$3"
-    local hash stamp
-
-    [ -f "$file" ] || return 0
-    hash="$(sha256sum "$file" | awk '{print $1}')"
-    stamp=".diy-state/$name.sha"
-    mkdir -p .diy-state
-    [ "$(cat "$stamp" 2>/dev/null)" = "$hash" ] && return 0
-
-    if ls staging_dir/toolchain-*/bin/*-gcc >/dev/null 2>&1; then
-        echo "[DIY] $name изменился — пересборка $target"
-        make "$target/clean" "$target/compile" >/dev/null
-        rm -f staging_dir/target-*/stamp/.package_install
-    fi
-    printf '%s\n' "$hash" > "$stamp"
-}
-
-_diy_refresh_package base-files-config \
-    package/base-files/files/bin/config_generate \
-    package/base-files
-_diy_refresh_package uhttpd-config \
-    package/network/services/uhttpd/files/uhttpd.config \
-    package/network/services/uhttpd
-_diy_refresh_package lighttpd-config \
-    feeds/packages/net/lighttpd/files/lighttpd.conf \
-    package/feeds/packages/lighttpd
-
 # Применяет патч к package/kernel/mt76, если он ещё не применён.
 validate_and_apply_mt76_patch() {
     local patch_file="$1"

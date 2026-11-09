@@ -254,6 +254,42 @@ step_diy_part6() {
     ( cd "$OPENWRT_DIR" && bash "$DIY_P2_SH" )
 }
 
+# Локальная оптимизация: если diy-part6.sh изменил файлы пакетов, которые уже
+# собирались раньше, make может пропустить их по stamp-файлам. Пересобираем
+# такие пакеты, когда тулчейн уже есть (в CI это не нужно: сборка с нуля).
+step_refresh_changed_packages() {
+    local name file target hash stamp
+    if ! ls "$OPENWRT_DIR"/staging_dir/toolchain-*/bin/*-gcc >/dev/null 2>&1; then
+        return 0
+    fi
+    mkdir -p "$STATE_DIR"
+
+    _refresh_one() {
+        name="$1"
+        file="$2"
+        target="$3"
+        [ -f "$file" ] || return 0
+        hash="$(sha256sum "$file" | awk '{print $1}')"
+        stamp="$STATE_DIR/$name.sha"
+        [ "$(cat "$stamp" 2>/dev/null)" = "$hash" ] && return 0
+        log "Пересборка $target (изменился $file)"
+        ( cd "$OPENWRT_DIR" && make "$target/clean" "$target/compile" )
+        rm -f "$OPENWRT_DIR"/staging_dir/target-*/stamp/.package_install
+        printf '%s\n' "$hash" > "$stamp"
+    }
+
+    _refresh_one base-files-config \
+        "$OPENWRT_DIR/package/base-files/files/bin/config_generate" \
+        package/base-files
+    _refresh_one uhttpd-config \
+        "$OPENWRT_DIR/package/network/services/uhttpd/files/uhttpd.config" \
+        package/network/services/uhttpd
+    _refresh_one lighttpd-config \
+        "$OPENWRT_DIR/feeds/packages/net/lighttpd/files/lighttpd.conf" \
+        package/feeds/packages/lighttpd
+    unset -f _refresh_one
+}
+
 # Шаг 6 («Скачивание пакетов»): make defconfig уже сделан в diy-part6.sh.
 step_download_packages() {
     if [ "$FORCE" = 1 ] || [ "$OPENWRT_UPDATED" = 1 ] || [ "$FEEDS_UPDATED" = 1 ] \
@@ -288,6 +324,7 @@ main() {
     step_diy_part5
     step_apply_config
     step_diy_part6
+    step_refresh_changed_packages
     step_download_packages
     step_build_firmware
 }
