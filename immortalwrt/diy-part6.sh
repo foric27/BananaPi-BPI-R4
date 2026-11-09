@@ -48,6 +48,9 @@ for required in \
     'CONFIG_PACKAGE_acme-acmesh=y' \
     'CONFIG_PACKAGE_luci-app-acme=y' \
     'CONFIG_PACKAGE_luci-app-sms-tool-js=y' \
+    'CONFIG_PACKAGE_avahi-daemon-service-http=y' \
+    'CONFIG_PACKAGE_avahi-dbus-daemon=y' \
+    'CONFIG_PACKAGE_avahi-utils=y' \
     'CONFIG_PACKAGE_lighttpd=y' \
     'CONFIG_PACKAGE_lighttpd-mod-proxy=y' \
     'CONFIG_PACKAGE_lighttpd-mod-openssl=y' \
