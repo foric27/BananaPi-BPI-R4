@@ -45,7 +45,6 @@ for required in \
     'CONFIG_PACKAGE_luci-app-acme=y' \
     'CONFIG_PACKAGE_frps=y' \
     'CONFIG_PACKAGE_luci-app-frps=y' \
-    'CONFIG_PACKAGE_luci-app-p910nd=y' \
     'CONFIG_PACKAGE_luci-app-sms-tool-js=y' \
     'CONFIG_PACKAGE_lighttpd=y' \
     'CONFIG_PACKAGE_luci-app-uhttpd=y'; do
@@ -53,6 +52,33 @@ for required in \
         echo "The resolved 25.12 config lost an expected package: $required" >&2
         exit 1
     }
+done
+
+# Отключённые по запросу пакеты не должны вернуться (в т.ч. как зависимости).
+for forbidden in \
+    'CONFIG_PACKAGE_aria2=y' \
+    'CONFIG_PACKAGE_ariang=y' \
+    'CONFIG_PACKAGE_luci-app-aria2=y' \
+    'CONFIG_PACKAGE_ddns-scripts-services=y' \
+    'CONFIG_PACKAGE_luci-app-ddns=y' \
+    'CONFIG_PACKAGE_netdata=y' \
+    'CONFIG_PACKAGE_luci-app-netdata=y' \
+    'CONFIG_PACKAGE_p910nd=y' \
+    'CONFIG_PACKAGE_luci-app-p910nd=y' \
+    'CONFIG_PACKAGE_luci-app-usb-printer=y' \
+    'CONFIG_PACKAGE_shairport-sync-openssl=y' \
+    'CONFIG_PACKAGE_luci-app-airplay2=y' \
+    'CONFIG_PACKAGE_vlmcsd=y' \
+    'CONFIG_PACKAGE_luci-app-vlmcsd=y' \
+    'CONFIG_PACKAGE_luci-app-wol=y' \
+    'CONFIG_PACKAGE_luci-app-wechatpush=y' \
+    'CONFIG_PACKAGE_luci-app-ramfree=y' \
+    'CONFIG_PACKAGE_fibocom-dial=y' \
+    'CONFIG_PACKAGE_kmod-usb-net-qmi-wwan-fibocom=y'; do
+    if grep -qxF "$forbidden" .config; then
+        echo "A disabled package is still selected: $forbidden" >&2
+        exit 1
+    fi
 done
 
 # Веб-серверы: Lighttpd — на 80-м порту (по умолчанию), uhttpd/LuCI — на 8888.
