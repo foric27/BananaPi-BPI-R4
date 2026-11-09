@@ -63,6 +63,9 @@ for required in \
     'CONFIG_PACKAGE_luci-app-internet-detector=y' \
     'CONFIG_PACKAGE_luci-app-log-viewer=y' \
     'CONFIG_PACKAGE_internet-detector=y' \
+    'CONFIG_PACKAGE_internet-detector-mod-email=y' \
+    'CONFIG_PACKAGE_internet-detector-mod-telegram=y' \
+    'CONFIG_PACKAGE_internet-detector-mod-modem-restart=y' \
     'CONFIG_PACKAGE_luci-i18n-interfaces-statistics-ru=y' \
     'CONFIG_PACKAGE_luci-i18n-internet-detector-ru=y' \
     'CONFIG_PACKAGE_luci-i18n-log-viewer-ru=y' \

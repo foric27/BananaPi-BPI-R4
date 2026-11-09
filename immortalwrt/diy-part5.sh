@@ -209,7 +209,14 @@ cp -a "$DIYS_SRC_DIR/luci-app-internet-detector/internet-detector/." \
 cp -a "$DIYS_SRC_DIR/luci-app-internet-detector/luci-app-internet-detector/." \
     package/openwrt-packages/luci-app-internet-detector/ || exit 1
 
-for _pkg in luci-app-interfaces-statistics luci-app-log-viewer internet-detector luci-app-internet-detector; do
+# Модули internet-detector: email, telegram, перезапуск модема.
+for _mod in internet-detector-mod-email internet-detector-mod-telegram internet-detector-mod-modem-restart; do
+    rm -rf "package/openwrt-packages/$_mod"
+    cp -a "$DIYS_SRC_DIR/luci-app-internet-detector/$_mod" "package/openwrt-packages/$_mod" || exit 1
+done
+
+for _pkg in luci-app-interfaces-statistics luci-app-log-viewer internet-detector luci-app-internet-detector \
+    internet-detector-mod-email internet-detector-mod-telegram internet-detector-mod-modem-restart; do
     [ -f "package/openwrt-packages/$_pkg/Makefile" ] || {
         echo "Package $_pkg was not prepared" >&2
         exit 1
