@@ -231,7 +231,13 @@ rm -rf package/feeds/packages/dnsdist \
 [ -f feeds/luci/applications/luci-app-package-manager/root/usr/libexec/package-manager-call ] && \
     apply_workspace_patch "$GITHUB_WORKSPACE/patches/filogic/25.12/1004-luci-package-manager-apk-upload-untrusted-master.patch"
 
-./scripts/feeds install -a
+if [ "${SKIP_FEEDS_INSTALL:-0}" = 1 ] && [ -d package/feeds ]; then
+    echo "[feeds] Установка фидов пропущена: дерево и фиды не менялись"
+else
+    ./scripts/feeds install -a
+    mkdir -p "$DIYS_STATE_DIR"
+    touch "$DIYS_STATE_DIR/feeds-installed"
+fi
 
 # Удаляем APK-репозиторий kiddin9 (ломанный video/-подрепозиторий)
 for f in \

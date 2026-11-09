@@ -8,7 +8,11 @@ set -e
 configure_bpi_r4() {
     local selected_device required
     [ -r .config ] || { echo 'Missing 25.12 .config' >&2; return 1; }
-    make defconfig
+    if [ "${DIY_SKIP_DEFCONFIG:-0}" = 1 ]; then
+        echo "[config] make defconfig пропущен: конфигурация и фиды не менялись"
+    else
+        make defconfig
+    fi
 
     selected_device="$(sed -n '/^CONFIG_TARGET_.*_DEVICE_.*=y$/p' .config)"
     if [ "$selected_device" != 'CONFIG_TARGET_mediatek_filogic_DEVICE_bananapi_bpi-r4=y' ]; then
@@ -43,8 +47,6 @@ for required in \
     'CONFIG_PACKAGE_luci-app-snmpd=y' \
     'CONFIG_PACKAGE_acme-acmesh=y' \
     'CONFIG_PACKAGE_luci-app-acme=y' \
-    'CONFIG_PACKAGE_frps=y' \
-    'CONFIG_PACKAGE_luci-app-frps=y' \
     'CONFIG_PACKAGE_luci-app-sms-tool-js=y' \
     'CONFIG_PACKAGE_lighttpd=y' \
     'CONFIG_PACKAGE_luci-app-uhttpd=y'; do
@@ -75,7 +77,9 @@ for forbidden in \
     'CONFIG_PACKAGE_luci-app-ramfree=y' \
     'CONFIG_PACKAGE_fibocom-dial=y' \
     'CONFIG_PACKAGE_frpc=y' \
-    'CONFIG_PACKAGE_luci-app-frpc=y'; do
+    'CONFIG_PACKAGE_luci-app-frpc=y' \
+    'CONFIG_PACKAGE_frps=y' \
+    'CONFIG_PACKAGE_luci-app-frps=y'; do
     if grep -qxF "$forbidden" .config; then
         echo "A disabled package is still selected: $forbidden" >&2
         exit 1
