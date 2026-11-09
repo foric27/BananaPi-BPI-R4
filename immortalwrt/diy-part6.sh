@@ -49,6 +49,12 @@ for required in \
     'CONFIG_PACKAGE_luci-app-acme=y' \
     'CONFIG_PACKAGE_luci-app-sms-tool-js=y' \
     'CONFIG_PACKAGE_lighttpd=y' \
+    'CONFIG_PACKAGE_lighttpd-mod-proxy=y' \
+    'CONFIG_PACKAGE_iperf=y' \
+    'CONFIG_PACKAGE_iperf3=y' \
+    'CONFIG_PACKAGE_luci-app-nut=y' \
+    'CONFIG_PACKAGE_nut-server=y' \
+    'CONFIG_PACKAGE_nut-driver-usbhid-ups=y' \
     'CONFIG_PACKAGE_luci-app-uhttpd=y'; do
     grep -qxF "$required" .config || {
         echo "The resolved 25.12 config lost an expected package: $required" >&2
@@ -122,6 +128,14 @@ if [ -f "$_lighttpd_conf" ]; then
         exit 1
     }
     echo "[DIY] lighttpd: HTTP-порт по умолчанию 80"
+fi
+
+# NUT: uci-defaults, который включает прослушивание 3493 в LAN для раздачи
+# состояния UPS по сети (lighttpd-mod-proxy ставится как пакет в defconfig).
+_nut_lan_src="$GITHUB_WORKSPACE/immortalwrt/files/etc/uci-defaults/30-nut-lan"
+if [ -f "$_nut_lan_src" ]; then
+    install -D -m 0755 "$_nut_lan_src" package/base-files/files/etc/uci-defaults/30-nut-lan
+    echo "[DIY] nut: LAN-прослушивание upsd 0.0.0.0:3493 (uci-defaults)"
 fi
 
 # Применяет патч к package/kernel/mt76, если он ещё не применён.

@@ -323,6 +323,9 @@ step_refresh_changed_packages() {
     _refresh_one lighttpd-config \
         "$OPENWRT_DIR/feeds/packages/net/lighttpd/files/lighttpd.conf" \
         package/feeds/packages/lighttpd
+    _refresh_one nut-lan-config \
+        "$OPENWRT_DIR/package/base-files/files/etc/uci-defaults/30-nut-lan" \
+        package/base-files
     unset -f _refresh_one
 }
 

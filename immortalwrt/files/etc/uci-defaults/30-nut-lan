@@ -1,0 +1,11 @@
+#!/bin/sh
+# NUT: раздаём состояние UPS в локальную сеть — upsd слушает 3493 на всех
+# интерфейсах. Если пользователь уже настроил listen_address (LuCI/UCI),
+# ничего не меняем.
+[ -f /etc/config/nut_server ] || exit 0
+uci -q get nut_server.@listen_address[0] >/dev/null 2>&1 && exit 0
+uci -q add nut_server listen_address >/dev/null 2>&1 || exit 0
+uci -q set nut_server.@listen_address[0].address='0.0.0.0'
+uci -q set nut_server.@listen_address[0].port='3493'
+uci -q commit nut_server
+exit 0
