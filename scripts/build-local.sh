@@ -282,12 +282,19 @@ step_apply_config() {
 # Шаг 5: diy-part6.sh — проверка профиля и пакетов, патч mt76, правка IP.
 step_diy_part6() {
     local skip_defconfig=0
+    local diy_hash diy_stamp
+    # make defconfig можно пропустить, только если не менялись ни исходники,
+    # ни фиды, ни community-репозитории, ни конфиг, ни сами DIY-скрипты.
+    diy_hash="$(cat "$DIY_P1_SH" "$DIY_P2_SH" | sha256sum | awk '{print $1}')"
+    diy_stamp="$STATE_DIR/diy-scripts.sha"
     if [ "$FORCE" = 0 ] && [ "$OPENWRT_UPDATED" = 0 ] && [ "$FEEDS_UPDATED" = 0 ] \
-        && [ "$CONFIG_CHANGED" = 0 ]; then
+        && [ "$REPOS_UPDATED" = 0 ] && [ "$CONFIG_CHANGED" = 0 ] \
+        && [ "$(cat "$diy_stamp" 2>/dev/null)" = "$diy_hash" ]; then
         skip_defconfig=1
     fi
     log "Шаг 5/7: immortalwrt/diy-part6.sh (проверка конфигурации и патч mt76)"
     ( cd "$OPENWRT_DIR" && DIY_SKIP_DEFCONFIG="$skip_defconfig" bash "$DIY_P2_SH" )
+    printf '%s\n' "$diy_hash" > "$diy_stamp"
 }
 
 # Локальная оптимизация: если diy-part6.sh изменил файлы пакетов, которые уже
