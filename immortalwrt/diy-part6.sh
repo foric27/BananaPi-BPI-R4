@@ -59,6 +59,13 @@ for required in \
     'CONFIG_PACKAGE_usb-modeswitch=y' \
     'CONFIG_PACKAGE_kmod-mhi-pci-generic=y' \
     'CONFIG_PACKAGE_luci-app-wrtbwmon=y' \
+    'CONFIG_PACKAGE_luci-app-interfaces-statistics=y' \
+    'CONFIG_PACKAGE_luci-app-internet-detector=y' \
+    'CONFIG_PACKAGE_luci-app-log-viewer=y' \
+    'CONFIG_PACKAGE_internet-detector=y' \
+    'CONFIG_PACKAGE_luci-i18n-interfaces-statistics-ru=y' \
+    'CONFIG_PACKAGE_luci-i18n-internet-detector-ru=y' \
+    'CONFIG_PACKAGE_luci-i18n-log-viewer-ru=y' \
     'CONFIG_PACKAGE_iperf=y' \
     'CONFIG_PACKAGE_iperf3=y' \
     'CONFIG_PACKAGE_luci-app-nut=y' \

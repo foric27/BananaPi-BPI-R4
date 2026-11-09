@@ -13,6 +13,9 @@
 REPO_SOCAT="https://github.com/1522042029/luci-app-socat";                              BRANCH_SOCAT="main"
 REPO_ARGON="https://github.com/jerrykuku/luci-theme-argon";                             BRANCH_ARGON="master"
 REPO_JELL="https://github.com/kenzok8/jell";                                            BRANCH_JELL="main"
+REPO_LUCI_INTERFACES_STATS="https://github.com/gSpotx2f/luci-app-interfaces-statistics"; BRANCH_LUCI_INTERFACES_STATS="master"
+REPO_LUCI_LOG="https://github.com/gSpotx2f/luci-app-log";                               BRANCH_LUCI_LOG="master"
+REPO_LUCI_INETDETECT="https://github.com/gSpotx2f/luci-app-internet-detector";          BRANCH_LUCI_INETDETECT="master"
 
 # Наш форк LuCI-приложений: URL и ветка приходят из workflow.
 LUCI_APP_REPO_URL="${LUCI_APP_REPO_URL:-https://github.com/foric27/luci-app}"
@@ -174,6 +177,42 @@ sync_repo "$REPO_JELL" "$BRANCH_JELL" "$DIYS_SRC_DIR/jell" || exit 1
 rm -rf package/openwrt-packages/wrtbwmon
 cp -a "$DIYS_SRC_DIR/jell/wrtbwmon" package/openwrt-packages/wrtbwmon || exit 1
 cp -a "$DIYS_SRC_DIR/jell/luci-app-wrtbwmon" package/openwrt-packages/luci-app-wrtbwmon || exit 1
+
+# LuCI-приложения gSpotx2f: статистика интерфейсов, журналы, детектор интернета.
+sync_repo "$REPO_LUCI_INTERFACES_STATS" "$BRANCH_LUCI_INTERFACES_STATS" \
+    "$DIYS_SRC_DIR/luci-app-interfaces-statistics" || exit 1
+rm -rf package/openwrt-packages/luci-app-interfaces-statistics
+mkdir -p package/openwrt-packages/luci-app-interfaces-statistics
+cp -a "$DIYS_SRC_DIR/luci-app-interfaces-statistics/Makefile" \
+      "$DIYS_SRC_DIR/luci-app-interfaces-statistics/htdocs" \
+      "$DIYS_SRC_DIR/luci-app-interfaces-statistics/po" \
+      "$DIYS_SRC_DIR/luci-app-interfaces-statistics/root" \
+      package/openwrt-packages/luci-app-interfaces-statistics/ || exit 1
+
+sync_repo "$REPO_LUCI_LOG" "$BRANCH_LUCI_LOG" "$DIYS_SRC_DIR/luci-app-log" || exit 1
+rm -rf package/openwrt-packages/luci-app-log
+mkdir -p package/openwrt-packages/luci-app-log
+cp -a "$DIYS_SRC_DIR/luci-app-log/Makefile" \
+      "$DIYS_SRC_DIR/luci-app-log/htdocs" \
+      "$DIYS_SRC_DIR/luci-app-log/po" \
+      "$DIYS_SRC_DIR/luci-app-log/root" \
+      package/openwrt-packages/luci-app-log/ || exit 1
+
+sync_repo "$REPO_LUCI_INETDETECT" "$BRANCH_LUCI_INETDETECT" \
+    "$DIYS_SRC_DIR/luci-app-internet-detector" || exit 1
+rm -rf package/openwrt-packages/internet-detector package/openwrt-packages/luci-app-internet-detector
+mkdir -p package/openwrt-packages/internet-detector package/openwrt-packages/luci-app-internet-detector
+cp -a "$DIYS_SRC_DIR/luci-app-internet-detector/internet-detector/." \
+    package/openwrt-packages/internet-detector/ || exit 1
+cp -a "$DIYS_SRC_DIR/luci-app-internet-detector/luci-app-internet-detector/." \
+    package/openwrt-packages/luci-app-internet-detector/ || exit 1
+
+for _pkg in luci-app-interfaces-statistics luci-app-log internet-detector luci-app-internet-detector; do
+    [ -f "package/openwrt-packages/$_pkg/Makefile" ] || {
+        echo "Package $_pkg was not prepared" >&2
+        exit 1
+    }
+done
 popd
 
 # Сохраняем версионированные Go-компиляторы фида, bootstrap и совместимые
