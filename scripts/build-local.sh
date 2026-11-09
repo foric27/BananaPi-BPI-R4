@@ -243,6 +243,9 @@ step_apply_config() {
         cp "$CONFIG_FILE" "$OPENWRT_DIR/.config"
         printf '%s\n' "$hash" > "$STATE_DIR/config.sha"
         CONFIG_CHANGED=1
+        # Новый набор пакетов: заставляем make пересобрать rootfs и образы.
+        rm -f "$OPENWRT_DIR"/staging_dir/target-*/stamp/.package_install
+        rm -f "$OPENWRT_DIR"/staging_dir/target-*/stamp/.target_install
     else
         echo "[config] Конфигурация не менялась"
     fi

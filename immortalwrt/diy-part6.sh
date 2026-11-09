@@ -73,7 +73,9 @@ for forbidden in \
     'CONFIG_PACKAGE_luci-app-wol=y' \
     'CONFIG_PACKAGE_luci-app-wechatpush=y' \
     'CONFIG_PACKAGE_luci-app-ramfree=y' \
-    'CONFIG_PACKAGE_fibocom-dial=y'; do
+    'CONFIG_PACKAGE_fibocom-dial=y' \
+    'CONFIG_PACKAGE_frpc=y' \
+    'CONFIG_PACKAGE_luci-app-frpc=y'; do
     if grep -qxF "$forbidden" .config; then
         echo "A disabled package is still selected: $forbidden" >&2
         exit 1
