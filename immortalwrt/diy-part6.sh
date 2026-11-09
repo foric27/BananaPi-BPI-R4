@@ -50,6 +50,9 @@ for required in \
     'CONFIG_PACKAGE_luci-app-sms-tool-js=y' \
     'CONFIG_PACKAGE_lighttpd=y' \
     'CONFIG_PACKAGE_lighttpd-mod-proxy=y' \
+    'CONFIG_PACKAGE_lighttpd-mod-openssl=y' \
+    'CONFIG_LIGHTTPD_SSL=y' \
+    'CONFIG_PACKAGE_stunnel=y' \
     'CONFIG_PACKAGE_iperf=y' \
     'CONFIG_PACKAGE_iperf3=y' \
     'CONFIG_PACKAGE_luci-app-nut=y' \
