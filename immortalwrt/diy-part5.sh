@@ -190,13 +190,15 @@ cp -a "$DIYS_SRC_DIR/luci-app-interfaces-statistics/Makefile" \
       package/openwrt-packages/luci-app-interfaces-statistics/ || exit 1
 
 sync_repo "$REPO_LUCI_LOG" "$BRANCH_LUCI_LOG" "$DIYS_SRC_DIR/luci-app-log" || exit 1
-rm -rf package/openwrt-packages/luci-app-log
-mkdir -p package/openwrt-packages/luci-app-log
+# Имя каталога определяет basename для luci-i18n-* (luci.mk), поэтому каталог
+# называем как PKG_NAME — luci-app-log-viewer.
+rm -rf package/openwrt-packages/luci-app-log package/openwrt-packages/luci-app-log-viewer
+mkdir -p package/openwrt-packages/luci-app-log-viewer
 cp -a "$DIYS_SRC_DIR/luci-app-log/Makefile" \
       "$DIYS_SRC_DIR/luci-app-log/htdocs" \
       "$DIYS_SRC_DIR/luci-app-log/po" \
       "$DIYS_SRC_DIR/luci-app-log/root" \
-      package/openwrt-packages/luci-app-log/ || exit 1
+      package/openwrt-packages/luci-app-log-viewer/ || exit 1
 
 sync_repo "$REPO_LUCI_INETDETECT" "$BRANCH_LUCI_INETDETECT" \
     "$DIYS_SRC_DIR/luci-app-internet-detector" || exit 1
@@ -207,7 +209,7 @@ cp -a "$DIYS_SRC_DIR/luci-app-internet-detector/internet-detector/." \
 cp -a "$DIYS_SRC_DIR/luci-app-internet-detector/luci-app-internet-detector/." \
     package/openwrt-packages/luci-app-internet-detector/ || exit 1
 
-for _pkg in luci-app-interfaces-statistics luci-app-log internet-detector luci-app-internet-detector; do
+for _pkg in luci-app-interfaces-statistics luci-app-log-viewer internet-detector luci-app-internet-detector; do
     [ -f "package/openwrt-packages/$_pkg/Makefile" ] || {
         echo "Package $_pkg was not prepared" >&2
         exit 1
