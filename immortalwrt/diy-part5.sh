@@ -173,6 +173,7 @@ fi
 sync_repo "$REPO_JELL" "$BRANCH_JELL" "$DIYS_SRC_DIR/jell" || exit 1
 rm -rf package/openwrt-packages/wrtbwmon
 cp -a "$DIYS_SRC_DIR/jell/wrtbwmon" package/openwrt-packages/wrtbwmon || exit 1
+cp -a "$DIYS_SRC_DIR/jell/luci-app-wrtbwmon" package/openwrt-packages/luci-app-wrtbwmon || exit 1
 popd
 
 # Сохраняем версионированные Go-компиляторы фида, bootstrap и совместимые
