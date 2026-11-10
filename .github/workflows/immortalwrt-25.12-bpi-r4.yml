@@ -7,6 +7,15 @@ on:
   schedule:
     - cron: 0 16 * * *
   workflow_dispatch:
+  # Автосборка при изменениях конфигурации/скриптов/патчей (API dispatch может
+  # быть недоступен, а push-событие запускает workflow на стороне GitHub).
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/**'
+      - 'immortalwrt/**'
+      - 'patches/**'
+      - 'scripts/**'
 
 permissions:
   actions: write
