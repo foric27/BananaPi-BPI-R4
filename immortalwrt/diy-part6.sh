@@ -75,6 +75,7 @@ for required in \
     'CONFIG_PACKAGE_iperf3=y' \
     'CONFIG_PACKAGE_luci-app-nut=y' \
     'CONFIG_PACKAGE_nut-server=y' \
+    'CONFIG_PACKAGE_nut-driver-nutdrv_qx=y' \
     'CONFIG_PACKAGE_nut-driver-usbhid-ups=y' \
     'CONFIG_PACKAGE_luci-app-uhttpd=y'; do
     grep -qxF "$required" .config || {
