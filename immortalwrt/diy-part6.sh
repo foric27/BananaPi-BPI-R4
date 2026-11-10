@@ -71,6 +71,15 @@ for required in \
     'CONFIG_PACKAGE_luci-i18n-log-viewer-ru=y' \
     'CONFIG_PACKAGE_luci-app-avahi-publisher=y' \
     'CONFIG_PACKAGE_luci-i18n-avahi-publisher-ru=y' \
+    'CONFIG_PACKAGE_nikki=y' \
+    'CONFIG_PACKAGE_luci-app-nikki=y' \
+    'CONFIG_PACKAGE_luci-i18n-nikki-ru=y' \
+    'CONFIG_PACKAGE_mihomo-meta=y' \
+    'CONFIG_PACKAGE_kmod-tun=y' \
+    'CONFIG_PACKAGE_kmod-inet-diag=y' \
+    'CONFIG_PACKAGE_kmod-nft-tproxy=y' \
+    'CONFIG_PACKAGE_kmod-nft-socket=y' \
+    'CONFIG_PACKAGE_kmod-dummy=y' \
     'CONFIG_PACKAGE_iperf=y' \
     'CONFIG_PACKAGE_iperf3=y' \
     'CONFIG_PACKAGE_luci-app-nut=y' \

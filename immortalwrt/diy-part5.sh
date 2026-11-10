@@ -16,6 +16,7 @@ REPO_JELL="https://github.com/kenzok8/jell";                                    
 REPO_LUCI_INTERFACES_STATS="https://github.com/gSpotx2f/luci-app-interfaces-statistics"; BRANCH_LUCI_INTERFACES_STATS="master"
 REPO_LUCI_LOG="https://github.com/gSpotx2f/luci-app-log";                               BRANCH_LUCI_LOG="master"
 REPO_LUCI_INETDETECT="https://github.com/gSpotx2f/luci-app-internet-detector";          BRANCH_LUCI_INETDETECT="master"
+REPO_NIKKI="https://github.com/nikkinikki-org/OpenWrt-nikki";                           BRANCH_NIKKI="main"
 
 # Наш форк LuCI-приложений: URL и ветка приходят из workflow.
 LUCI_APP_REPO_URL="${LUCI_APP_REPO_URL:-https://github.com/foric27/luci-app}"
@@ -215,8 +216,16 @@ for _mod in internet-detector-mod-email internet-detector-mod-telegram internet-
     cp -a "$DIYS_SRC_DIR/luci-app-internet-detector/$_mod" "package/openwrt-packages/$_mod" || exit 1
 done
 
+# Nikki (Mihomo transparent proxy): ядро-пакет nikki, LuCI и mihomo-meta.
+sync_repo "$REPO_NIKKI" "$BRANCH_NIKKI" "$DIYS_SRC_DIR/OpenWrt-nikki" || exit 1
+for _pkg in nikki luci-app-nikki mihomo-meta; do
+    rm -rf "package/openwrt-packages/$_pkg"
+    cp -a "$DIYS_SRC_DIR/OpenWrt-nikki/$_pkg" "package/openwrt-packages/$_pkg" || exit 1
+done
+
 for _pkg in luci-app-interfaces-statistics luci-app-log-viewer internet-detector luci-app-internet-detector \
-    internet-detector-mod-email internet-detector-mod-telegram internet-detector-mod-modem-restart; do
+    internet-detector-mod-email internet-detector-mod-telegram internet-detector-mod-modem-restart \
+    nikki luci-app-nikki mihomo-meta; do
     [ -f "package/openwrt-packages/$_pkg/Makefile" ] || {
         echo "Package $_pkg was not prepared" >&2
         exit 1
