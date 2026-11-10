@@ -157,11 +157,11 @@ sync_repo "$REPO_ARGON" "$BRANCH_ARGON" "luci-theme-argon" || exit 1
 mkdir -p package/openwrt-packages
 _luci_cache="$DIYS_SRC_DIR/luci-app"
 sync_repo "$LUCI_APP_REPO_URL" "$LUCI_APP_REPO_BRANCH" "$_luci_cache" || exit 1
-for _app in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-traffic rpcd-mod-router-status; do
+for _app in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-traffic luci-app-avahi-publisher rpcd-mod-router-status; do
     rm -rf "package/openwrt-packages/$_app"
     cp -a "$_luci_cache/Luci-app/$_app" "package/openwrt-packages/$_app" || exit 1
 done
-for _app in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-traffic rpcd-mod-router-status; do
+for _app in luci-app-fan luci-app-sfp-status luci-app-modemband luci-app-traffic luci-app-avahi-publisher rpcd-mod-router-status; do
     [ -f "package/openwrt-packages/$_app/Makefile" ] || {
         echo "Package $_app was not fetched from $LUCI_APP_REPO_URL" >&2
         exit 1

@@ -69,6 +69,8 @@ for required in \
     'CONFIG_PACKAGE_luci-i18n-interfaces-statistics-ru=y' \
     'CONFIG_PACKAGE_luci-i18n-internet-detector-ru=y' \
     'CONFIG_PACKAGE_luci-i18n-log-viewer-ru=y' \
+    'CONFIG_PACKAGE_luci-app-avahi-publisher=y' \
+    'CONFIG_PACKAGE_luci-i18n-avahi-publisher-ru=y' \
     'CONFIG_PACKAGE_iperf=y' \
     'CONFIG_PACKAGE_iperf3=y' \
     'CONFIG_PACKAGE_luci-app-nut=y' \
