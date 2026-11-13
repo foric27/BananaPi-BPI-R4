@@ -257,8 +257,12 @@ step_apply_config() {
         # Скачивание нужно только если в новом конфиге появились новые пакеты;
         # при простом удалении пакетов сеть не требуется.
         if [ -f "$OPENWRT_DIR/.config" ]; then
-            added="$(grep -oE '^CONFIG_PACKAGE_[A-Za-z0-9_.+-]+=y' "$CONFIG_FILE" \
-                | grep -vxF -f <(grep -oE '^CONFIG_PACKAGE_[A-Za-z0-9_.+-]+=y' "$OPENWRT_DIR/.config") \
+            # comm вместо grep -vxF: пустой результат grep -vxF даёт код 1,
+            # а из-за pipefail это молча роняло скрипт, когда новых пакетов нет.
+            # LC_ALL=C обязателен: comm требует сортировки в байтовом порядке.
+            added="$(comm -23 \
+                <(grep -oE '^CONFIG_PACKAGE_[A-Za-z0-9_.+-]+=y' "$CONFIG_FILE" | LC_ALL=C sort -u) \
+                <(grep -oE '^CONFIG_PACKAGE_[A-Za-z0-9_.+-]+=y' "$OPENWRT_DIR/.config" | LC_ALL=C sort -u) \
                 | wc -l)"
             added="${added// /}"
         else

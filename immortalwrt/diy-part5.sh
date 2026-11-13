@@ -17,7 +17,11 @@ REPO_LUCI_INTERFACES_STATS="https://github.com/gSpotx2f/luci-app-interfaces-stat
 REPO_LUCI_LOG="https://github.com/gSpotx2f/luci-app-log";                               BRANCH_LUCI_LOG="master"
 REPO_LUCI_INETDETECT="https://github.com/gSpotx2f/luci-app-internet-detector";          BRANCH_LUCI_INETDETECT="master"
 REPO_NIKKI="https://github.com/nikkinikki-org/OpenWrt-nikki";                           BRANCH_NIKKI="main"
-REPO_NETPULSE="https://github.com/gnacho/netpulse";                                  REF_NETPULSE="v2.52.0"
+# NetPulse (upstream gnacho/netpulse): тег релиза, тег клона и sha256
+# официального SPA-артефакта app-dist-<версия>.tar.gz из того же релиза.
+NETPULSE_VERSION="2.52.0"
+NETPULSE_APP_DIST_SHA256="1e13bf149859efa0990b3b0e6f9825ecdfd8f72ab20b1ba1b5a82227cdf8bdc6"
+REPO_NETPULSE="https://github.com/gnacho/netpulse";                                  REF_NETPULSE="v$NETPULSE_VERSION"
 
 # Наш форк LuCI-приложений: URL и ветка приходят из workflow.
 LUCI_APP_REPO_URL="${LUCI_APP_REPO_URL:-https://github.com/foric27/luci-app}"
@@ -224,10 +228,11 @@ for _pkg in nikki luci-app-nikki mihomo-meta; do
     cp -a "$DIYS_SRC_DIR/OpenWrt-nikki/$_pkg" "package/openwrt-packages/$_pkg" || exit 1
 done
 
-# NetPulse: агент мониторинга роутера + LuCI-страница (upstream gnacho/netpulse).
+# NetPulse (upstream gnacho/netpulse): агент + LuCI-страница и сервер on-box.
 # Монорепозиторий большой (скриншоты в assets), поэтому клонируем только
-# deploy/openwrt и agent (sparse). Makefile агента — наш: upstream собирает
-# бинарник вызовом `go build` + UPX, а в buildroot Go берётся из фида (golang/host).
+# deploy/openwrt и agent (sparse). Makefile агента и скрипт сборки сервера —
+# наши: upstream собирает бинарники вызовом `go build` + UPX, а в buildroot
+# Go берётся из фида (golang/host); SPA сервера — официальный артефакт релиза.
 _netpulse_dir="$DIYS_SRC_DIR/netpulse"
 _netpulse_ref_file="$DIYS_STATE_DIR/netpulse-ref"
 if [ -d "$_netpulse_dir/.git" ] && [ "$(cat "$_netpulse_ref_file" 2>/dev/null)" = "$REF_NETPULSE" ]; then
@@ -240,7 +245,8 @@ else
     echo "$REF_NETPULSE" > "$_netpulse_ref_file"
     touch "$DIYS_STATE_DIR/repos-updated"
 fi
-rm -rf package/openwrt-packages/netpulse-agent package/openwrt-packages/luci-app-netpulse
+rm -rf package/openwrt-packages/netpulse-agent package/openwrt-packages/luci-app-netpulse \
+       package/openwrt-packages/netpulse
 mkdir -p package/openwrt-packages/netpulse-agent
 cp -a "$_netpulse_dir/deploy/openwrt/netpulse-agent/files" \
     package/openwrt-packages/netpulse-agent/files || exit 1
@@ -248,6 +254,28 @@ install -m 0644 "$GITHUB_WORKSPACE/immortalwrt/packages/netpulse-agent/Makefile"
     package/openwrt-packages/netpulse-agent/Makefile || exit 1
 cp -a "$_netpulse_dir/deploy/openwrt/luci-app-netpulse" \
     package/openwrt-packages/luci-app-netpulse || exit 1
+# Сервер on-box: Go-сборка (server-go + встроенные агенты) и SPA из релиза.
+mkdir -p package/openwrt-packages/netpulse
+cp -a "$_netpulse_dir/deploy/openwrt/netpulse-server/files" \
+    package/openwrt-packages/netpulse/files || exit 1
+install -m 0644 "$GITHUB_WORKSPACE/immortalwrt/packages/netpulse-server/Makefile" \
+    package/openwrt-packages/netpulse/Makefile || exit 1
+install -m 0755 "$GITHUB_WORKSPACE/immortalwrt/packages/netpulse-server/build.sh" \
+    package/openwrt-packages/netpulse/build.sh || exit 1
+_netpulse_spa="$DIYS_SRC_DIR/netpulse-app-dist-$NETPULSE_VERSION.tar.gz"
+if [ ! -f "$_netpulse_spa" ]; then
+    curl -fsSL --retry 3 -o "$_netpulse_spa.tmp" \
+        "https://github.com/gnacho/netpulse/releases/download/v$NETPULSE_VERSION/app-dist-v$NETPULSE_VERSION.tar.gz" || exit 1
+    _netpulse_spa_sha="$(sha256sum "$_netpulse_spa.tmp" | awk '{print $1}')"
+    if [ "$_netpulse_spa_sha" != "$NETPULSE_APP_DIST_SHA256" ]; then
+        rm -f "$_netpulse_spa.tmp"
+        echo "netpulse app-dist sha256 mismatch: $_netpulse_spa_sha" >&2
+        exit 1
+    fi
+    mv "$_netpulse_spa.tmp" "$_netpulse_spa"
+fi
+install -m 0644 "$_netpulse_spa" \
+    "package/openwrt-packages/netpulse/app-dist-$NETPULSE_VERSION.tar.gz" || exit 1
 [ -f "package/openwrt-packages/netpulse-agent/Makefile" ] || {
     echo "netpulse-agent package was not prepared" >&2
     exit 1
@@ -256,10 +284,20 @@ cp -a "$_netpulse_dir/deploy/openwrt/luci-app-netpulse" \
     echo "netpulse-agent init script was not prepared" >&2
     exit 1
 }
+for _netpulse_file in \
+    package/openwrt-packages/netpulse/Makefile \
+    package/openwrt-packages/netpulse/build.sh \
+    package/openwrt-packages/netpulse/files/netpulse-server.init \
+    "package/openwrt-packages/netpulse/app-dist-$NETPULSE_VERSION.tar.gz"; do
+    [ -f "$_netpulse_file" ] || {
+        echo "NetPulse server package file is missing: $_netpulse_file" >&2
+        exit 1
+    }
+done
 
 for _pkg in luci-app-interfaces-statistics luci-app-log-viewer internet-detector luci-app-internet-detector \
     internet-detector-mod-email internet-detector-mod-telegram internet-detector-mod-modem-restart \
-    nikki luci-app-nikki mihomo-meta netpulse-agent luci-app-netpulse; do
+    nikki luci-app-nikki mihomo-meta netpulse-agent luci-app-netpulse netpulse; do
     [ -f "package/openwrt-packages/$_pkg/Makefile" ] || {
         echo "Package $_pkg was not prepared" >&2
         exit 1

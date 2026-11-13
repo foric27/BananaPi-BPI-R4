@@ -9,6 +9,10 @@
 * NetPulse agent (github.com/gnacho/netpulse) with its LuCI page: the router
   can be monitored by a self-hosted NetPulse server (agent is idle until
   `/etc/config/netpulse-agent` has `server`, `token` and `slug`)
+* NetPulse on-box server: HTTPS web UI on port 3100 (`https://192.168.1.1:3100`),
+  SQLite data in `/usr/local/netpulse-data` (set `netpulse.server.data_dir` to a
+  mounted USB path to keep the database off flash); the initial admin password
+  is generated on first boot and printed once in `logread`
 
 ## References
 * https://github.com/immortalwrt/immortalwrt

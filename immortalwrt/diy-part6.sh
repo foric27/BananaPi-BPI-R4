@@ -77,6 +77,7 @@ for required in \
     'CONFIG_PACKAGE_mihomo-meta=y' \
     'CONFIG_PACKAGE_iw=y' \
     'CONFIG_PACKAGE_netpulse-agent=y' \
+    'CONFIG_PACKAGE_netpulse=y' \
     'CONFIG_PACKAGE_luci-app-netpulse=y' \
     'CONFIG_PACKAGE_kmod-tun=y' \
     'CONFIG_PACKAGE_kmod-inet-diag=y' \
@@ -103,12 +104,22 @@ for _netpulse_file in \
     package/community/package/openwrt-packages/netpulse-agent/files/netpulse-agent.config \
     package/community/package/openwrt-packages/netpulse-agent/files/netpulse-agent.defaults \
     package/community/package/openwrt-packages/luci-app-netpulse/Makefile \
-    package/community/package/openwrt-packages/luci-app-netpulse/files/usr/libexec/rpcd/luci.netpulse; do
+    package/community/package/openwrt-packages/luci-app-netpulse/files/usr/libexec/rpcd/luci.netpulse \
+    package/community/package/openwrt-packages/netpulse/Makefile \
+    package/community/package/openwrt-packages/netpulse/build.sh \
+    package/community/package/openwrt-packages/netpulse/files/netpulse-server.init \
+    package/community/package/openwrt-packages/netpulse/files/netpulse-server.defaults; do
     [ -f "$_netpulse_file" ] || {
         echo "netpulse package files are missing: $_netpulse_file" >&2
         exit 1
     }
 done
+# SPA-артефакт версионирован, поэтому проверяем его маской (версия задаётся
+# в diy-part5.sh и здесь недоступна).
+if ! ls package/community/package/openwrt-packages/netpulse/app-dist-*.tar.gz >/dev/null 2>&1; then
+    echo "netpulse SPA artifact (app-dist-*.tar.gz) is missing" >&2
+    exit 1
+fi
 
 # Отключённые по запросу пакеты не должны вернуться (в т.ч. как зависимости).
 for forbidden in \
