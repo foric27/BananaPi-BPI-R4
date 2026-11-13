@@ -91,6 +91,11 @@ CONFIG_PACKAGE_kmod-tun=y
 CONFIG_PACKAGE_mihomo-meta=y
 CONFIG_PACKAGE_nikki=y
 
+# NetPulse: агент мониторинга роутера (сервер NetPulse — на отдельной машине)
+# и его LuCI-страница из upstream gnacho/netpulse (пакеты готовит diy-part5.sh).
+CONFIG_PACKAGE_iw=y
+CONFIG_PACKAGE_netpulse-agent=y
+
 # Core service set trimmed to packages that are present in current feeds.
 CONFIG_PACKAGE_acme-acmesh=y
 CONFIG_PACKAGE_avahi-daemon-service-http=y
@@ -207,6 +212,7 @@ CONFIG_PACKAGE_luci-app-interfaces-statistics=y
 CONFIG_PACKAGE_luci-app-internet-detector=y
 CONFIG_PACKAGE_luci-app-log-viewer=y
 CONFIG_PACKAGE_luci-app-nikki=y
+CONFIG_PACKAGE_luci-app-netpulse=y
 CONFIG_PACKAGE_luci-app-sfp-status=y
 CONFIG_PACKAGE_luci-app-socat=y
 CONFIG_PACKAGE_luci-app-wrtbwmon=y

@@ -6,6 +6,9 @@
 * Support BRI-R4-NIC-BE14 Model
 * Support MTK-HNAT
 * Lighttpd on port 80, LuCI (uhttpd) on port 8888
+* NetPulse agent (github.com/gnacho/netpulse) with its LuCI page: the router
+  can be monitored by a self-hosted NetPulse server (agent is idle until
+  `/etc/config/netpulse-agent` has `server`, `token` and `slug`)
 
 ## References
 * https://github.com/immortalwrt/immortalwrt

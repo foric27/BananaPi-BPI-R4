@@ -75,6 +75,9 @@ for required in \
     'CONFIG_PACKAGE_luci-app-nikki=y' \
     'CONFIG_PACKAGE_luci-i18n-nikki-ru=y' \
     'CONFIG_PACKAGE_mihomo-meta=y' \
+    'CONFIG_PACKAGE_iw=y' \
+    'CONFIG_PACKAGE_netpulse-agent=y' \
+    'CONFIG_PACKAGE_luci-app-netpulse=y' \
     'CONFIG_PACKAGE_kmod-tun=y' \
     'CONFIG_PACKAGE_kmod-inet-diag=y' \
     'CONFIG_PACKAGE_kmod-nft-tproxy=y' \
@@ -89,6 +92,20 @@ for required in \
     'CONFIG_PACKAGE_luci-app-uhttpd=y'; do
     grep -qxF "$required" .config || {
         echo "The resolved 25.12 config lost an expected package: $required" >&2
+        exit 1
+    }
+done
+
+# NetPulse: пакеты готовит diy-part5.sh из upstream gnacho/netpulse.
+for _netpulse_file in \
+    package/community/package/openwrt-packages/netpulse-agent/Makefile \
+    package/community/package/openwrt-packages/netpulse-agent/files/netpulse-agent.init \
+    package/community/package/openwrt-packages/netpulse-agent/files/netpulse-agent.config \
+    package/community/package/openwrt-packages/netpulse-agent/files/netpulse-agent.defaults \
+    package/community/package/openwrt-packages/luci-app-netpulse/Makefile \
+    package/community/package/openwrt-packages/luci-app-netpulse/files/usr/libexec/rpcd/luci.netpulse; do
+    [ -f "$_netpulse_file" ] || {
+        echo "netpulse package files are missing: $_netpulse_file" >&2
         exit 1
     }
 done
