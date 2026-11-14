@@ -6,13 +6,14 @@
 * Support BRI-R4-NIC-BE14 Model
 * Support MTK-HNAT
 * Lighttpd on port 80, LuCI (uhttpd) on port 8888
-* NetPulse agent (github.com/gnacho/netpulse) with its LuCI page: the router
-  can be monitored by a self-hosted NetPulse server (agent is idle until
-  `/etc/config/netpulse-agent` has `server`, `token` and `slug`)
-* NetPulse on-box server: HTTPS web UI on port 3100 (`https://192.168.1.1:3100`),
-  SQLite data in `/usr/local/netpulse-data` (set `netpulse.server.data_dir` to a
-  mounted USB path to keep the database off flash); the initial admin password
-  is generated on first boot and printed once in `logread`
+* NetPulse (`netpulse-agent`, `luci-app-netpulse`, on-box server `netpulse`):
+  packages are maintained in https://github.com/foric27/luci-app and copied by
+  `diy-part5.sh`; the agent is idle until `/etc/config/netpulse-agent` has
+  `server`, `token` and `slug`; the server brings up HTTPS on port 3100
+  (`https://192.168.1.1:3100`), stores SQLite data in
+  `/usr/local/netpulse-data` (move it to a mounted USB path via
+  `netpulse.server.data_dir`) and prints the initial admin password once in
+  `logread`
 
 ## References
 * https://github.com/immortalwrt/immortalwrt

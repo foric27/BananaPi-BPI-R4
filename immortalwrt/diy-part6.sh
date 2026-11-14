@@ -97,29 +97,24 @@ for required in \
     }
 done
 
-# NetPulse: пакеты готовит diy-part5.sh из upstream gnacho/netpulse.
+# NetPulse: пакеты раскладывает diy-part5.sh из репозитория foric27/luci-app.
 for _netpulse_file in \
     package/community/package/openwrt-packages/netpulse-agent/Makefile \
     package/community/package/openwrt-packages/netpulse-agent/files/netpulse-agent.init \
     package/community/package/openwrt-packages/netpulse-agent/files/netpulse-agent.config \
     package/community/package/openwrt-packages/netpulse-agent/files/netpulse-agent.defaults \
-    package/community/package/openwrt-packages/luci-app-netpulse/Makefile \
-    package/community/package/openwrt-packages/luci-app-netpulse/files/usr/libexec/rpcd/luci.netpulse \
     package/community/package/openwrt-packages/netpulse/Makefile \
     package/community/package/openwrt-packages/netpulse/build.sh \
     package/community/package/openwrt-packages/netpulse/files/netpulse-server.init \
-    package/community/package/openwrt-packages/netpulse/files/netpulse-server.defaults; do
+    package/community/package/openwrt-packages/netpulse/files/netpulse-server.defaults \
+    package/community/package/openwrt-packages/luci-app-netpulse/Makefile \
+    package/community/package/openwrt-packages/luci-app-netpulse/root/usr/libexec/rpcd/luci.netpulse \
+    package/community/package/openwrt-packages/luci-app-netpulse/po/ru/netpulse.po; do
     [ -f "$_netpulse_file" ] || {
-        echo "netpulse package files are missing: $_netpulse_file" >&2
+        echo "NetPulse package file is missing: $_netpulse_file" >&2
         exit 1
     }
 done
-# SPA-артефакт версионирован, поэтому проверяем его маской (версия задаётся
-# в diy-part5.sh и здесь недоступна).
-if ! ls package/community/package/openwrt-packages/netpulse/app-dist-*.tar.gz >/dev/null 2>&1; then
-    echo "netpulse SPA artifact (app-dist-*.tar.gz) is missing" >&2
-    exit 1
-fi
 
 # Отключённые по запросу пакеты не должны вернуться (в т.ч. как зависимости).
 for forbidden in \
